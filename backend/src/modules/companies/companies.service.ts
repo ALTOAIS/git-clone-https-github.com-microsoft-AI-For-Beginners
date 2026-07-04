@@ -22,13 +22,19 @@ export class CompaniesService {
     return this.prisma.company.create({ data });
   }
 
-  async update(id: string, data: { name?: string; description?: string; isActive?: boolean }) {
+  async update(
+    id: string,
+    data: { name?: string; description?: string; isActive?: boolean },
+  ) {
     await this.findOne(id);
     return this.prisma.company.update({ where: { id }, data });
   }
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.company.update({ where: { id }, data: { isActive: false } });
+    return this.prisma.company.update({
+      where: { id },
+      data: { isActive: false },
+    });
   }
 }

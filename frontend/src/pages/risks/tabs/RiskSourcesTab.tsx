@@ -51,7 +51,7 @@ export function RiskSourcesTab({ risk, onUpdated, canEdit }: Props) {
         locale={{ emptyText: 'No sources linked to this risk yet' }}
         renderItem={({ source }) => (
           <List.Item
-            actions={canEdit ? [<a onClick={() => handleUnlink(source.id)}>Unlink</a>] : undefined}
+            actions={canEdit ? [<a key="unlink" onClick={() => handleUnlink(source.id)}>Unlink</a>] : undefined}
           >
             <List.Item.Meta
               title={source.title}

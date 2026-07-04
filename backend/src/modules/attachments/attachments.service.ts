@@ -49,7 +49,9 @@ export class AttachmentsService {
   }
 
   async findOne(id: string) {
-    const attachment = await this.prisma.attachment.findUnique({ where: { id } });
+    const attachment = await this.prisma.attachment.findUnique({
+      where: { id },
+    });
     if (!attachment) throw new NotFoundException('Attachment not found');
     return attachment;
   }

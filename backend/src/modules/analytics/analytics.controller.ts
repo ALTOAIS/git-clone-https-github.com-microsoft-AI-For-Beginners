@@ -26,17 +26,23 @@ export class AnalyticsController {
 
   @Get('top-companies')
   topCompanies(@Query('limit') limit?: string) {
-    return this.analyticsService.topCompanies(limit ? Number(limit) : undefined);
+    return this.analyticsService.topCompanies(
+      limit ? Number(limit) : undefined,
+    );
   }
 
   @Get('top-departments')
   topDepartments(@Query('limit') limit?: string) {
-    return this.analyticsService.topDepartments(limit ? Number(limit) : undefined);
+    return this.analyticsService.topDepartments(
+      limit ? Number(limit) : undefined,
+    );
   }
 
   @Get('top-categories')
   topCategories(@Query('limit') limit?: string) {
-    return this.analyticsService.topCategories(limit ? Number(limit) : undefined);
+    return this.analyticsService.topCategories(
+      limit ? Number(limit) : undefined,
+    );
   }
 
   @Get('top-sources')

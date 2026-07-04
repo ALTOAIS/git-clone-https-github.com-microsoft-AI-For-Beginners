@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class CreateRiskDto {
   @ApiProperty()
@@ -50,7 +57,11 @@ export class CreateRiskDto {
   @Max(5)
   impact?: number;
 
-  @ApiProperty({ required: false, type: [String], description: 'Source IDs to link on creation' })
+  @ApiProperty({
+    required: false,
+    type: [String],
+    description: 'Source IDs to link on creation',
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

@@ -33,7 +33,12 @@ export class AuditService {
     });
   }
 
-  async findAll(params: { page: number; pageSize: number; entityType?: string; userId?: string }) {
+  async findAll(params: {
+    page: number;
+    pageSize: number;
+    entityType?: string;
+    userId?: string;
+  }) {
     const { page, pageSize, entityType, userId } = params;
     const where = {
       ...(entityType ? { entityType } : {}),
@@ -45,7 +50,9 @@ export class AuditService {
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: { user: { select: { id: true, fullName: true, email: true } } },
+        include: {
+          user: { select: { id: true, fullName: true, email: true } },
+        },
       }),
       this.prisma.auditLog.count({ where }),
     ]);

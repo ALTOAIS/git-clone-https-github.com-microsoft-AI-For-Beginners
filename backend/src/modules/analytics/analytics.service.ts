@@ -17,7 +17,8 @@ export class AnalyticsService {
 
   /** 5x5 likelihood/impact matrix of active risks, for the inherent-risk heat map widget. */
   async heatmap(kind: 'inherent' | 'residual' = 'inherent') {
-    const likelihoodField = kind === 'inherent' ? 'likelihood' : 'residualLikelihood';
+    const likelihoodField =
+      kind === 'inherent' ? 'likelihood' : 'residualLikelihood';
     const impactField = kind === 'inherent' ? 'impact' : 'residualImpact';
 
     const where: any = {
@@ -49,14 +50,20 @@ export class AnalyticsService {
     since.setHours(0, 0, 0, 0);
 
     const [created, closed] = await Promise.all([
-      this.prisma.risk.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
+      this.prisma.risk.findMany({
+        where: { createdAt: { gte: since } },
+        select: { createdAt: true },
+      }),
       this.prisma.risk.findMany({
         where: { closedAt: { gte: since } },
         select: { closedAt: true },
       }),
     ]);
 
-    const buckets = new Map<string, { month: string; created: number; closed: number }>();
+    const buckets = new Map<
+      string,
+      { month: string; created: number; closed: number }
+    >();
     for (let i = 0; i < months; i++) {
       const d = new Date(since);
       d.setMonth(d.getMonth() + i);
@@ -107,7 +114,11 @@ export class AnalyticsService {
       where: { id: { in: groups.map((g) => g.companyId!) } },
     });
     const nameById = new Map(companies.map((c) => [c.id, c.name]));
-    return groups.map((g) => ({ id: g.companyId, name: nameById.get(g.companyId!), count: g._count._all }));
+    return groups.map((g) => ({
+      id: g.companyId,
+      name: nameById.get(g.companyId!),
+      count: g._count._all,
+    }));
   }
 
   async topDepartments(limit = 5) {
@@ -122,7 +133,11 @@ export class AnalyticsService {
       where: { id: { in: groups.map((g) => g.departmentId!) } },
     });
     const nameById = new Map(departments.map((d) => [d.id, d.name]));
-    return groups.map((g) => ({ id: g.departmentId, name: nameById.get(g.departmentId!), count: g._count._all }));
+    return groups.map((g) => ({
+      id: g.departmentId,
+      name: nameById.get(g.departmentId!),
+      count: g._count._all,
+    }));
   }
 
   async topCategories(limit = 5) {
@@ -137,7 +152,11 @@ export class AnalyticsService {
       where: { id: { in: groups.map((g) => g.categoryId!) } },
     });
     const nameById = new Map(categories.map((c) => [c.id, c.name]));
-    return groups.map((g) => ({ id: g.categoryId, name: nameById.get(g.categoryId!), count: g._count._all }));
+    return groups.map((g) => ({
+      id: g.categoryId,
+      name: nameById.get(g.categoryId!),
+      count: g._count._all,
+    }));
   }
 
   async topSources(limit = 5) {
@@ -185,18 +204,26 @@ export class AnalyticsService {
       select: { inherentScore: true, residualScore: true },
     });
     if (risks.length === 0) {
-      return { averageInherent: 0, averageResidual: 0, reductionPercent: 0, count: 0 };
+      return {
+        averageInherent: 0,
+        averageResidual: 0,
+        reductionPercent: 0,
+        count: 0,
+      };
     }
     const withResidual = risks.filter((r) => r.residualScore !== null);
     const averageInherent =
       risks.reduce((sum, r) => sum + (r.inherentScore ?? 0), 0) / risks.length;
     const averageResidual =
       withResidual.length > 0
-        ? withResidual.reduce((sum, r) => sum + (r.residualScore ?? 0), 0) / withResidual.length
+        ? withResidual.reduce((sum, r) => sum + (r.residualScore ?? 0), 0) /
+          withResidual.length
         : 0;
     const reductionPercent =
       averageInherent > 0 && withResidual.length > 0
-        ? Math.round(((averageInherent - averageResidual) / averageInherent) * 10000) / 100
+        ? Math.round(
+            ((averageInherent - averageResidual) / averageInherent) * 10000,
+          ) / 100
         : 0;
     return {
       averageInherent: Math.round(averageInherent * 100) / 100,

@@ -16,7 +16,10 @@ import { ApiTags } from '@nestjs/swagger';
 import { EntityType } from '@prisma/client';
 import { Response } from 'express';
 import { join, resolve } from 'path';
-import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  AuthenticatedUser,
+} from '../../common/decorators/current-user.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AttachmentsService } from './attachments.service';
 import { attachmentsMulterOptions } from './multer.config';
@@ -37,7 +40,9 @@ export class AttachmentsController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('file', attachmentsMulterOptions(UPLOAD_DIR)))
+  @UseInterceptors(
+    FileInterceptor('file', attachmentsMulterOptions(UPLOAD_DIR)),
+  )
   async upload(
     @UploadedFile() file: Express.Multer.File,
     @Query('entityType') entityType: EntityType,
@@ -58,7 +63,10 @@ export class AttachmentsController {
   @Get(':id/download')
   async download(@Param('id') id: string, @Res() res: Response) {
     const attachment = await this.attachmentsService.findOne(id);
-    return res.download(join(this.uploadDir, attachment.storedName), attachment.fileName);
+    return res.download(
+      join(this.uploadDir, attachment.storedName),
+      attachment.fileName,
+    );
   }
 
   @Delete(':id')

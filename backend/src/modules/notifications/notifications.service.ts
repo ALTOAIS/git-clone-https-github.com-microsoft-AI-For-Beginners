@@ -55,11 +55,15 @@ export class NotificationsService {
       include: { risk: { select: { code: true, title: true } } },
     });
     for (const action of overdue) {
-      await this.createIfNotDuplicate(action.ownerId!, NotificationType.ACTION_OVERDUE, {
-        title: 'Action plan overdue',
-        message: `"${action.title}" for risk ${action.risk?.code ?? ''} is overdue.`,
-        link: `/risks/${action.riskId}`,
-      });
+      await this.createIfNotDuplicate(
+        action.ownerId!,
+        NotificationType.ACTION_OVERDUE,
+        {
+          title: 'Action plan overdue',
+          message: `"${action.title}" for risk ${action.risk?.code ?? ''} is overdue.`,
+          link: `/risks/${action.riskId}`,
+        },
+      );
     }
 
     const soon = new Date();
@@ -73,14 +77,20 @@ export class NotificationsService {
       include: { risk: { select: { code: true, title: true } } },
     });
     for (const action of dueSoon) {
-      await this.createIfNotDuplicate(action.ownerId!, NotificationType.ACTION_DUE_SOON, {
-        title: 'Action plan due soon',
-        message: `"${action.title}" for risk ${action.risk?.code ?? ''} is due within 3 days.`,
-        link: `/risks/${action.riskId}`,
-      });
+      await this.createIfNotDuplicate(
+        action.ownerId!,
+        NotificationType.ACTION_DUE_SOON,
+        {
+          title: 'Action plan due soon',
+          message: `"${action.title}" for risk ${action.risk?.code ?? ''} is due within 3 days.`,
+          link: `/risks/${action.riskId}`,
+        },
+      );
     }
 
-    this.logger.log(`Notification sweep: ${overdue.length} overdue, ${dueSoon.length} due soon`);
+    this.logger.log(
+      `Notification sweep: ${overdue.length} overdue, ${dueSoon.length} due soon`,
+    );
   }
 
   private async createIfNotDuplicate(

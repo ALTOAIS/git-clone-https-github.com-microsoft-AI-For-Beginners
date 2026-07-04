@@ -16,7 +16,9 @@ export class CategoriesService {
   /** Returns categories nested as a tree, used by the Risk Library screen. */
   async findTree() {
     const all = await this.findAll();
-    const byId = new Map(all.map((c) => [c.id, { ...c, children: [] as any[] }]));
+    const byId = new Map(
+      all.map((c) => [c.id, { ...c, children: [] as any[] }]),
+    );
     const roots: any[] = [];
     for (const cat of byId.values()) {
       if (cat.parentId && byId.has(cat.parentId)) {
@@ -38,13 +40,24 @@ export class CategoriesService {
     return this.prisma.category.create({ data });
   }
 
-  async update(id: string, data: { name?: string; description?: string; parentId?: string; isActive?: boolean }) {
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      description?: string;
+      parentId?: string;
+      isActive?: boolean;
+    },
+  ) {
     await this.findOne(id);
     return this.prisma.category.update({ where: { id }, data });
   }
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.category.update({ where: { id }, data: { isActive: false } });
+    return this.prisma.category.update({
+      where: { id },
+      data: { isActive: false },
+    });
   }
 }

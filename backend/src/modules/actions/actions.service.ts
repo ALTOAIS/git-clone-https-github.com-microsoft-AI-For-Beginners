@@ -61,23 +61,35 @@ export class ActionsService {
   }
 
   async findOne(id: string) {
-    const action = await this.prisma.action.findUnique({ where: { id }, include: INCLUDE });
+    const action = await this.prisma.action.findUnique({
+      where: { id },
+      include: INCLUDE,
+    });
     if (!action) throw new NotFoundException('Action not found');
     return action;
   }
 
   async create(dto: CreateActionDto, userId?: string) {
     const action = await this.prisma.action.create({
-      data: { ...dto, deadline: dto.deadline ? new Date(dto.deadline) : undefined },
+      data: {
+        ...dto,
+        deadline: dto.deadline ? new Date(dto.deadline) : undefined,
+      },
       include: INCLUDE,
     });
-    await this.audit.record({ entityType: 'ACTION', entityId: action.id, action: 'CREATE', userId });
+    await this.audit.record({
+      entityType: 'ACTION',
+      entityId: action.id,
+      action: 'CREATE',
+      userId,
+    });
     return action;
   }
 
   async update(id: string, dto: UpdateActionDto, userId?: string) {
     await this.findOne(id);
-    const completedAt = dto.status === ActionStatus.COMPLETED ? new Date() : undefined;
+    const completedAt =
+      dto.status === ActionStatus.COMPLETED ? new Date() : undefined;
     const action = await this.prisma.action.update({
       where: { id },
       data: {
@@ -87,14 +99,25 @@ export class ActionsService {
       },
       include: INCLUDE,
     });
-    await this.audit.record({ entityType: 'ACTION', entityId: id, action: 'UPDATE', userId, changes: dto as any });
+    await this.audit.record({
+      entityType: 'ACTION',
+      entityId: id,
+      action: 'UPDATE',
+      userId,
+      changes: dto as any,
+    });
     return action;
   }
 
   async remove(id: string, userId?: string) {
     await this.findOne(id);
     await this.prisma.action.delete({ where: { id } });
-    await this.audit.record({ entityType: 'ACTION', entityId: id, action: 'DELETE', userId });
+    await this.audit.record({
+      entityType: 'ACTION',
+      entityId: id,
+      action: 'DELETE',
+      userId,
+    });
     return { success: true };
   }
 

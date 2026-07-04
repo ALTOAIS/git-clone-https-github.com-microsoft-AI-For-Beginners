@@ -32,7 +32,9 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Compliance Risk Hub API')
-    .setDescription('REST API for the Compliance Risk Hub compliance-risk-management platform')
+    .setDescription(
+      'REST API for the Compliance Risk Hub compliance-risk-management platform',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -42,6 +44,8 @@ async function bootstrap() {
   const port = config.get<string>('PORT', '3000');
   await app.listen(port);
   // eslint-disable-next-line no-console
-  console.log(`Compliance Risk Hub API running on http://localhost:${port}/api (docs at /api/docs)`);
+  console.log(
+    `Compliance Risk Hub API running on http://localhost:${port}/api (docs at /api/docs)`,
+  );
 }
 bootstrap();

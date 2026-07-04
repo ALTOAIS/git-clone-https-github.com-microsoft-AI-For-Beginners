@@ -4,7 +4,8 @@ import { Response } from 'express';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { ReportsService } from './reports.service';
 
-type TableKind = 'risk-register' | 'action-plan' | 'critical-risks' | 'overdue-actions';
+type TableKind =
+  'risk-register' | 'action-plan' | 'critical-risks' | 'overdue-actions';
 
 @ApiTags('reports')
 @Controller('reports')
@@ -21,7 +22,8 @@ export class ReportsController {
     if (format === 'xlsx') {
       const buffer = await this.reportsService.exportXlsx(kind);
       res.set({
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Type':
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': `attachment; filename="${kind}.xlsx"`,
       });
       return res.send(buffer);
@@ -37,7 +39,10 @@ export class ReportsController {
   @Get('board')
   async board(@Res() res: Response) {
     const buffer = await this.reportsService.boardReportPdf();
-    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="board-report.pdf"' });
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="board-report.pdf"',
+    });
     return res.send(buffer);
   }
 
@@ -46,7 +51,8 @@ export class ReportsController {
     const buffer = await this.reportsService.auditCommitteeReportPdf();
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="audit-committee-report.pdf"',
+      'Content-Disposition':
+        'attachment; filename="audit-committee-report.pdf"',
     });
     return res.send(buffer);
   }

@@ -1,7 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  AuthenticatedUser,
+} from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AssessRiskDto } from './dto/assess-risk.dto';
@@ -11,7 +24,12 @@ import { QueryRisksDto } from './dto/query-risks.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
 import { RisksService } from './risks.service';
 
-const EDIT_ROLES = [Role.ADMINISTRATOR, Role.COMPLIANCE_MANAGER, Role.COMPLIANCE_OFFICER, Role.RISK_OWNER];
+const EDIT_ROLES = [
+  Role.ADMINISTRATOR,
+  Role.COMPLIANCE_MANAGER,
+  Role.COMPLIANCE_OFFICER,
+  Role.RISK_OWNER,
+];
 const APPROVE_ROLES = [Role.ADMINISTRATOR, Role.COMPLIANCE_MANAGER];
 
 @ApiTags('risks')
@@ -38,13 +56,21 @@ export class RisksController {
 
   @Patch(':id')
   @Roles(...EDIT_ROLES)
-  update(@Param('id') id: string, @Body() dto: UpdateRiskDto, @CurrentUser() user: AuthenticatedUser) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateRiskDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.risksService.update(id, dto, user.id);
   }
 
   @Patch(':id/assess')
   @Roles(...EDIT_ROLES)
-  assess(@Param('id') id: string, @Body() dto: AssessRiskDto, @CurrentUser() user: AuthenticatedUser) {
+  assess(
+    @Param('id') id: string,
+    @Body() dto: AssessRiskDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.risksService.assess(id, dto, user.id);
   }
 

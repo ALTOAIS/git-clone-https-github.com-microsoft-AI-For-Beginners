@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -53,12 +57,16 @@ export class AuthService {
     }
 
     const tokenHash = hashToken(refreshToken);
-    const stored = await this.prisma.refreshToken.findUnique({ where: { token: tokenHash } });
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { token: tokenHash },
+    });
     if (!stored || stored.revoked || stored.expiresAt < new Date()) {
       throw new UnauthorizedException('Refresh token is no longer valid');
     }
 
-    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
     if (!user || !user.isActive) {
       throw new UnauthorizedException('User is inactive or does not exist');
     }
@@ -81,13 +89,20 @@ export class AuthService {
     return { success: true };
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException();
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!valid) throw new ConflictException('Current password is incorrect');
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
     return { success: true };
   }
 
@@ -96,12 +111,18 @@ export class AuthService {
       { sub: userId, email, role },
       {
         secret: this.config.get<string>('JWT_ACCESS_SECRET'),
-        expiresIn: this.config.get<string>('JWT_ACCESS_EXPIRES_IN', '15m') as any,
+        expiresIn: this.config.get<string>(
+          'JWT_ACCESS_EXPIRES_IN',
+          '15m',
+        ) as any,
       },
     );
 
     const jti = uuid();
-    const refreshExpiresIn = this.config.get<string>('JWT_REFRESH_EXPIRES_IN', '7d');
+    const refreshExpiresIn = this.config.get<string>(
+      'JWT_REFRESH_EXPIRES_IN',
+      '7d',
+    );
     const refreshToken = await this.jwt.signAsync(
       { sub: userId, jti },
       {
@@ -111,7 +132,9 @@ export class AuthService {
     );
 
     const expiresAt = new Date();
-    expiresAt.setSeconds(expiresAt.getSeconds() + this.parseExpiry(refreshExpiresIn));
+    expiresAt.setSeconds(
+      expiresAt.getSeconds() + this.parseExpiry(refreshExpiresIn),
+    );
 
     await this.prisma.refreshToken.create({
       data: {
@@ -141,7 +164,12 @@ export class AuthService {
     if (!match) return 7 * 24 * 3600;
     const amount = Number(match[1]);
     const unit = match[2];
-    const multipliers: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
+    const multipliers: Record<string, number> = {
+      s: 1,
+      m: 60,
+      h: 3600,
+      d: 86400,
+    };
     return amount * multipliers[unit];
   }
 

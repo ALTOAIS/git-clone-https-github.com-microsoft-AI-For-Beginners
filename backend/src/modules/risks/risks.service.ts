@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, RiskStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -24,7 +28,9 @@ const DETAIL_INCLUDE = {
     include: { author: { select: { id: true, fullName: true } } },
     orderBy: { createdAt: 'desc' as const },
   },
-  attachments: { include: { uploadedBy: { select: { id: true, fullName: true } } } },
+  attachments: {
+    include: { uploadedBy: { select: { id: true, fullName: true } } },
+  },
   history: { orderBy: { version: 'desc' as const } },
 } satisfies Prisma.RiskInclude;
 
@@ -82,7 +88,10 @@ export class RisksService {
   }
 
   async findOne(id: string) {
-    const risk = await this.prisma.risk.findUnique({ where: { id }, include: DETAIL_INCLUDE });
+    const risk = await this.prisma.risk.findUnique({
+      where: { id },
+      include: DETAIL_INCLUDE,
+    });
     if (!risk) throw new NotFoundException('Risk not found');
     return risk;
   }
@@ -141,7 +150,13 @@ export class RisksService {
       include: DETAIL_INCLUDE,
     });
 
-    await this.snapshotHistory(id, updated.version, updated, userId, 'Risk updated');
+    await this.snapshotHistory(
+      id,
+      updated.version,
+      updated,
+      userId,
+      'Risk updated',
+    );
     await this.audit.record({
       entityType: 'RISK',
       entityId: id,
@@ -157,8 +172,10 @@ export class RisksService {
     const existing = await this.findOne(id);
     const likelihood = dto.likelihood ?? existing.likelihood ?? undefined;
     const impact = dto.impact ?? existing.impact ?? undefined;
-    const residualLikelihood = dto.residualLikelihood ?? existing.residualLikelihood ?? undefined;
-    const residualImpact = dto.residualImpact ?? existing.residualImpact ?? undefined;
+    const residualLikelihood =
+      dto.residualLikelihood ?? existing.residualLikelihood ?? undefined;
+    const residualImpact =
+      dto.residualImpact ?? existing.residualImpact ?? undefined;
 
     const inherentScore = this.computeScore(likelihood, impact);
     const residualScore = this.computeScore(residualLikelihood, residualImpact);
@@ -180,8 +197,19 @@ export class RisksService {
       include: DETAIL_INCLUDE,
     });
 
-    await this.snapshotHistory(id, updated.version, updated, userId, 'Risk assessed');
-    await this.audit.record({ entityType: 'RISK', entityId: id, action: 'ASSESS', userId });
+    await this.snapshotHistory(
+      id,
+      updated.version,
+      updated,
+      userId,
+      'Risk assessed',
+    );
+    await this.audit.record({
+      entityType: 'RISK',
+      entityId: id,
+      action: 'ASSESS',
+      userId,
+    });
 
     return updated;
   }
@@ -235,14 +263,17 @@ export class RisksService {
 
   /** Recomputes the aggregated control-effectiveness score for a risk; called whenever a control changes. */
   async recomputeControlEffectiveness(riskId: string) {
-    const controlEffectivenessAvg = await this.computeControlEffectiveness(riskId);
+    const controlEffectivenessAvg =
+      await this.computeControlEffectiveness(riskId);
     return this.prisma.risk.update({
       where: { id: riskId },
       data: { controlEffectivenessAvg },
     });
   }
 
-  private async computeControlEffectiveness(riskId: string): Promise<number | undefined> {
+  private async computeControlEffectiveness(
+    riskId: string,
+  ): Promise<number | undefined> {
     const controls = await this.prisma.control.findMany({ where: { riskId } });
     if (controls.length === 0) return undefined;
     const weight: Record<string, number> = {
@@ -251,11 +282,17 @@ export class RisksService {
       INEFFECTIVE: 20,
       NOT_TESTED: 0,
     };
-    const total = controls.reduce((sum, c) => sum + (weight[c.effectiveness] ?? 0), 0);
+    const total = controls.reduce(
+      (sum, c) => sum + (weight[c.effectiveness] ?? 0),
+      0,
+    );
     return Math.round((total / controls.length) * 100) / 100;
   }
 
-  private computeScore(likelihood?: number, impact?: number): number | undefined {
+  private computeScore(
+    likelihood?: number,
+    impact?: number,
+  ): number | undefined {
     if (!likelihood || !impact) return undefined;
     return likelihood * impact;
   }

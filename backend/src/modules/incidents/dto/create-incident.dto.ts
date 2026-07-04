@@ -32,7 +32,10 @@ export class CreateIncidentDto {
   @IsString()
   sourceId?: string;
 
-  @ApiProperty({ required: false, description: 'Existing risk to update/close/escalate' })
+  @ApiProperty({
+    required: false,
+    description: 'Existing risk to update/close/escalate',
+  })
   @IsOptional()
   @IsString()
   riskId?: string;

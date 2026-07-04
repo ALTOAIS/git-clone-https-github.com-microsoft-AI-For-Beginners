@@ -20,7 +20,12 @@ export class IncidentsService {
     private audit: AuditService,
   ) {}
 
-  async findAll(params: { page: number; pageSize: number; status?: string; riskId?: string }) {
+  async findAll(params: {
+    page: number;
+    pageSize: number;
+    status?: string;
+    riskId?: string;
+  }) {
     const { page, pageSize, status, riskId } = params;
     const where: Prisma.IncidentWhereInput = {
       ...(status ? { status: status as any } : {}),
@@ -40,7 +45,10 @@ export class IncidentsService {
   }
 
   async findOne(id: string) {
-    const incident = await this.prisma.incident.findUnique({ where: { id }, include: INCLUDE });
+    const incident = await this.prisma.incident.findUnique({
+      where: { id },
+      include: INCLUDE,
+    });
     if (!incident) throw new NotFoundException('Incident not found');
     return incident;
   }
@@ -75,7 +83,12 @@ export class IncidentsService {
     });
 
     await this.applyRiskAction(incident.id, dto.action, riskId, userId);
-    await this.audit.record({ entityType: 'INCIDENT', entityId: incident.id, action: 'CREATE', userId });
+    await this.audit.record({
+      entityType: 'INCIDENT',
+      entityId: incident.id,
+      action: 'CREATE',
+      userId,
+    });
     return incident;
   }
 
@@ -91,17 +104,33 @@ export class IncidentsService {
     });
 
     if (dto.action && dto.action !== existing.action) {
-      await this.applyRiskAction(id, dto.action, dto.riskId ?? existing.riskId ?? undefined, userId);
+      await this.applyRiskAction(
+        id,
+        dto.action,
+        dto.riskId ?? existing.riskId ?? undefined,
+        userId,
+      );
     }
 
-    await this.audit.record({ entityType: 'INCIDENT', entityId: id, action: 'UPDATE', userId, changes: dto as any });
+    await this.audit.record({
+      entityType: 'INCIDENT',
+      entityId: id,
+      action: 'UPDATE',
+      userId,
+      changes: dto as any,
+    });
     return incident;
   }
 
   async remove(id: string, userId?: string) {
     await this.findOne(id);
     await this.prisma.incident.delete({ where: { id } });
-    await this.audit.record({ entityType: 'INCIDENT', entityId: id, action: 'DELETE', userId });
+    await this.audit.record({
+      entityType: 'INCIDENT',
+      entityId: id,
+      action: 'DELETE',
+      userId,
+    });
     return { success: true };
   }
 
@@ -111,20 +140,40 @@ export class IncidentsService {
     riskId: string | undefined,
     userId?: string,
   ) {
-    if (!action || !riskId || action === IncidentAction.NONE || action === IncidentAction.CREATE_RISK) {
+    if (
+      !action ||
+      !riskId ||
+      action === IncidentAction.NONE ||
+      action === IncidentAction.CREATE_RISK
+    ) {
       return;
     }
 
     if (action === IncidentAction.UPDATE_RISK) {
       await this.risksService.update(riskId, {}, userId);
     } else if (action === IncidentAction.CLOSE_RISK) {
-      await this.tryTransition(riskId, RiskStatus.CLOSED, userId, `Closed via incident ${incidentId}`);
+      await this.tryTransition(
+        riskId,
+        RiskStatus.CLOSED,
+        userId,
+        `Closed via incident ${incidentId}`,
+      );
     } else if (action === IncidentAction.ESCALATE_RISK) {
-      await this.tryTransition(riskId, RiskStatus.ASSESSMENT, userId, `Escalated via incident ${incidentId}`);
+      await this.tryTransition(
+        riskId,
+        RiskStatus.ASSESSMENT,
+        userId,
+        `Escalated via incident ${incidentId}`,
+      );
     }
   }
 
-  private async tryTransition(riskId: string, status: RiskStatus, userId?: string, note?: string) {
+  private async tryTransition(
+    riskId: string,
+    status: RiskStatus,
+    userId?: string,
+    note?: string,
+  ) {
     try {
       await this.risksService.changeStatus(riskId, { status, note }, userId);
     } catch {

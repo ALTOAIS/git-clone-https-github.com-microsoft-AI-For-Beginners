@@ -6,7 +6,11 @@ export interface PdfSection {
   table?: { headers: string[]; rows: (string | number)[][] };
 }
 
-export function buildPdfReport(title: string, subtitle: string, sections: PdfSection[]): Promise<Buffer> {
+export function buildPdfReport(
+  title: string,
+  subtitle: string,
+  sections: PdfSection[],
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50 });
     const chunks: Buffer[] = [];
@@ -36,12 +40,22 @@ export function buildPdfReport(title: string, subtitle: string, sections: PdfSec
         const { headers, rows } = section.table;
         const colWidth = (doc.page.width - 100) / headers.length;
         doc.fontSize(10).font('Helvetica-Bold');
-        headers.forEach((h, i) => doc.text(h, 50 + i * colWidth, doc.y, { width: colWidth, continued: i < headers.length - 1 }));
+        headers.forEach((h, i) =>
+          doc.text(h, 50 + i * colWidth, doc.y, {
+            width: colWidth,
+            continued: i < headers.length - 1,
+          }),
+        );
         doc.moveDown(0.5);
         doc.font('Helvetica');
         rows.forEach((row) => {
           const y = doc.y;
-          row.forEach((cell, i) => doc.text(String(cell), 50 + i * colWidth, y, { width: colWidth, continued: i < row.length - 1 }));
+          row.forEach((cell, i) =>
+            doc.text(String(cell), 50 + i * colWidth, y, {
+              width: colWidth,
+              continued: i < row.length - 1,
+            }),
+          );
           doc.moveDown(0.3);
         });
       }

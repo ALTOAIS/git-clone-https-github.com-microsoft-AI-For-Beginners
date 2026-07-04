@@ -50,7 +50,10 @@ export class ReportsService {
 
   async actionPlanRows() {
     const actions = await this.prisma.action.findMany({
-      include: { risk: { select: { code: true, title: true } }, owner: { select: { fullName: true } } },
+      include: {
+        risk: { select: { code: true, title: true } },
+        owner: { select: { fullName: true } },
+      },
       orderBy: { deadline: 'asc' },
     });
     return actions.map((a) => ({
@@ -67,7 +70,11 @@ export class ReportsService {
   async criticalRiskRows() {
     const risks = await this.prisma.risk.findMany({
       where: { status: { in: ACTIVE_STATUSES }, inherentScore: { gte: 15 } },
-      include: { company: { select: { name: true } }, department: { select: { name: true } }, owner: { select: { fullName: true } } },
+      include: {
+        company: { select: { name: true } },
+        department: { select: { name: true } },
+        owner: { select: { fullName: true } },
+      },
       orderBy: { inherentScore: 'desc' },
     });
     return risks.map((r) => ({
@@ -87,7 +94,10 @@ export class ReportsService {
         deadline: { lt: new Date() },
         status: { notIn: [ActionStatus.COMPLETED, ActionStatus.CANCELLED] },
       },
-      include: { risk: { select: { code: true, title: true } }, owner: { select: { fullName: true } } },
+      include: {
+        risk: { select: { code: true, title: true } },
+        owner: { select: { fullName: true } },
+      },
       orderBy: { deadline: 'asc' },
     });
     return actions.map((a) => ({
@@ -99,17 +109,26 @@ export class ReportsService {
     }));
   }
 
-  async exportCsv(kind: 'risk-register' | 'action-plan' | 'critical-risks' | 'overdue-actions') {
+  async exportCsv(
+    kind:
+      'risk-register' | 'action-plan' | 'critical-risks' | 'overdue-actions',
+  ) {
     const { columns, rows } = await this.resolveTable(kind);
     return toCsv(columns, rows);
   }
 
-  async exportXlsx(kind: 'risk-register' | 'action-plan' | 'critical-risks' | 'overdue-actions') {
+  async exportXlsx(
+    kind:
+      'risk-register' | 'action-plan' | 'critical-risks' | 'overdue-actions',
+  ) {
     const { columns, rows } = await this.resolveTable(kind);
     return toXlsx(kind, columns, rows);
   }
 
-  private async resolveTable(kind: 'risk-register' | 'action-plan' | 'critical-risks' | 'overdue-actions') {
+  private async resolveTable(
+    kind:
+      'risk-register' | 'action-plan' | 'critical-risks' | 'overdue-actions',
+  ) {
     switch (kind) {
       case 'risk-register':
         return {
@@ -171,45 +190,55 @@ export class ReportsService {
   }
 
   async boardReportPdf() {
-    const [criticalRows, residual, topCompanies, topDepartments] = await Promise.all([
-      this.criticalRiskRows(),
-      this.analytics.residualRiskSummary(),
-      this.analytics.topCompanies(5),
-      this.analytics.topDepartments(5),
-    ]);
+    const [criticalRows, residual, topCompanies, topDepartments] =
+      await Promise.all([
+        this.criticalRiskRows(),
+        this.analytics.residualRiskSummary(),
+        this.analytics.topCompanies(5),
+        this.analytics.topDepartments(5),
+      ]);
 
-    return buildPdfReport('Board Report — Compliance Risk Hub', new Date().toDateString(), [
-      {
-        heading: 'Executive Summary',
-        lines: [
-          `Active risks under residual assessment: ${residual.count}`,
-          `Average inherent score: ${residual.averageInherent}`,
-          `Average residual score: ${residual.averageResidual}`,
-          `Residual risk reduction: ${residual.reductionPercent}%`,
-        ],
-      },
-      {
-        heading: 'Top Companies by Active Risk Count',
-        table: {
-          headers: ['Company', 'Risks'],
-          rows: topCompanies.map((c) => [c.name ?? 'Unknown', c.count]),
+    return buildPdfReport(
+      'Board Report — Compliance Risk Hub',
+      new Date().toDateString(),
+      [
+        {
+          heading: 'Executive Summary',
+          lines: [
+            `Active risks under residual assessment: ${residual.count}`,
+            `Average inherent score: ${residual.averageInherent}`,
+            `Average residual score: ${residual.averageResidual}`,
+            `Residual risk reduction: ${residual.reductionPercent}%`,
+          ],
         },
-      },
-      {
-        heading: 'Top Departments by Active Risk Count',
-        table: {
-          headers: ['Department', 'Risks'],
-          rows: topDepartments.map((d) => [d.name ?? 'Unknown', d.count]),
+        {
+          heading: 'Top Companies by Active Risk Count',
+          table: {
+            headers: ['Company', 'Risks'],
+            rows: topCompanies.map((c) => [c.name ?? 'Unknown', c.count]),
+          },
         },
-      },
-      {
-        heading: 'Critical Risks',
-        table: {
-          headers: ['Code', 'Title', 'Score', 'Status'],
-          rows: criticalRows.map((r) => [r.code, r.title, r.inherentScore, r.status]),
+        {
+          heading: 'Top Departments by Active Risk Count',
+          table: {
+            headers: ['Department', 'Risks'],
+            rows: topDepartments.map((d) => [d.name ?? 'Unknown', d.count]),
+          },
         },
-      },
-    ]);
+        {
+          heading: 'Critical Risks',
+          table: {
+            headers: ['Code', 'Title', 'Score', 'Status'],
+            rows: criticalRows.map((r) => [
+              r.code,
+              r.title,
+              r.inherentScore,
+              r.status,
+            ]),
+          },
+        },
+      ],
+    );
   }
 
   async auditCommitteeReportPdf() {
@@ -219,31 +248,46 @@ export class ReportsService {
       this.overdueActionRows(),
     ]);
 
-    return buildPdfReport('Audit Committee Report — Compliance Risk Hub', new Date().toDateString(), [
-      {
-        heading: 'Control Effectiveness Overview',
-        lines: [
-          `Effective: ${controlEff.EFFECTIVE}`,
-          `Partially effective: ${controlEff.PARTIALLY_EFFECTIVE}`,
-          `Ineffective: ${controlEff.INEFFECTIVE}`,
-          `Not tested: ${controlEff.NOT_TESTED}`,
-        ],
-      },
-      {
-        heading: 'Critical Risks Requiring Attention',
-        table: {
-          headers: ['Code', 'Title', 'Company', 'Department', 'Score'],
-          rows: criticalRows.map((r) => [r.code, r.title, r.company, r.department, r.inherentScore]),
+    return buildPdfReport(
+      'Audit Committee Report — Compliance Risk Hub',
+      new Date().toDateString(),
+      [
+        {
+          heading: 'Control Effectiveness Overview',
+          lines: [
+            `Effective: ${controlEff.EFFECTIVE}`,
+            `Partially effective: ${controlEff.PARTIALLY_EFFECTIVE}`,
+            `Ineffective: ${controlEff.INEFFECTIVE}`,
+            `Not tested: ${controlEff.NOT_TESTED}`,
+          ],
         },
-      },
-      {
-        heading: 'Overdue Action Plans',
-        table: {
-          headers: ['Risk', 'Action', 'Owner', 'Deadline'],
-          rows: overdue.map((a) => [a.riskCode, a.title, a.owner, a.deadline]),
+        {
+          heading: 'Critical Risks Requiring Attention',
+          table: {
+            headers: ['Code', 'Title', 'Company', 'Department', 'Score'],
+            rows: criticalRows.map((r) => [
+              r.code,
+              r.title,
+              r.company,
+              r.department,
+              r.inherentScore,
+            ]),
+          },
         },
-      },
-    ]);
+        {
+          heading: 'Overdue Action Plans',
+          table: {
+            headers: ['Risk', 'Action', 'Owner', 'Deadline'],
+            rows: overdue.map((a) => [
+              a.riskCode,
+              a.title,
+              a.owner,
+              a.deadline,
+            ]),
+          },
+        },
+      ],
+    );
   }
 
   async complianceReportPdf() {
@@ -253,28 +297,32 @@ export class ReportsService {
       this.analytics.topCategories(5),
     ]);
 
-    return buildPdfReport('Compliance Report — Compliance Risk Hub', new Date().toDateString(), [
-      {
-        heading: 'Risk Trend (last 6 months)',
-        table: {
-          headers: ['Month', 'Created', 'Closed'],
-          rows: trends.map((t) => [t.month, t.created, t.closed]),
+    return buildPdfReport(
+      'Compliance Report — Compliance Risk Hub',
+      new Date().toDateString(),
+      [
+        {
+          heading: 'Risk Trend (last 6 months)',
+          table: {
+            headers: ['Month', 'Created', 'Closed'],
+            rows: trends.map((t) => [t.month, t.created, t.closed]),
+          },
         },
-      },
-      {
-        heading: 'Top Risk Sources',
-        table: {
-          headers: ['Source', 'Type', 'Linked Risks'],
-          rows: topSources.map((s) => [s.title ?? '', s.type ?? '', s.count]),
+        {
+          heading: 'Top Risk Sources',
+          table: {
+            headers: ['Source', 'Type', 'Linked Risks'],
+            rows: topSources.map((s) => [s.title ?? '', s.type ?? '', s.count]),
+          },
         },
-      },
-      {
-        heading: 'Top Risk Categories',
-        table: {
-          headers: ['Category', 'Active Risks'],
-          rows: topCategories.map((c) => [c.name ?? 'Unknown', c.count]),
+        {
+          heading: 'Top Risk Categories',
+          table: {
+            headers: ['Category', 'Active Risks'],
+            rows: topCategories.map((c) => [c.name ?? 'Unknown', c.count]),
+          },
         },
-      },
-    ]);
+      ],
+    );
   }
 }

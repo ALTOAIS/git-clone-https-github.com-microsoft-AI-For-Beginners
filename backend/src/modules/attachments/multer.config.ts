@@ -26,9 +26,16 @@ export function attachmentsMulterOptions(uploadDir: string) {
       },
     }),
     limits: { fileSize: MAX_UPLOAD_SIZE_BYTES },
-    fileFilter: (_req: unknown, file: Express.Multer.File, callback: (error: Error | null, accept: boolean) => void) => {
+    fileFilter: (
+      _req: unknown,
+      file: Express.Multer.File,
+      callback: (error: Error | null, accept: boolean) => void,
+    ) => {
       if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
-        callback(new BadRequestException(`File type not allowed: ${file.mimetype}`), false);
+        callback(
+          new BadRequestException(`File type not allowed: ${file.mimetype}`),
+          false,
+        );
         return;
       }
       callback(null, true);

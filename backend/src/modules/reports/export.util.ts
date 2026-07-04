@@ -6,7 +6,10 @@ export interface ExportColumn {
   title: string;
 }
 
-export function toCsv(columns: ExportColumn[], rows: Record<string, unknown>[]): string {
+export function toCsv(
+  columns: ExportColumn[],
+  rows: Record<string, unknown>[],
+): string {
   const stringifier = createObjectCsvStringifier({
     header: columns.map((c) => ({ id: c.id, title: c.title })),
   });
@@ -20,7 +23,11 @@ export async function toXlsx(
 ): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(sheetName);
-  sheet.columns = columns.map((c) => ({ header: c.title, key: c.id, width: 24 }));
+  sheet.columns = columns.map((c) => ({
+    header: c.title,
+    key: c.id,
+    width: 24,
+  }));
   sheet.getRow(1).font = { bold: true };
   rows.forEach((row) => sheet.addRow(row));
   const buffer = await workbook.xlsx.writeBuffer();

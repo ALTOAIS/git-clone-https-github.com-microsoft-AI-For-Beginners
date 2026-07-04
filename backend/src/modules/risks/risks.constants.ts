@@ -7,13 +7,18 @@ export const RISK_LIFECYCLE: Record<RiskStatus, RiskStatus[]> = {
   [RiskStatus.ASSESSMENT]: [RiskStatus.APPROVED, RiskStatus.NEW],
   [RiskStatus.APPROVED]: [RiskStatus.MONITORING, RiskStatus.ASSESSMENT],
   [RiskStatus.MONITORING]: [RiskStatus.MITIGATION, RiskStatus.APPROVED],
-  [RiskStatus.MITIGATION]: [RiskStatus.RESIDUAL_ASSESSMENT, RiskStatus.MONITORING],
+  [RiskStatus.MITIGATION]: [
+    RiskStatus.RESIDUAL_ASSESSMENT,
+    RiskStatus.MONITORING,
+  ],
   [RiskStatus.RESIDUAL_ASSESSMENT]: [RiskStatus.CLOSED, RiskStatus.MITIGATION],
   [RiskStatus.CLOSED]: [RiskStatus.ARCHIVED, RiskStatus.MONITORING],
   [RiskStatus.ARCHIVED]: [],
 };
 
-export function scoreToLevel(score: number | null | undefined): 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null {
+export function scoreToLevel(
+  score: number | null | undefined,
+): 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null {
   if (score === null || score === undefined) return null;
   if (score >= 15) return 'CRITICAL';
   if (score >= 9) return 'HIGH';

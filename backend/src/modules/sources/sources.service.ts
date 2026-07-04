@@ -7,7 +7,12 @@ import { UpdateSourceDto } from './dto/update-source.dto';
 export class SourcesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(params: { page: number; pageSize: number; type?: string; search?: string }) {
+  async findAll(params: {
+    page: number;
+    pageSize: number;
+    type?: string;
+    search?: string;
+  }) {
     const { page, pageSize, type, search } = params;
     const where: any = {
       ...(type ? { type } : {}),
@@ -38,7 +43,13 @@ export class SourcesService {
     const source = await this.prisma.source.findUnique({
       where: { id },
       include: {
-        risks: { include: { risk: { select: { id: true, code: true, title: true, status: true } } } },
+        risks: {
+          include: {
+            risk: {
+              select: { id: true, code: true, title: true, status: true },
+            },
+          },
+        },
         incidents: true,
       },
     });
@@ -48,7 +59,11 @@ export class SourcesService {
 
   create(dto: CreateSourceDto, createdById?: string) {
     return this.prisma.source.create({
-      data: { ...dto, occurredAt: dto.occurredAt ? new Date(dto.occurredAt) : undefined, createdById },
+      data: {
+        ...dto,
+        occurredAt: dto.occurredAt ? new Date(dto.occurredAt) : undefined,
+        createdById,
+      },
     });
   }
 
@@ -56,7 +71,10 @@ export class SourcesService {
     await this.findOne(id);
     return this.prisma.source.update({
       where: { id },
-      data: { ...dto, occurredAt: dto.occurredAt ? new Date(dto.occurredAt) : undefined },
+      data: {
+        ...dto,
+        occurredAt: dto.occurredAt ? new Date(dto.occurredAt) : undefined,
+      },
     });
   }
 

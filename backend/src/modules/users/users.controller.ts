@@ -1,7 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  AuthenticatedUser,
+} from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -27,7 +40,12 @@ export class UsersController {
     @Query('search') search?: string,
     @Query('role') role?: string,
   ) {
-    return this.usersService.findAll({ page: Number(page), pageSize: Number(pageSize), search, role });
+    return this.usersService.findAll({
+      page: Number(page),
+      pageSize: Number(pageSize),
+      search,
+      role,
+    });
   }
 
   @Get(':id')
@@ -50,7 +68,10 @@ export class UsersController {
 
   @Patch(':id/reset-password')
   @Roles(Role.ADMINISTRATOR)
-  resetPassword(@Param('id') id: string, @Body() body: { newPassword: string }) {
+  resetPassword(
+    @Param('id') id: string,
+    @Body() body: { newPassword: string },
+  ) {
     return this.usersService.resetPassword(id, body.newPassword);
   }
 

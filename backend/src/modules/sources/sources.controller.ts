@@ -1,14 +1,31 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  AuthenticatedUser,
+} from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { CreateSourceDto } from './dto/create-source.dto';
 import { UpdateSourceDto } from './dto/update-source.dto';
 import { SourcesService } from './sources.service';
 
-const MANAGE_ROLES = [Role.ADMINISTRATOR, Role.COMPLIANCE_MANAGER, Role.COMPLIANCE_OFFICER];
+const MANAGE_ROLES = [
+  Role.ADMINISTRATOR,
+  Role.COMPLIANCE_MANAGER,
+  Role.COMPLIANCE_OFFICER,
+];
 
 @ApiTags('sources')
 @Controller('sources')
@@ -23,7 +40,12 @@ export class SourcesController {
     @Query('type') type?: string,
     @Query('search') search?: string,
   ) {
-    return this.sourcesService.findAll({ page: Number(page), pageSize: Number(pageSize), type, search });
+    return this.sourcesService.findAll({
+      page: Number(page),
+      pageSize: Number(pageSize),
+      type,
+      search,
+    });
   }
 
   @Get(':id')

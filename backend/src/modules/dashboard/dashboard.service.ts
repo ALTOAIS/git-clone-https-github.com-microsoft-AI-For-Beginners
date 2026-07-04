@@ -32,7 +32,9 @@ export class DashboardService {
       trends,
     ] = await Promise.all([
       this.prisma.risk.count({ where: { status: { in: ACTIVE_STATUSES } } }),
-      this.prisma.risk.count({ where: { status: { in: ACTIVE_STATUSES }, inherentScore: { gte: 15 } } }),
+      this.prisma.risk.count({
+        where: { status: { in: ACTIVE_STATUSES }, inherentScore: { gte: 15 } },
+      }),
       this.analytics.residualRiskSummary(),
       this.prisma.action.count({
         where: {

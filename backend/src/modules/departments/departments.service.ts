@@ -16,7 +16,10 @@ export class DepartmentsService {
   async findOne(id: string) {
     const dept = await this.prisma.department.findUnique({
       where: { id },
-      include: { processes: true, company: { select: { id: true, name: true } } },
+      include: {
+        processes: true,
+        company: { select: { id: true, name: true } },
+      },
     });
     if (!dept) throw new NotFoundException('Department not found');
     return dept;
@@ -26,13 +29,19 @@ export class DepartmentsService {
     return this.prisma.department.create({ data });
   }
 
-  async update(id: string, data: { name?: string; companyId?: string; isActive?: boolean }) {
+  async update(
+    id: string,
+    data: { name?: string; companyId?: string; isActive?: boolean },
+  ) {
     await this.findOne(id);
     return this.prisma.department.update({ where: { id }, data });
   }
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.department.update({ where: { id }, data: { isActive: false } });
+    return this.prisma.department.update({
+      where: { id },
+      data: { isActive: false },
+    });
   }
 }

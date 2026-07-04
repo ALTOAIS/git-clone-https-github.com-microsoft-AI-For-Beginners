@@ -38,7 +38,12 @@ export class ControlsService {
       },
     });
     await this.risksService.recomputeControlEffectiveness(dto.riskId);
-    await this.audit.record({ entityType: 'CONTROL', entityId: control.id, action: 'CREATE', userId });
+    await this.audit.record({
+      entityType: 'CONTROL',
+      entityId: control.id,
+      action: 'CREATE',
+      userId,
+    });
     return control;
   }
 
@@ -46,10 +51,19 @@ export class ControlsService {
     const existing = await this.findOne(id);
     const control = await this.prisma.control.update({
       where: { id },
-      data: { ...dto, lastTestedAt: dto.lastTestedAt ? new Date(dto.lastTestedAt) : undefined },
+      data: {
+        ...dto,
+        lastTestedAt: dto.lastTestedAt ? new Date(dto.lastTestedAt) : undefined,
+      },
     });
     await this.risksService.recomputeControlEffectiveness(existing.riskId);
-    await this.audit.record({ entityType: 'CONTROL', entityId: id, action: 'UPDATE', userId, changes: dto as any });
+    await this.audit.record({
+      entityType: 'CONTROL',
+      entityId: id,
+      action: 'UPDATE',
+      userId,
+      changes: dto as any,
+    });
     return control;
   }
 
@@ -57,7 +71,12 @@ export class ControlsService {
     const existing = await this.findOne(id);
     await this.prisma.control.delete({ where: { id } });
     await this.risksService.recomputeControlEffectiveness(existing.riskId);
-    await this.audit.record({ entityType: 'CONTROL', entityId: id, action: 'DELETE', userId });
+    await this.audit.record({
+      entityType: 'CONTROL',
+      entityId: id,
+      action: 'DELETE',
+      userId,
+    });
     return { success: true };
   }
 }

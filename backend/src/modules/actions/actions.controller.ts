@@ -1,7 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ActionStatus, Role } from '@prisma/client';
-import { CurrentUser, AuthenticatedUser } from '../../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  AuthenticatedUser,
+} from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { ActionsService } from './actions.service';
@@ -59,7 +72,11 @@ export class ActionsController {
 
   @Patch(':id')
   @Roles(...MANAGE_ROLES)
-  update(@Param('id') id: string, @Body() dto: UpdateActionDto, @CurrentUser() user: AuthenticatedUser) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateActionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.actionsService.update(id, dto, user.id);
   }
 

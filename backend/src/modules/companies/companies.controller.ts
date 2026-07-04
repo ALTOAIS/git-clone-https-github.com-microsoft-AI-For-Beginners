@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -29,7 +38,10 @@ export class CompaniesController {
 
   @Patch(':id')
   @Roles(Role.ADMINISTRATOR)
-  update(@Param('id') id: string, @Body() body: { name?: string; description?: string; isActive?: boolean }) {
+  update(
+    @Param('id') id: string,
+    @Body() body: { name?: string; description?: string; isActive?: boolean },
+  ) {
     return this.companiesService.update(id, body);
   }
 

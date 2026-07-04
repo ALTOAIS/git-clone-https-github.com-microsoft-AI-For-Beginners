@@ -14,7 +14,9 @@ export class BusinessProcessesService {
   }
 
   async findOne(id: string) {
-    const process = await this.prisma.businessProcess.findUnique({ where: { id } });
+    const process = await this.prisma.businessProcess.findUnique({
+      where: { id },
+    });
     if (!process) throw new NotFoundException('Business process not found');
     return process;
   }
@@ -23,13 +25,19 @@ export class BusinessProcessesService {
     return this.prisma.businessProcess.create({ data });
   }
 
-  async update(id: string, data: { name?: string; departmentId?: string; isActive?: boolean }) {
+  async update(
+    id: string,
+    data: { name?: string; departmentId?: string; isActive?: boolean },
+  ) {
     await this.findOne(id);
     return this.prisma.businessProcess.update({ where: { id }, data });
   }
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.businessProcess.update({ where: { id }, data: { isActive: false } });
+    return this.prisma.businessProcess.update({
+      where: { id },
+      data: { isActive: false },
+    });
   }
 }

@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -28,7 +37,9 @@ export class CategoriesController {
 
   @Post()
   @Roles(Role.ADMINISTRATOR, Role.COMPLIANCE_MANAGER)
-  create(@Body() body: { name: string; description?: string; parentId?: string }) {
+  create(
+    @Body() body: { name: string; description?: string; parentId?: string },
+  ) {
     return this.service.create(body);
   }
 
@@ -36,7 +47,13 @@ export class CategoriesController {
   @Roles(Role.ADMINISTRATOR, Role.COMPLIANCE_MANAGER)
   update(
     @Param('id') id: string,
-    @Body() body: { name?: string; description?: string; parentId?: string; isActive?: boolean },
+    @Body()
+    body: {
+      name?: string;
+      description?: string;
+      parentId?: string;
+      isActive?: boolean;
+    },
   ) {
     return this.service.update(id, body);
   }
