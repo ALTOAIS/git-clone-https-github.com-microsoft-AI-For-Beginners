@@ -16,25 +16,25 @@ import type { Role } from '../types';
 export interface NavItem {
   key: string;
   path: string;
-  label: string;
+  labelKey: string;
   icon: React.ComponentType;
   roles?: Role[];
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { key: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: DashboardOutlined },
-  { key: 'risks', path: '/risks', label: 'Risk Register', icon: AlertOutlined },
-  { key: 'risk-library', path: '/risk-library', label: 'Risk Library', icon: BookOutlined },
-  { key: 'sources', path: '/sources', label: 'Risk Sources', icon: ApartmentOutlined },
-  { key: 'controls', path: '/controls', label: 'Controls', icon: SafetyCertificateOutlined },
-  { key: 'actions', path: '/actions', label: 'Action Plans', icon: CheckSquareOutlined },
-  { key: 'incidents', path: '/incidents', label: 'Incidents', icon: AuditOutlined },
-  { key: 'analytics', path: '/analytics', label: 'Analytics', icon: BarChartOutlined },
-  { key: 'reports', path: '/reports', label: 'Reports', icon: FileTextOutlined },
+  { key: 'dashboard', path: '/dashboard', labelKey: 'nav.dashboard', icon: DashboardOutlined },
+  { key: 'risks', path: '/risks', labelKey: 'nav.riskRegister', icon: AlertOutlined },
+  { key: 'risk-library', path: '/risk-library', labelKey: 'nav.riskLibrary', icon: BookOutlined },
+  { key: 'sources', path: '/sources', labelKey: 'nav.sources', icon: ApartmentOutlined },
+  { key: 'controls', path: '/controls', labelKey: 'nav.controls', icon: SafetyCertificateOutlined },
+  { key: 'actions', path: '/actions', labelKey: 'nav.actionPlans', icon: CheckSquareOutlined },
+  { key: 'incidents', path: '/incidents', labelKey: 'nav.incidents', icon: AuditOutlined },
+  { key: 'analytics', path: '/analytics', labelKey: 'nav.analytics', icon: BarChartOutlined },
+  { key: 'reports', path: '/reports', labelKey: 'nav.reports', icon: FileTextOutlined },
   {
     key: 'administration',
     path: '/administration',
-    label: 'Administration',
+    labelKey: 'nav.administration',
     icon: SettingOutlined,
     roles: ['ADMINISTRATOR'],
   },

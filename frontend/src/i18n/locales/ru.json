@@ -1,0 +1,573 @@
+{
+  "app": {
+    "fullName": "Единая информационная система управления комплаенс-рисками",
+    "shortName": "CRH — Compliance Risk Hub"
+  },
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "edit": "Изменить",
+    "delete": "Удалить",
+    "deactivate": "Деактивировать",
+    "create": "Создать",
+    "search": "Поиск",
+    "actions": "Действия",
+    "close": "Закрыть",
+    "download": "Скачать",
+    "upload": "Загрузить",
+    "yes": "Да",
+    "no": "Нет",
+    "active": "Активен",
+    "inactive": "Неактивен",
+    "unknown": "Не указано",
+    "notSet": "—",
+    "loading": "Загрузка…",
+    "csv": "CSV",
+    "excel": "Excel",
+    "downloadPdf": "Скачать PDF"
+  },
+  "nav": {
+    "dashboard": "Главная",
+    "riskRegister": "Реестр комплаенс-рисков",
+    "riskLibrary": "Библиотека рисков",
+    "sources": "Источники рисков",
+    "controls": "Контрольные мероприятия",
+    "actionPlans": "Планы мероприятий",
+    "incidents": "Инциденты",
+    "analytics": "Аналитика",
+    "reports": "Отчетность",
+    "administration": "Администрирование"
+  },
+  "layout": {
+    "notifications": "Уведомления",
+    "noNotifications": "Нет уведомлений",
+    "signOut": "Выйти из системы",
+    "language": "Язык"
+  },
+  "auth": {
+    "signInTitle": "Вход в систему",
+    "signInSubtitle": "Войдите, чтобы управлять профилем комплаенс-рисков вашей организации",
+    "emailLabel": "Электронная почта",
+    "emailPlaceholder": "you@company.com",
+    "emailRequired": "Укажите электронную почту",
+    "emailInvalid": "Введите корректный адрес электронной почты",
+    "passwordLabel": "Пароль",
+    "passwordRequired": "Укажите пароль",
+    "signIn": "Войти",
+    "invalidCredentials": "Неверная электронная почта или пароль.",
+    "demoAccounts": "Демонстрационные учётные записи (пароль ChangeMe123!): admin@crh.local, officer@crh.local, manager@crh.local, owner@crh.local, deptmgr@crh.local, audit@crh.local, board@crh.local"
+  },
+  "roles": {
+    "ADMINISTRATOR": "Администратор",
+    "COMPLIANCE_OFFICER": "Комплаенс-офицер",
+    "COMPLIANCE_MANAGER": "Руководитель службы комплаенс",
+    "RISK_OWNER": "Владелец риска",
+    "DEPARTMENT_MANAGER": "Руководитель подразделения",
+    "INTERNAL_AUDIT": "Внутренний аудитор",
+    "BOARD": "Совет директоров"
+  },
+  "riskStatus": {
+    "DRAFT": "Черновик",
+    "NEW": "Новый",
+    "ASSESSMENT": "Оценка",
+    "APPROVED": "Утверждён",
+    "MONITORING": "Мониторинг",
+    "MITIGATION": "Устранение",
+    "RESIDUAL_ASSESSMENT": "Оценка остаточного риска",
+    "CLOSED": "Закрыт",
+    "ARCHIVED": "В архиве"
+  },
+  "sourceType": {
+    "CORRUPTION_RISK_ASSESSMENT": "Оценка коррупционных рисков",
+    "ANTI_CORRUPTION_MONITORING": "Антикоррупционный мониторинг",
+    "CANDIDATE_DUE_DILIGENCE": "Комплаенс-проверка кандидатов",
+    "COUNTERPARTY_DUE_DILIGENCE": "Комплаенс-проверка контрагентов",
+    "INVESTIGATION": "Служебная проверка",
+    "HOTLINE": "Горячая линия",
+    "CONFLICT_OF_INTEREST": "Конфликт интересов",
+    "GIFTS": "Подарки",
+    "AUDIT": "Аудит",
+    "STATE_INSPECTION": "Государственная проверка",
+    "MEDIA": "СМИ",
+    "HR": "Кадровая служба",
+    "PROCUREMENT": "Закупки",
+    "INVESTMENT": "Инвестиции",
+    "ESG": "ESG (устойчивое развитие)"
+  },
+  "controlType": {
+    "PREVENTIVE": "Превентивный",
+    "DETECTIVE": "Выявляющий",
+    "CORRECTIVE": "Корректирующий"
+  },
+  "controlEffectiveness": {
+    "EFFECTIVE": "Эффективен",
+    "PARTIALLY_EFFECTIVE": "Частично эффективен",
+    "INEFFECTIVE": "Неэффективен",
+    "NOT_TESTED": "Не протестирован"
+  },
+  "actionStatus": {
+    "PLANNED": "Запланировано",
+    "IN_PROGRESS": "В работе",
+    "COMPLETED": "Выполнено",
+    "OVERDUE": "Просрочено",
+    "CANCELLED": "Отменено"
+  },
+  "incidentStatus": {
+    "OPEN": "Открыт",
+    "UNDER_REVIEW": "На рассмотрении",
+    "RESOLVED": "Разрешён",
+    "CLOSED": "Закрыт"
+  },
+  "incidentAction": {
+    "NONE": "Без действия",
+    "CREATE_RISK": "Создать новый риск",
+    "UPDATE_RISK": "Обновить существующий риск",
+    "CLOSE_RISK": "Закрыть существующий риск",
+    "ESCALATE_RISK": "Эскалировать существующий риск"
+  },
+  "scoreLevel": {
+    "LOW": "Низкий",
+    "MEDIUM": "Средний",
+    "HIGH": "Высокий",
+    "CRITICAL": "Критический"
+  },
+  "dashboard": {
+    "title": "Главная",
+    "activeRisks": "Активные риски",
+    "criticalRisks": "Критические риски",
+    "residualRisks": "Оценённые остаточные риски",
+    "overdueActions": "Просроченные мероприятия",
+    "inherentHeatMapTitle": "Карта неотъемлемого риска",
+    "residualReductionTitle": "Снижение остаточного риска",
+    "avgInherentScore": "Средний неотъемлемый балл",
+    "avgResidualScore": "Средний остаточный балл",
+    "reduction": "Снижение",
+    "topCompanies": "Компании — лидеры по рискам",
+    "topDepartments": "Подразделения — лидеры по рискам",
+    "topCategories": "Категории — лидеры по рискам",
+    "noDataYet": "Данных пока нет",
+    "seriesCreated": "Зарегистрировано",
+    "seriesClosed": "Закрыто"
+  },
+  "heatMap": {
+    "likelihoodAxis": "Вероятность",
+    "impactAxis": "Влияние",
+    "tooltip": "Вероятность {{likelihood}} × Влияние {{impact}} = {{score}} — рисков: {{count}}"
+  },
+  "riskRegister": {
+    "title": "Реестр комплаенс-рисков",
+    "registerButton": "Зарегистрировать риск",
+    "searchPlaceholder": "Поиск по названию, коду, описанию",
+    "statusPlaceholder": "Статус",
+    "categoryPlaceholder": "Категория",
+    "companyPlaceholder": "Компания",
+    "departmentPlaceholder": "Подразделение",
+    "columns": {
+      "code": "Код",
+      "title": "Наименование",
+      "status": "Статус",
+      "category": "Категория",
+      "company": "Компания",
+      "department": "Подразделение",
+      "owner": "Владелец",
+      "inherent": "Неотъемлемый",
+      "residual": "Остаточный"
+    }
+  },
+  "riskForm": {
+    "modalTitle": "Регистрация нового риска",
+    "titleLabel": "Наименование",
+    "titlePlaceholder": "например, Риск коррупции при выборе поставщика",
+    "titleRequired": "Наименование обязательно для заполнения",
+    "descriptionLabel": "Описание",
+    "categoryLabel": "Категория",
+    "categoryPlaceholder": "Выберите категорию риска",
+    "companyLabel": "Компания",
+    "companyPlaceholder": "Выберите компанию",
+    "departmentLabel": "Подразделение",
+    "departmentPlaceholder": "Выберите подразделение",
+    "ownerLabel": "Владелец риска",
+    "ownerPlaceholder": "Выберите владельца",
+    "createButton": "Создать риск"
+  },
+  "riskCard": {
+    "backButton": "Назад к реестру рисков",
+    "changeStatusButton": "Изменить статус",
+    "moveTo": "Перевести в статус «{{status}}»",
+    "statusChangedTo": "Статус изменён на «{{status}}»",
+    "transitionNotAllowed": "Переход в данный статус недопустим",
+    "tabs": {
+      "info": "Основные сведения",
+      "assessment": "Оценка",
+      "sources": "Источники",
+      "controls": "Контрольные мероприятия",
+      "actions": "Мероприятия",
+      "comments": "Комментарии",
+      "attachments": "Вложения",
+      "history": "История"
+    }
+  },
+  "riskInfo": {
+    "code": "Код",
+    "version": "Версия",
+    "category": "Категория",
+    "owner": "Владелец",
+    "company": "Компания",
+    "department": "Подразделение",
+    "businessProcess": "Бизнес-процесс",
+    "createdBy": "Создал",
+    "description": "Описание",
+    "noDescription": "Описание отсутствует",
+    "edit": "Изменить",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "titleLabel": "Наименование",
+    "descriptionLabel": "Описание",
+    "categoryLabel": "Категория",
+    "companyLabel": "Компания",
+    "departmentLabel": "Подразделение",
+    "ownerLabel": "Владелец",
+    "updated": "Риск обновлён"
+  },
+  "riskAssessment": {
+    "inherentScoreLabel": "Балл неотъемлемого риска",
+    "residualScoreLabel": "Балл остаточного риска",
+    "controlEffectivenessLabel": "Эффективность контрольных мероприятий",
+    "controlsCountLabel": "Количество контрольных мероприятий",
+    "notAssessed": "Не оценено",
+    "notTested": "Не протестировано",
+    "likelihoodLabel": "Вероятность (1–5)",
+    "impactLabel": "Влияние (1–5)",
+    "residualLikelihoodLabel": "Остаточная вероятность (1–5)",
+    "residualImpactLabel": "Остаточное влияние (1–5)",
+    "saveButton": "Сохранить оценку",
+    "saved": "Оценка сохранена"
+  },
+  "riskSources": {
+    "linkButton": "Привязать источник",
+    "noSourcesYet": "К этому риску пока не привязаны источники",
+    "unlink": "Отвязать",
+    "linkModalTitle": "Привязка существующего источника",
+    "selectPlaceholder": "Выберите источник",
+    "refPrefix": "Референс",
+    "linked": "Источник привязан",
+    "unlinked": "Источник отвязан"
+  },
+  "riskControls": {
+    "addButton": "Добавить контрольное мероприятие",
+    "noControlsYet": "Контрольные мероприятия для этого риска не определены",
+    "columns": {
+      "type": "Тип",
+      "title": "Наименование",
+      "effectiveness": "Эффективность",
+      "owner": "Владелец",
+      "actions": "Действия"
+    },
+    "editLink": "Изменить",
+    "deleteLink": "Удалить",
+    "deleteConfirm": "Удалить это контрольное мероприятие?",
+    "modalTitleAdd": "Добавление контрольного мероприятия",
+    "modalTitleEdit": "Изменение контрольного мероприятия",
+    "typeLabel": "Тип",
+    "titleLabel": "Наименование",
+    "descriptionLabel": "Описание",
+    "effectivenessLabel": "Эффективность",
+    "updated": "Контрольное мероприятие обновлено",
+    "added": "Контрольное мероприятие добавлено",
+    "removed": "Контрольное мероприятие удалено"
+  },
+  "riskActions": {
+    "addButton": "Добавить мероприятие",
+    "noActionsYet": "Мероприятия пока не запланированы",
+    "columns": {
+      "title": "Наименование",
+      "owner": "Ответственный",
+      "deadline": "Срок исполнения",
+      "status": "Статус",
+      "actions": "Действия"
+    },
+    "editLink": "Изменить",
+    "deleteLink": "Удалить",
+    "deleteConfirm": "Удалить это мероприятие?",
+    "modalTitleAdd": "Добавление мероприятия",
+    "modalTitleEdit": "Изменение мероприятия",
+    "titleLabel": "Наименование",
+    "descriptionLabel": "Описание",
+    "ownerLabel": "Ответственный",
+    "deadlineLabel": "Срок исполнения",
+    "statusLabel": "Статус",
+    "evidenceLabel": "Подтверждающие документы",
+    "resultLabel": "Результат",
+    "residualImpactLabel": "Влияние на остаточный риск",
+    "updated": "Мероприятие обновлено",
+    "created": "Мероприятие создано",
+    "removed": "Мероприятие удалено"
+  },
+  "riskComments": {
+    "placeholder": "Добавить комментарий...",
+    "postButton": "Опубликовать комментарий",
+    "noCommentsYet": "Комментариев пока нет",
+    "unknownUser": "Неизвестный пользователь"
+  },
+  "riskAttachments": {
+    "dragText": "Нажмите или перетащите файл для загрузки",
+    "dragHint": "PDF, Word, Excel, изображения или CSV размером до 20 МБ",
+    "noAttachmentsYet": "Вложений пока нет",
+    "download": "Скачать",
+    "delete": "Удалить",
+    "uploadedByPrefix": "загрузил(а)",
+    "uploaded": "Файл загружен",
+    "uploadFailed": "Не удалось загрузить файл",
+    "removed": "Вложение удалено"
+  },
+  "riskHistory": {
+    "noHistoryYet": "История изменений пока не зафиксирована.",
+    "versionLabel": "Версия {{version}}",
+    "updatedDefault": "Обновлено"
+  },
+  "riskLibrary": {
+    "title": "Библиотека рисков",
+    "description": "Библиотека рисков — единый справочник категорий комплаенс-рисков, используемый для классификации записей реестра рисков.",
+    "addCategoryButton": "Добавить категорию",
+    "modalTitle": "Добавление категории риска",
+    "nameLabel": "Наименование",
+    "descriptionLabel": "Описание",
+    "parentLabel": "Родительская категория",
+    "risksSuffix": "рисков",
+    "added": "Категория добавлена в библиотеку рисков"
+  },
+  "sourcesPage": {
+    "title": "Источники рисков",
+    "newButton": "Новый источник",
+    "searchPlaceholder": "Поиск источников",
+    "typePlaceholder": "Тип",
+    "modalTitle": "Новый источник риска",
+    "typeLabel": "Тип",
+    "titleLabel": "Наименование",
+    "descriptionLabel": "Описание",
+    "referenceLabel": "Номер референса",
+    "dateLabel": "Дата",
+    "columns": {
+      "title": "Наименование",
+      "type": "Тип",
+      "reference": "Референс",
+      "linkedRisks": "Связанные риски",
+      "actions": "Действия"
+    },
+    "deleteConfirm": "Удалить этот источник?",
+    "deleteLink": "Удалить",
+    "created": "Источник создан",
+    "deleted": "Источник удалён"
+  },
+  "controlsPage": {
+    "title": "Контрольные мероприятия",
+    "description": "Превентивные, выявляющие и корректирующие контрольные мероприятия по всему реестру рисков. Откройте риск, чтобы добавить или изменить его контрольные мероприятия.",
+    "typePlaceholder": "Тип",
+    "effectivenessPlaceholder": "Эффективность",
+    "columns": {
+      "risk": "Риск",
+      "control": "Контрольное мероприятие",
+      "type": "Тип",
+      "effectiveness": "Эффективность",
+      "owner": "Владелец"
+    }
+  },
+  "actionsPage": {
+    "title": "Планы мероприятий",
+    "description": "Мероприятия по устранению и снижению рисков по всему реестру. Откройте риск, чтобы добавить или обновить его мероприятия.",
+    "statusPlaceholder": "Статус",
+    "overdueOnly": "Только просроченные",
+    "columns": {
+      "risk": "Риск",
+      "action": "Мероприятие",
+      "owner": "Ответственный",
+      "deadline": "Срок исполнения",
+      "status": "Статус"
+    }
+  },
+  "incidentsPage": {
+    "title": "Инциденты",
+    "description": "Инцидент может создать, обновить, закрыть или эскалировать риск в реестре комплаенс-рисков.",
+    "logButton": "Зарегистрировать инцидент",
+    "columns": {
+      "title": "Наименование",
+      "status": "Статус",
+      "action": "Действие",
+      "linkedRisk": "Связанный риск",
+      "reportedBy": "Кем зарегистрирован"
+    },
+    "modalTitle": "Регистрация инцидента",
+    "titleLabel": "Наименование",
+    "descriptionLabel": "Описание",
+    "occurredLabel": "Дата возникновения",
+    "sourceLabel": "Источник",
+    "statusLabel": "Статус",
+    "riskActionLabel": "Действие в отношении риска",
+    "existingRiskLabel": "Существующий риск",
+    "selectRiskRequired": "Выберите риск",
+    "logged": "Инцидент зарегистрирован"
+  },
+  "analytics": {
+    "title": "Аналитика",
+    "tabs": {
+      "heatmaps": "Карты рисков",
+      "trends": "Динамика рисков",
+      "topRisks": "Топ рисков",
+      "topLists": "Компании / Подразделения / Источники",
+      "controls": "Эффективность контрольных мероприятий"
+    },
+    "inherentHeatMap": "Карта неотъемлемого риска",
+    "residualHeatMap": "Карта остаточного риска",
+    "topRisksColumns": {
+      "code": "Код",
+      "title": "Наименование",
+      "status": "Статус",
+      "inherentScore": "Неотъемлемый балл",
+      "company": "Компания",
+      "department": "Подразделение"
+    },
+    "topCompanies": "Компании — лидеры",
+    "topDepartments": "Подразделения — лидеры",
+    "topSources": "Источники — лидеры",
+    "controlEffectivenessDist": "Распределение эффективности контрольных мероприятий",
+    "residualReductionTitle": "Снижение остаточного риска",
+    "avgInherentScore": "Средний неотъемлемый балл",
+    "avgResidualScore": "Средний остаточный балл",
+    "reductionLabel": "Снижение",
+    "risksAssessed": "Оценено рисков"
+  },
+  "reports": {
+    "title": "Отчетность",
+    "description": "Формирование управленческой и регуляторной отчётности напрямую по актуальным данным реестра рисков.",
+    "dataExportsHeading": "Выгрузка данных",
+    "narrativeReportsHeading": "Аналитические отчёты",
+    "downloadFailed": "Не удалось сформировать отчёт",
+    "riskRegister": {
+      "title": "Реестр рисков",
+      "description": "Полная выгрузка всех рисков с оценками и указанием ответственных."
+    },
+    "actionPlan": {
+      "title": "Отчёт по мероприятиям",
+      "description": "Все мероприятия с указанием ответственных, сроков и статуса."
+    },
+    "criticalRisks": {
+      "title": "Критические риски",
+      "description": "Активные риски с неотъемлемым баллом 15 и выше."
+    },
+    "overdueActions": {
+      "title": "Просроченные мероприятия",
+      "description": "Мероприятия с истёкшим сроком исполнения, не выполненные до сих пор."
+    },
+    "board": {
+      "title": "Отчёт для совета директоров",
+      "description": "Краткая сводка для Совета директоров."
+    },
+    "auditCommittee": {
+      "title": "Отчёт для комитета по аудиту",
+      "description": "Эффективность контрольных мероприятий и критические риски для службы внутреннего аудита."
+    },
+    "compliance": {
+      "title": "Комплаенс-отчёт",
+      "description": "Динамика рисков, ключевые источники и категории для комплаенс-функции."
+    }
+  },
+  "administration": {
+    "title": "Администрирование",
+    "tabs": {
+      "users": "Пользователи",
+      "companies": "Компании",
+      "departments": "Подразделения",
+      "auditLog": "Журнал аудита",
+      "settings": "Настройки"
+    }
+  },
+  "usersAdmin": {
+    "newButton": "Новый пользователь",
+    "columns": {
+      "name": "ФИО",
+      "email": "Электронная почта",
+      "role": "Роль",
+      "company": "Компания",
+      "department": "Подразделение",
+      "active": "Статус",
+      "actions": "Действия"
+    },
+    "editLink": "Изменить",
+    "deactivateLink": "Деактивировать",
+    "deactivateConfirm": "Деактивировать этого пользователя?",
+    "modalTitleNew": "Новый пользователь",
+    "modalTitleEdit": "Изменение пользователя",
+    "fullNameLabel": "ФИО",
+    "emailLabel": "Электронная почта",
+    "passwordLabel": "Временный пароль",
+    "roleLabel": "Роль",
+    "jobTitleLabel": "Должность",
+    "companyLabel": "Компания",
+    "departmentLabel": "Подразделение",
+    "activeLabel": "Активен",
+    "updated": "Пользователь обновлён",
+    "created": "Пользователь создан",
+    "deactivated": "Пользователь деактивирован"
+  },
+  "companiesAdmin": {
+    "newButton": "Новая компания",
+    "columns": {
+      "name": "Наименование",
+      "description": "Описание",
+      "active": "Статус",
+      "actions": "Действия"
+    },
+    "editLink": "Изменить",
+    "deactivateLink": "Деактивировать",
+    "deactivateConfirm": "Деактивировать эту компанию?",
+    "modalTitleNew": "Новая компания",
+    "modalTitleEdit": "Изменение компании",
+    "nameLabel": "Наименование",
+    "descriptionLabel": "Описание",
+    "updated": "Компания обновлена",
+    "created": "Компания создана",
+    "deactivated": "Компания деактивирована"
+  },
+  "departmentsAdmin": {
+    "newButton": "Новое подразделение",
+    "columns": {
+      "name": "Наименование",
+      "company": "Компания",
+      "active": "Статус",
+      "actions": "Действия"
+    },
+    "editLink": "Изменить",
+    "deactivateLink": "Деактивировать",
+    "deactivateConfirm": "Деактивировать это подразделение?",
+    "modalTitleNew": "Новое подразделение",
+    "modalTitleEdit": "Изменение подразделения",
+    "nameLabel": "Наименование",
+    "companyLabel": "Компания",
+    "updated": "Подразделение обновлено",
+    "created": "Подразделение создано",
+    "deactivated": "Подразделение деактивировано"
+  },
+  "auditLog": {
+    "columns": {
+      "entity": "Объект",
+      "action": "Действие",
+      "user": "Пользователь",
+      "when": "Дата и время"
+    }
+  },
+  "settings": {
+    "accountTitle": "Учётная запись",
+    "nameLabel": "ФИО",
+    "emailLabel": "Электронная почта",
+    "roleLabel": "Роль",
+    "jobTitleLabel": "Должность",
+    "changePasswordTitle": "Смена пароля",
+    "currentPasswordLabel": "Текущий пароль",
+    "newPasswordLabel": "Новый пароль",
+    "updateButton": "Обновить пароль",
+    "systemTitle": "Система",
+    "systemDescription": "Единая информационная система управления комплаенс-рисками (MVP) · Сессия ограничена сроком действия JWT-токена доступа с автоматическим обновлением.",
+    "passwordChanged": "Пароль изменён",
+    "passwordChangeFailed": "Не удалось изменить пароль. Проверьте правильность текущего пароля."
+  }
+}

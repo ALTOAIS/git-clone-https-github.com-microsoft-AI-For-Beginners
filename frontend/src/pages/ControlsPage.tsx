@@ -2,11 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { Select, Space, Table, Tag, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { controlsApi } from '../api/endpoints';
 import type { Control } from '../types';
-import { CONTROL_EFFECTIVENESS_COLORS, CONTROL_EFFECTIVENESS_LABELS } from '../utils/riskDisplay';
+import { ALL_CONTROL_EFFECTIVENESS, CONTROL_EFFECTIVENESS_COLORS, controlEffectivenessLabel } from '../utils/riskDisplay';
+
+const CONTROL_TYPE_VALUES = ['PREVENTIVE', 'DETECTIVE', 'CORRECTIVE'] as const;
 
 export function ControlsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [type, setType] = useState<string | undefined>();
   const [effectiveness, setEffectiveness] = useState<string | undefined>();
@@ -22,28 +26,25 @@ export function ControlsPage() {
 
   return (
     <div>
-      <Typography.Title level={3}>Controls</Typography.Title>
-      <Typography.Paragraph type="secondary">
-        Preventive, detective and corrective controls defined across the risk register. Open a risk to add or edit
-        its controls.
-      </Typography.Paragraph>
+      <Typography.Title level={3}>{t('controlsPage.title')}</Typography.Title>
+      <Typography.Paragraph type="secondary">{t('controlsPage.description')}</Typography.Paragraph>
 
       <Space style={{ marginBottom: 16 }} wrap>
         <Select
           allowClear
-          placeholder="Type"
+          placeholder={t('controlsPage.typePlaceholder')}
           style={{ width: 180 }}
           value={type}
           onChange={setType}
-          options={['PREVENTIVE', 'DETECTIVE', 'CORRECTIVE'].map((v) => ({ value: v, label: v }))}
+          options={CONTROL_TYPE_VALUES.map((v) => ({ value: v, label: t(`controlType.${v}`) }))}
         />
         <Select
           allowClear
-          placeholder="Effectiveness"
+          placeholder={t('controlsPage.effectivenessPlaceholder')}
           style={{ width: 200 }}
           value={effectiveness}
           onChange={setEffectiveness}
-          options={Object.entries(CONTROL_EFFECTIVENESS_LABELS).map(([value, label]) => ({ value, label }))}
+          options={ALL_CONTROL_EFFECTIVENESS.map((value) => ({ value, label: controlEffectivenessLabel(value) }))}
         />
       </Space>
 
@@ -53,7 +54,7 @@ export function ControlsPage() {
         dataSource={filtered}
         columns={[
           {
-            title: 'Risk',
+            title: t('controlsPage.columns.risk'),
             dataIndex: ['risk', 'title'],
             render: (title: string, record: Control & { risk?: { id: string; code: string } }) => (
               <a onClick={() => record.risk && navigate(`/risks/${record.risk.id}`)}>
@@ -61,17 +62,17 @@ export function ControlsPage() {
               </a>
             ),
           },
-          { title: 'Control', dataIndex: 'title' },
-          { title: 'Type', dataIndex: 'type', width: 120 },
+          { title: t('controlsPage.columns.control'), dataIndex: 'title' },
+          { title: t('controlsPage.columns.type'), dataIndex: 'type', width: 120, render: (v: Control['type']) => t(`controlType.${v}`) },
           {
-            title: 'Effectiveness',
+            title: t('controlsPage.columns.effectiveness'),
             dataIndex: 'effectiveness',
             width: 170,
             render: (v: Control['effectiveness']) => (
-              <Tag color={CONTROL_EFFECTIVENESS_COLORS[v]}>{CONTROL_EFFECTIVENESS_LABELS[v]}</Tag>
+              <Tag color={CONTROL_EFFECTIVENESS_COLORS[v]}>{controlEffectivenessLabel(v)}</Tag>
             ),
           },
-          { title: 'Owner', dataIndex: ['owner', 'fullName'], width: 160 },
+          { title: t('controlsPage.columns.owner'), dataIndex: ['owner', 'fullName'], width: 160 },
         ]}
       />
     </div>

@@ -2,12 +2,14 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App, Button, Form, Input, Modal, Popconfirm, Select, Switch, Table, Tag } from 'antd';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usersApi } from '../../api/endpoints';
-import { ALL_ROLES, ROLE_LABELS } from '../../auth/roles';
+import { ALL_ROLES, roleLabel } from '../../auth/roles';
 import { useCompanies, useDepartments } from '../../hooks/useReferenceData';
 import type { User } from '../../types';
 
 export function UsersAdminTab() {
+  const { t } = useTranslation();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
@@ -40,10 +42,10 @@ export function UsersAdminTab() {
     const values = await form.validateFields();
     if (editing) {
       await usersApi.update(editing.id, values);
-      message.success('User updated');
+      message.success(t('usersAdmin.updated'));
     } else {
       await usersApi.create(values);
-      message.success('User created');
+      message.success(t('usersAdmin.created'));
     }
     setOpen(false);
     queryClient.invalidateQueries({ queryKey: ['admin-users'] });
@@ -51,14 +53,14 @@ export function UsersAdminTab() {
 
   const handleDeactivate = async (id: string) => {
     await usersApi.remove(id);
-    message.success('User deactivated');
+    message.success(t('usersAdmin.deactivated'));
     queryClient.invalidateQueries({ queryKey: ['admin-users'] });
   };
 
   return (
     <div>
       <Button type="primary" icon={<PlusOutlined />} style={{ marginBottom: 16 }} onClick={openCreate}>
-        New User
+        {t('usersAdmin.newButton')}
       </Button>
       <Table
         rowKey="id"
@@ -66,26 +68,26 @@ export function UsersAdminTab() {
         dataSource={data?.items}
         pagination={{ current: page, pageSize: 20, total: data?.total, onChange: setPage }}
         columns={[
-          { title: 'Name', dataIndex: 'fullName' },
-          { title: 'Email', dataIndex: 'email' },
-          { title: 'Role', dataIndex: 'role', render: (v: User['role']) => <Tag>{ROLE_LABELS[v]}</Tag> },
-          { title: 'Company', dataIndex: ['company', 'name'] },
-          { title: 'Department', dataIndex: ['department', 'name'] },
+          { title: t('usersAdmin.columns.name'), dataIndex: 'fullName' },
+          { title: t('usersAdmin.columns.email'), dataIndex: 'email' },
+          { title: t('usersAdmin.columns.role'), dataIndex: 'role', render: (v: User['role']) => <Tag>{roleLabel(v)}</Tag> },
+          { title: t('usersAdmin.columns.company'), dataIndex: ['company', 'name'] },
+          { title: t('usersAdmin.columns.department'), dataIndex: ['department', 'name'] },
           {
-            title: 'Active',
+            title: t('usersAdmin.columns.active'),
             dataIndex: 'isActive',
             width: 90,
-            render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? 'Active' : 'Inactive'}</Tag>,
+            render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? t('common.active') : t('common.inactive')}</Tag>,
           },
           {
-            title: 'Actions',
+            title: t('usersAdmin.columns.actions'),
             width: 160,
             render: (_: unknown, record: User) => (
               <>
-                <a onClick={() => openEdit(record)}>Edit</a>{' '}
+                <a onClick={() => openEdit(record)}>{t('usersAdmin.editLink')}</a>{' '}
                 {record.isActive && (
-                  <Popconfirm title="Deactivate this user?" onConfirm={() => handleDeactivate(record.id)}>
-                    <a>Deactivate</a>
+                  <Popconfirm title={t('usersAdmin.deactivateConfirm')} onConfirm={() => handleDeactivate(record.id)}>
+                    <a>{t('usersAdmin.deactivateLink')}</a>
                   </Popconfirm>
                 )}
               </>
@@ -94,37 +96,42 @@ export function UsersAdminTab() {
         ]}
       />
 
-      <Modal title={editing ? 'Edit User' : 'New User'} open={open} onCancel={() => setOpen(false)} onOk={handleSave}>
+      <Modal
+        title={editing ? t('usersAdmin.modalTitleEdit') : t('usersAdmin.modalTitleNew')}
+        open={open}
+        onCancel={() => setOpen(false)}
+        onOk={handleSave}
+      >
         <Form form={form} layout="vertical">
-          <Form.Item name="fullName" label="Full Name" rules={[{ required: true }]}>
+          <Form.Item name="fullName" label={t('usersAdmin.fullNameLabel')} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
+          <Form.Item name="email" label={t('usersAdmin.emailLabel')} rules={[{ required: true, type: 'email' }]}>
             <Input disabled={!!editing} />
           </Form.Item>
           {!editing && (
-            <Form.Item name="password" label="Temporary Password" rules={[{ required: true, min: 8 }]}>
+            <Form.Item name="password" label={t('usersAdmin.passwordLabel')} rules={[{ required: true, min: 8 }]}>
               <Input.Password />
             </Form.Item>
           )}
-          <Form.Item name="role" label="Role" rules={[{ required: true }]}>
-            <Select options={ALL_ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role] }))} />
+          <Form.Item name="role" label={t('usersAdmin.roleLabel')} rules={[{ required: true }]}>
+            <Select options={ALL_ROLES.map((role) => ({ value: role, label: roleLabel(role) }))} />
           </Form.Item>
-          <Form.Item name="title" label="Job Title">
+          <Form.Item name="title" label={t('usersAdmin.jobTitleLabel')}>
             <Input />
           </Form.Item>
-          <Form.Item name="companyId" label="Company">
+          <Form.Item name="companyId" label={t('usersAdmin.companyLabel')}>
             <Select
               allowClear
               options={companies?.map((c) => ({ value: c.id, label: c.name }))}
               onChange={() => form.setFieldValue('departmentId', undefined)}
             />
           </Form.Item>
-          <Form.Item name="departmentId" label="Department">
+          <Form.Item name="departmentId" label={t('usersAdmin.departmentLabel')}>
             <Select allowClear options={departments?.map((d) => ({ value: d.id, label: d.name }))} />
           </Form.Item>
           {editing && (
-            <Form.Item name="isActive" label="Active" valuePropName="checked">
+            <Form.Item name="isActive" label={t('usersAdmin.activeLabel')} valuePropName="checked">
               <Switch />
             </Form.Item>
           )}

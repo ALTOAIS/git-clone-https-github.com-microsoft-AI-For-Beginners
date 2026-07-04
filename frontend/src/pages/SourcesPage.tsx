@@ -2,14 +2,16 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App, Button, DatePicker, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { sourcesApi } from '../api/endpoints';
 import { useAuthStore } from '../auth/authStore';
 import type { Source } from '../types';
-import { SOURCE_TYPE_LABELS } from '../utils/riskDisplay';
+import { ALL_SOURCE_TYPES, sourceTypeLabel } from '../utils/riskDisplay';
 
 const MANAGE_ROLES = ['ADMINISTRATOR', 'COMPLIANCE_MANAGER', 'COMPLIANCE_OFFICER'];
 
 export function SourcesPage() {
+  const { t } = useTranslation();
   const { message } = App.useApp();
   const user = useAuthStore((s) => s.user);
   const canManage = !!user && MANAGE_ROLES.includes(user.role);
@@ -21,6 +23,8 @@ export function SourcesPage() {
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm();
 
+  const typeOptions = ALL_SOURCE_TYPES.map((value) => ({ value, label: sourceTypeLabel(value) }));
+
   const { data, isFetching } = useQuery({
     queryKey: ['sources', { page, type, search }],
     queryFn: () => sourcesApi.list({ page, pageSize: 20, type, search: search || undefined }).then((r) => r.data),
@@ -30,7 +34,7 @@ export function SourcesPage() {
   const handleCreate = async () => {
     const values = await form.validateFields();
     await sourcesApi.create({ ...values, occurredAt: values.occurredAt?.toISOString() });
-    message.success('Source created');
+    message.success(t('sourcesPage.created'));
     setOpen(false);
     form.resetFields();
     queryClient.invalidateQueries({ queryKey: ['sources'] });
@@ -38,7 +42,7 @@ export function SourcesPage() {
 
   const handleDelete = async (id: string) => {
     await sourcesApi.remove(id);
-    message.success('Source deleted');
+    message.success(t('sourcesPage.deleted'));
     queryClient.invalidateQueries({ queryKey: ['sources'] });
   };
 
@@ -46,24 +50,24 @@ export function SourcesPage() {
     <div>
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
         <Typography.Title level={3} style={{ margin: 0 }}>
-          Risk Sources
+          {t('sourcesPage.title')}
         </Typography.Title>
         {canManage && (
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
-            New Source
+            {t('sourcesPage.newButton')}
           </Button>
         )}
       </Space>
 
       <Space style={{ marginBottom: 16 }} wrap>
-        <Input.Search placeholder="Search sources" allowClear style={{ width: 260 }} onSearch={setSearch} />
+        <Input.Search placeholder={t('sourcesPage.searchPlaceholder')} allowClear style={{ width: 260 }} onSearch={setSearch} />
         <Select
           allowClear
-          placeholder="Type"
+          placeholder={t('sourcesPage.typePlaceholder')}
           style={{ width: 240 }}
           value={type}
           onChange={setType}
-          options={Object.entries(SOURCE_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
+          options={typeOptions}
         />
       </Space>
 
@@ -73,38 +77,38 @@ export function SourcesPage() {
         dataSource={data?.items}
         pagination={{ current: page, pageSize: 20, total: data?.total, onChange: setPage }}
         columns={[
-          { title: 'Title', dataIndex: 'title' },
-          { title: 'Type', dataIndex: 'type', render: (v: Source['type']) => <Tag>{SOURCE_TYPE_LABELS[v]}</Tag> },
-          { title: 'Reference', dataIndex: 'referenceNumber' },
-          { title: 'Linked Risks', dataIndex: ['_count', 'risks'], width: 120 },
+          { title: t('sourcesPage.columns.title'), dataIndex: 'title' },
+          { title: t('sourcesPage.columns.type'), dataIndex: 'type', render: (v: Source['type']) => <Tag>{sourceTypeLabel(v)}</Tag> },
+          { title: t('sourcesPage.columns.reference'), dataIndex: 'referenceNumber' },
+          { title: t('sourcesPage.columns.linkedRisks'), dataIndex: ['_count', 'risks'], width: 120 },
           {
-            title: 'Actions',
+            title: t('sourcesPage.columns.actions'),
             width: 100,
             render: (_: unknown, record: Source) =>
               canManage ? (
-                <Popconfirm title="Delete this source?" onConfirm={() => handleDelete(record.id)}>
-                  <a>Delete</a>
+                <Popconfirm title={t('sourcesPage.deleteConfirm')} onConfirm={() => handleDelete(record.id)}>
+                  <a>{t('sourcesPage.deleteLink')}</a>
                 </Popconfirm>
               ) : null,
           },
         ]}
       />
 
-      <Modal title="New Risk Source" open={open} onCancel={() => setOpen(false)} onOk={handleCreate}>
+      <Modal title={t('sourcesPage.modalTitle')} open={open} onCancel={() => setOpen(false)} onOk={handleCreate}>
         <Form form={form} layout="vertical">
-          <Form.Item name="type" label="Type" rules={[{ required: true }]}>
-            <Select options={Object.entries(SOURCE_TYPE_LABELS).map(([value, label]) => ({ value, label }))} />
+          <Form.Item name="type" label={t('sourcesPage.typeLabel')} rules={[{ required: true }]}>
+            <Select options={typeOptions} />
           </Form.Item>
-          <Form.Item name="title" label="Title" rules={[{ required: true }]}>
+          <Form.Item name="title" label={t('sourcesPage.titleLabel')} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="description" label="Description">
+          <Form.Item name="description" label={t('sourcesPage.descriptionLabel')}>
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item name="referenceNumber" label="Reference Number">
+          <Form.Item name="referenceNumber" label={t('sourcesPage.referenceLabel')}>
             <Input />
           </Form.Item>
-          <Form.Item name="occurredAt" label="Date">
+          <Form.Item name="occurredAt" label={t('sourcesPage.dateLabel')}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
         </Form>

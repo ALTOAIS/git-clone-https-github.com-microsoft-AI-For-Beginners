@@ -2,10 +2,12 @@ import { AlertOutlined, ClockCircleOutlined, FireOutlined, SafetyOutlined } from
 import { Line } from '@ant-design/charts';
 import { Card, Col, List, Row, Skeleton, Statistic, Typography } from 'antd';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { dashboardApi } from '../api/endpoints';
 import { RiskHeatMap } from '../components/RiskHeatMap';
 
 export function DashboardPage() {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: () => dashboardApi.summary().then((r) => r.data),
@@ -15,22 +17,22 @@ export function DashboardPage() {
     return <Skeleton active paragraph={{ rows: 10 }} />;
   }
 
-  const trendData = data.trends.flatMap((t) => [
-    { month: t.month, value: t.created, series: 'Created' },
-    { month: t.month, value: t.closed, series: 'Closed' },
+  const trendData = data.trends.flatMap((tr) => [
+    { month: tr.month, value: tr.created, series: t('dashboard.seriesCreated') },
+    { month: tr.month, value: tr.closed, series: t('dashboard.seriesClosed') },
   ]);
 
   return (
     <div>
       <Typography.Title level={3} style={{ marginTop: 0 }}>
-        Dashboard
+        {t('dashboard.title')}
       </Typography.Title>
 
       <Row gutter={16}>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Active Risks"
+              title={t('dashboard.activeRisks')}
               value={data.kpis.activeRisks}
               prefix={<AlertOutlined style={{ color: '#0f5fa8' }} />}
             />
@@ -39,7 +41,7 @@ export function DashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Critical Risks"
+              title={t('dashboard.criticalRisks')}
               value={data.kpis.criticalRisks}
               valueStyle={{ color: '#f5222d' }}
               prefix={<FireOutlined style={{ color: '#f5222d' }} />}
@@ -49,7 +51,7 @@ export function DashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Assessed Residual Risks"
+              title={t('dashboard.residualRisks')}
               value={data.kpis.residualRisks}
               prefix={<SafetyOutlined style={{ color: '#13a8a8' }} />}
             />
@@ -58,7 +60,7 @@ export function DashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="Overdue Actions"
+              title={t('dashboard.overdueActions')}
               value={data.kpis.overdueActions}
               valueStyle={{ color: data.kpis.overdueActions > 0 ? '#fa8c16' : undefined }}
               prefix={<ClockCircleOutlined style={{ color: '#fa8c16' }} />}
@@ -69,22 +71,22 @@ export function DashboardPage() {
 
       <Row gutter={16} style={{ marginTop: 16 }}>
         <Col xs={24} lg={12}>
-          <Card title="Inherent Risk Heat Map" bodyStyle={{ overflowX: 'auto' }}>
+          <Card title={t('dashboard.inherentHeatMapTitle')} bodyStyle={{ overflowX: 'auto' }}>
             <RiskHeatMap grid={data.heatMap.grid} />
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Residual Risk Reduction">
+          <Card title={t('dashboard.residualReductionTitle')}>
             <Row gutter={16}>
               <Col span={8}>
-                <Statistic title="Avg Inherent Score" value={data.residualRiskSummary.averageInherent} />
+                <Statistic title={t('dashboard.avgInherentScore')} value={data.residualRiskSummary.averageInherent} />
               </Col>
               <Col span={8}>
-                <Statistic title="Avg Residual Score" value={data.residualRiskSummary.averageResidual} />
+                <Statistic title={t('dashboard.avgResidualScore')} value={data.residualRiskSummary.averageResidual} />
               </Col>
               <Col span={8}>
                 <Statistic
-                  title="Reduction"
+                  title={t('dashboard.reduction')}
                   value={data.residualRiskSummary.reductionPercent}
                   suffix="%"
                   valueStyle={{ color: '#52c41a' }}
@@ -108,14 +110,14 @@ export function DashboardPage() {
 
       <Row gutter={16} style={{ marginTop: 16 }}>
         <Col xs={24} md={8}>
-          <Card title="Top Companies">
+          <Card title={t('dashboard.topCompanies')}>
             <List
               size="small"
               dataSource={data.topCompanies}
-              locale={{ emptyText: 'No data yet' }}
+              locale={{ emptyText: t('dashboard.noDataYet') }}
               renderItem={(item) => (
                 <List.Item>
-                  <Typography.Text>{item.name ?? 'Unknown'}</Typography.Text>
+                  <Typography.Text>{item.name ?? t('common.unknown')}</Typography.Text>
                   <Typography.Text strong>{item.count}</Typography.Text>
                 </List.Item>
               )}
@@ -123,14 +125,14 @@ export function DashboardPage() {
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card title="Top Departments">
+          <Card title={t('dashboard.topDepartments')}>
             <List
               size="small"
               dataSource={data.topDepartments}
-              locale={{ emptyText: 'No data yet' }}
+              locale={{ emptyText: t('dashboard.noDataYet') }}
               renderItem={(item) => (
                 <List.Item>
-                  <Typography.Text>{item.name ?? 'Unknown'}</Typography.Text>
+                  <Typography.Text>{item.name ?? t('common.unknown')}</Typography.Text>
                   <Typography.Text strong>{item.count}</Typography.Text>
                 </List.Item>
               )}
@@ -138,14 +140,14 @@ export function DashboardPage() {
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card title="Top Categories">
+          <Card title={t('dashboard.topCategories')}>
             <List
               size="small"
               dataSource={data.topCategories}
-              locale={{ emptyText: 'No data yet' }}
+              locale={{ emptyText: t('dashboard.noDataYet') }}
               renderItem={(item) => (
                 <List.Item>
-                  <Typography.Text>{item.name ?? 'Unknown'}</Typography.Text>
+                  <Typography.Text>{item.name ?? t('common.unknown')}</Typography.Text>
                   <Typography.Text strong>{item.count}</Typography.Text>
                 </List.Item>
               )}
