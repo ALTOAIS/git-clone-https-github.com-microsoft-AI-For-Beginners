@@ -20,8 +20,9 @@ a demo, not for production use (a persistent Render Disk, or S3, is the fix for 
 5. Render will detect `render.yaml` and show two services (`crh-backend`, `crh-frontend`) plus
    a database (`crh-postgres`). Click **Apply**.
 6. Wait for `crh-backend` to finish building and deploying (first build takes a few minutes —
-   it also runs the database migrations automatically on startup). The frontend build will
-   likely fail or point at the wrong API on this first pass — that's expected, fixed in step 2.
+   it also runs the database migrations and demo-data seed automatically on startup). The
+   frontend build will likely fail or point at the wrong API on this first pass — that's
+   expected, fixed in step 2.
 
 ## 2. Point the frontend at the real backend URL
 
@@ -39,19 +40,14 @@ a demo, not for production use (a persistent Render Disk, or S3, is the fix for 
 2. Open `crh-backend` → **Environment** tab, edit `CORS_ORIGIN` from `*` to that exact URL.
 3. Save — Render redeploys the backend automatically on env var changes.
 
-## 4. Load demo data (optional)
+## 4. Open the app
 
-`crh-backend` → **Shell** tab → run:
-
-```
-npx prisma db seed
-```
-
-This creates the demo companies/departments/users/risks described in the root `README.md`
-(all demo accounts use password `ChangeMe123!`). Safe to re-run; it skips records that already
-exist.
-
-## 5. Open the app
+`crh-backend` seeds its demo data automatically every time it starts (after migrations run,
+before the API accepts traffic), so there's no manual step here. It creates the demo
+companies/departments/users/risks described in the root `README.md` (all demo accounts use
+password `ChangeMe123!`) and is safe to re-run — it upserts/skips records that already exist,
+so redeploys never duplicate or reset data you've since changed. If you ever need to re-seed
+by hand, `crh-backend` → **Shell** tab → `node dist-seed/seed.js`.
 
 Visit the `crh-frontend` URL from step 3 and log in with a demo account, e.g.
 `admin@crh.local` / `ChangeMe123!`.
