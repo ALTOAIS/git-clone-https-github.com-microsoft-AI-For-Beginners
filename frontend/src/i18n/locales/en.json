@@ -1,0 +1,573 @@
+{
+  "app": {
+    "fullName": "Unified Compliance Risk Management Information System",
+    "shortName": "CRH — Compliance Risk Hub"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deactivate": "Deactivate",
+    "create": "Create",
+    "search": "Search",
+    "actions": "Actions",
+    "close": "Close",
+    "download": "Download",
+    "upload": "Upload",
+    "yes": "Yes",
+    "no": "No",
+    "active": "Active",
+    "inactive": "Inactive",
+    "unknown": "Unknown",
+    "notSet": "—",
+    "loading": "Loading…",
+    "csv": "CSV",
+    "excel": "Excel",
+    "downloadPdf": "Download PDF"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "riskRegister": "Risk Register",
+    "riskLibrary": "Risk Library",
+    "sources": "Risk Sources",
+    "controls": "Controls",
+    "actionPlans": "Action Plans",
+    "incidents": "Incidents",
+    "analytics": "Analytics",
+    "reports": "Reports",
+    "administration": "Administration"
+  },
+  "layout": {
+    "notifications": "Notifications",
+    "noNotifications": "No notifications",
+    "signOut": "Sign out",
+    "language": "Language"
+  },
+  "auth": {
+    "signInTitle": "Sign in",
+    "signInSubtitle": "Sign in to manage your organization's compliance risk profile",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@company.com",
+    "emailRequired": "Email is required",
+    "emailInvalid": "Enter a valid email",
+    "passwordLabel": "Password",
+    "passwordRequired": "Password is required",
+    "signIn": "Sign in",
+    "invalidCredentials": "Invalid email or password.",
+    "demoAccounts": "Demo accounts (password ChangeMe123!): admin@crh.local, officer@crh.local, manager@crh.local, owner@crh.local, deptmgr@crh.local, audit@crh.local, board@crh.local"
+  },
+  "roles": {
+    "ADMINISTRATOR": "Administrator",
+    "COMPLIANCE_OFFICER": "Compliance Officer",
+    "COMPLIANCE_MANAGER": "Compliance Manager",
+    "RISK_OWNER": "Risk Owner",
+    "DEPARTMENT_MANAGER": "Department Manager",
+    "INTERNAL_AUDIT": "Internal Audit",
+    "BOARD": "Board"
+  },
+  "riskStatus": {
+    "DRAFT": "Draft",
+    "NEW": "New",
+    "ASSESSMENT": "Assessment",
+    "APPROVED": "Approved",
+    "MONITORING": "Monitoring",
+    "MITIGATION": "Mitigation",
+    "RESIDUAL_ASSESSMENT": "Residual Assessment",
+    "CLOSED": "Closed",
+    "ARCHIVED": "Archived"
+  },
+  "sourceType": {
+    "CORRUPTION_RISK_ASSESSMENT": "Corruption Risk Assessment",
+    "ANTI_CORRUPTION_MONITORING": "Anti-Corruption Monitoring",
+    "CANDIDATE_DUE_DILIGENCE": "Candidate Due Diligence",
+    "COUNTERPARTY_DUE_DILIGENCE": "Counterparty Due Diligence",
+    "INVESTIGATION": "Investigation",
+    "HOTLINE": "Hotline",
+    "CONFLICT_OF_INTEREST": "Conflict of Interest",
+    "GIFTS": "Gifts",
+    "AUDIT": "Audit",
+    "STATE_INSPECTION": "State Inspection",
+    "MEDIA": "Media",
+    "HR": "HR",
+    "PROCUREMENT": "Procurement",
+    "INVESTMENT": "Investment",
+    "ESG": "ESG"
+  },
+  "controlType": {
+    "PREVENTIVE": "Preventive",
+    "DETECTIVE": "Detective",
+    "CORRECTIVE": "Corrective"
+  },
+  "controlEffectiveness": {
+    "EFFECTIVE": "Effective",
+    "PARTIALLY_EFFECTIVE": "Partially Effective",
+    "INEFFECTIVE": "Ineffective",
+    "NOT_TESTED": "Not Tested"
+  },
+  "actionStatus": {
+    "PLANNED": "Planned",
+    "IN_PROGRESS": "In Progress",
+    "COMPLETED": "Completed",
+    "OVERDUE": "Overdue",
+    "CANCELLED": "Cancelled"
+  },
+  "incidentStatus": {
+    "OPEN": "Open",
+    "UNDER_REVIEW": "Under Review",
+    "RESOLVED": "Resolved",
+    "CLOSED": "Closed"
+  },
+  "incidentAction": {
+    "NONE": "No action",
+    "CREATE_RISK": "Create new risk",
+    "UPDATE_RISK": "Update existing risk",
+    "CLOSE_RISK": "Close existing risk",
+    "ESCALATE_RISK": "Escalate existing risk"
+  },
+  "scoreLevel": {
+    "LOW": "Low",
+    "MEDIUM": "Medium",
+    "HIGH": "High",
+    "CRITICAL": "Critical"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "activeRisks": "Active Risks",
+    "criticalRisks": "Critical Risks",
+    "residualRisks": "Assessed Residual Risks",
+    "overdueActions": "Overdue Actions",
+    "inherentHeatMapTitle": "Inherent Risk Heat Map",
+    "residualReductionTitle": "Residual Risk Reduction",
+    "avgInherentScore": "Avg Inherent Score",
+    "avgResidualScore": "Avg Residual Score",
+    "reduction": "Reduction",
+    "topCompanies": "Top Companies",
+    "topDepartments": "Top Departments",
+    "topCategories": "Top Categories",
+    "noDataYet": "No data yet",
+    "seriesCreated": "Created",
+    "seriesClosed": "Closed"
+  },
+  "heatMap": {
+    "likelihoodAxis": "Likelihood",
+    "impactAxis": "Impact",
+    "tooltip": "Likelihood {{likelihood}} × Impact {{impact}} = {{score}} — {{count}} risk(s)"
+  },
+  "riskRegister": {
+    "title": "Risk Register",
+    "registerButton": "Register Risk",
+    "searchPlaceholder": "Search title, code, description",
+    "statusPlaceholder": "Status",
+    "categoryPlaceholder": "Category",
+    "companyPlaceholder": "Company",
+    "departmentPlaceholder": "Department",
+    "columns": {
+      "code": "Code",
+      "title": "Title",
+      "status": "Status",
+      "category": "Category",
+      "company": "Company",
+      "department": "Department",
+      "owner": "Owner",
+      "inherent": "Inherent",
+      "residual": "Residual"
+    }
+  },
+  "riskForm": {
+    "modalTitle": "Register New Risk",
+    "titleLabel": "Title",
+    "titlePlaceholder": "e.g. Bribery risk in vendor selection",
+    "titleRequired": "Title is required",
+    "descriptionLabel": "Description",
+    "categoryLabel": "Category",
+    "categoryPlaceholder": "Select risk category",
+    "companyLabel": "Company",
+    "companyPlaceholder": "Select company",
+    "departmentLabel": "Department",
+    "departmentPlaceholder": "Select department",
+    "ownerLabel": "Risk Owner",
+    "ownerPlaceholder": "Select owner",
+    "createButton": "Create Risk"
+  },
+  "riskCard": {
+    "backButton": "Back to Risk Register",
+    "changeStatusButton": "Change Status",
+    "moveTo": "Move to {{status}}",
+    "statusChangedTo": "Status changed to {{status}}",
+    "transitionNotAllowed": "Transition not allowed",
+    "tabs": {
+      "info": "Basic Info",
+      "assessment": "Assessment",
+      "sources": "Sources",
+      "controls": "Controls",
+      "actions": "Actions",
+      "comments": "Comments",
+      "attachments": "Attachments",
+      "history": "History"
+    }
+  },
+  "riskInfo": {
+    "code": "Code",
+    "version": "Version",
+    "category": "Category",
+    "owner": "Owner",
+    "company": "Company",
+    "department": "Department",
+    "businessProcess": "Business Process",
+    "createdBy": "Created By",
+    "description": "Description",
+    "noDescription": "No description",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "titleLabel": "Title",
+    "descriptionLabel": "Description",
+    "categoryLabel": "Category",
+    "companyLabel": "Company",
+    "departmentLabel": "Department",
+    "ownerLabel": "Owner",
+    "updated": "Risk updated"
+  },
+  "riskAssessment": {
+    "inherentScoreLabel": "Inherent Risk Score",
+    "residualScoreLabel": "Residual Risk Score",
+    "controlEffectivenessLabel": "Control Effectiveness",
+    "controlsCountLabel": "Controls Count",
+    "notAssessed": "Not assessed",
+    "notTested": "Not tested",
+    "likelihoodLabel": "Likelihood (1-5)",
+    "impactLabel": "Impact (1-5)",
+    "residualLikelihoodLabel": "Residual Likelihood (1-5)",
+    "residualImpactLabel": "Residual Impact (1-5)",
+    "saveButton": "Save Assessment",
+    "saved": "Assessment saved"
+  },
+  "riskSources": {
+    "linkButton": "Link Source",
+    "noSourcesYet": "No sources linked to this risk yet",
+    "unlink": "Unlink",
+    "linkModalTitle": "Link Existing Source",
+    "selectPlaceholder": "Select a source",
+    "refPrefix": "Ref",
+    "linked": "Source linked",
+    "unlinked": "Source unlinked"
+  },
+  "riskControls": {
+    "addButton": "Add Control",
+    "noControlsYet": "No controls defined for this risk",
+    "columns": {
+      "type": "Type",
+      "title": "Title",
+      "effectiveness": "Effectiveness",
+      "owner": "Owner",
+      "actions": "Actions"
+    },
+    "editLink": "Edit",
+    "deleteLink": "Delete",
+    "deleteConfirm": "Remove this control?",
+    "modalTitleAdd": "Add Control",
+    "modalTitleEdit": "Edit Control",
+    "typeLabel": "Type",
+    "titleLabel": "Title",
+    "descriptionLabel": "Description",
+    "effectivenessLabel": "Effectiveness",
+    "updated": "Control updated",
+    "added": "Control added",
+    "removed": "Control removed"
+  },
+  "riskActions": {
+    "addButton": "Add Action",
+    "noActionsYet": "No action plans yet",
+    "columns": {
+      "title": "Title",
+      "owner": "Owner",
+      "deadline": "Deadline",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "editLink": "Edit",
+    "deleteLink": "Delete",
+    "deleteConfirm": "Remove this action?",
+    "modalTitleAdd": "Add Action",
+    "modalTitleEdit": "Edit Action",
+    "titleLabel": "Title",
+    "descriptionLabel": "Description",
+    "ownerLabel": "Owner",
+    "deadlineLabel": "Deadline",
+    "statusLabel": "Status",
+    "evidenceLabel": "Evidence",
+    "resultLabel": "Result",
+    "residualImpactLabel": "Residual Risk Impact",
+    "updated": "Action updated",
+    "created": "Action created",
+    "removed": "Action removed"
+  },
+  "riskComments": {
+    "placeholder": "Add a comment...",
+    "postButton": "Post Comment",
+    "noCommentsYet": "No comments yet",
+    "unknownUser": "Unknown user"
+  },
+  "riskAttachments": {
+    "dragText": "Click or drag a file to upload",
+    "dragHint": "PDF, Word, Excel, images or CSV up to 20MB",
+    "noAttachmentsYet": "No attachments yet",
+    "download": "Download",
+    "delete": "Delete",
+    "uploadedByPrefix": "uploaded by",
+    "uploaded": "File uploaded",
+    "uploadFailed": "Upload failed",
+    "removed": "Attachment removed"
+  },
+  "riskHistory": {
+    "noHistoryYet": "No history recorded yet.",
+    "versionLabel": "Version {{version}}",
+    "updatedDefault": "Updated"
+  },
+  "riskLibrary": {
+    "title": "Risk Library",
+    "description": "The Risk Library is the master catalog of compliance risk categories used to classify entries in the Risk Register.",
+    "addCategoryButton": "Add Category",
+    "modalTitle": "Add Risk Category",
+    "nameLabel": "Name",
+    "descriptionLabel": "Description",
+    "parentLabel": "Parent Category",
+    "risksSuffix": "risks",
+    "added": "Category added to Risk Library"
+  },
+  "sourcesPage": {
+    "title": "Risk Sources",
+    "newButton": "New Source",
+    "searchPlaceholder": "Search sources",
+    "typePlaceholder": "Type",
+    "modalTitle": "New Risk Source",
+    "typeLabel": "Type",
+    "titleLabel": "Title",
+    "descriptionLabel": "Description",
+    "referenceLabel": "Reference Number",
+    "dateLabel": "Date",
+    "columns": {
+      "title": "Title",
+      "type": "Type",
+      "reference": "Reference",
+      "linkedRisks": "Linked Risks",
+      "actions": "Actions"
+    },
+    "deleteConfirm": "Delete this source?",
+    "deleteLink": "Delete",
+    "created": "Source created",
+    "deleted": "Source deleted"
+  },
+  "controlsPage": {
+    "title": "Controls",
+    "description": "Preventive, detective and corrective controls defined across the risk register. Open a risk to add or edit its controls.",
+    "typePlaceholder": "Type",
+    "effectivenessPlaceholder": "Effectiveness",
+    "columns": {
+      "risk": "Risk",
+      "control": "Control",
+      "type": "Type",
+      "effectiveness": "Effectiveness",
+      "owner": "Owner"
+    }
+  },
+  "actionsPage": {
+    "title": "Action Plans",
+    "description": "Remediation and mitigation actions across all risks. Open a risk to add or update its action plans.",
+    "statusPlaceholder": "Status",
+    "overdueOnly": "Overdue only",
+    "columns": {
+      "risk": "Risk",
+      "action": "Action",
+      "owner": "Owner",
+      "deadline": "Deadline",
+      "status": "Status"
+    }
+  },
+  "incidentsPage": {
+    "title": "Incidents",
+    "description": "An incident can create, update, close, or escalate a risk in the Risk Register.",
+    "logButton": "Log Incident",
+    "columns": {
+      "title": "Title",
+      "status": "Status",
+      "action": "Action",
+      "linkedRisk": "Linked Risk",
+      "reportedBy": "Reported By"
+    },
+    "modalTitle": "Log Incident",
+    "titleLabel": "Title",
+    "descriptionLabel": "Description",
+    "occurredLabel": "Occurred At",
+    "sourceLabel": "Source",
+    "statusLabel": "Status",
+    "riskActionLabel": "Risk Action",
+    "existingRiskLabel": "Existing Risk",
+    "selectRiskRequired": "Select a risk",
+    "logged": "Incident logged"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "tabs": {
+      "heatmaps": "Heat Maps",
+      "trends": "Risk Trends",
+      "topRisks": "Top Risks",
+      "topLists": "Top Companies / Departments / Sources",
+      "controls": "Control Effectiveness"
+    },
+    "inherentHeatMap": "Inherent Risk Heat Map",
+    "residualHeatMap": "Residual Risk Heat Map",
+    "topRisksColumns": {
+      "code": "Code",
+      "title": "Title",
+      "status": "Status",
+      "inherentScore": "Inherent Score",
+      "company": "Company",
+      "department": "Department"
+    },
+    "topCompanies": "Top Companies",
+    "topDepartments": "Top Departments",
+    "topSources": "Top Sources",
+    "controlEffectivenessDist": "Control Effectiveness Distribution",
+    "residualReductionTitle": "Residual Risk Reduction",
+    "avgInherentScore": "Average inherent score",
+    "avgResidualScore": "Average residual score",
+    "reductionLabel": "Reduction",
+    "risksAssessed": "Risks assessed"
+  },
+  "reports": {
+    "title": "Reports",
+    "description": "Generate management and regulatory reports directly from live Risk Register data.",
+    "dataExportsHeading": "Data Exports",
+    "narrativeReportsHeading": "Narrative Reports",
+    "downloadFailed": "Failed to generate report",
+    "riskRegister": {
+      "title": "Risk Register",
+      "description": "Full export of all risks with scores and ownership."
+    },
+    "actionPlan": {
+      "title": "Action Plan Report",
+      "description": "All action plans with owners, deadlines and status."
+    },
+    "criticalRisks": {
+      "title": "Critical Risks",
+      "description": "Active risks with an inherent score of 15 or higher."
+    },
+    "overdueActions": {
+      "title": "Overdue Actions",
+      "description": "Action plans past their deadline and not yet completed."
+    },
+    "board": {
+      "title": "Board Report",
+      "description": "Executive summary for the Board of Directors."
+    },
+    "auditCommittee": {
+      "title": "Audit Committee Report",
+      "description": "Control effectiveness and critical risks for Internal Audit."
+    },
+    "compliance": {
+      "title": "Compliance Report",
+      "description": "Risk trend, top sources and categories for the compliance function."
+    }
+  },
+  "administration": {
+    "title": "Administration",
+    "tabs": {
+      "users": "Users",
+      "companies": "Companies",
+      "departments": "Departments",
+      "auditLog": "Audit Log",
+      "settings": "Settings"
+    }
+  },
+  "usersAdmin": {
+    "newButton": "New User",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "company": "Company",
+      "department": "Department",
+      "active": "Active",
+      "actions": "Actions"
+    },
+    "editLink": "Edit",
+    "deactivateLink": "Deactivate",
+    "deactivateConfirm": "Deactivate this user?",
+    "modalTitleNew": "New User",
+    "modalTitleEdit": "Edit User",
+    "fullNameLabel": "Full Name",
+    "emailLabel": "Email",
+    "passwordLabel": "Temporary Password",
+    "roleLabel": "Role",
+    "jobTitleLabel": "Job Title",
+    "companyLabel": "Company",
+    "departmentLabel": "Department",
+    "activeLabel": "Active",
+    "updated": "User updated",
+    "created": "User created",
+    "deactivated": "User deactivated"
+  },
+  "companiesAdmin": {
+    "newButton": "New Company",
+    "columns": {
+      "name": "Name",
+      "description": "Description",
+      "active": "Active",
+      "actions": "Actions"
+    },
+    "editLink": "Edit",
+    "deactivateLink": "Deactivate",
+    "deactivateConfirm": "Deactivate this company?",
+    "modalTitleNew": "New Company",
+    "modalTitleEdit": "Edit Company",
+    "nameLabel": "Name",
+    "descriptionLabel": "Description",
+    "updated": "Company updated",
+    "created": "Company created",
+    "deactivated": "Company deactivated"
+  },
+  "departmentsAdmin": {
+    "newButton": "New Department",
+    "columns": {
+      "name": "Name",
+      "company": "Company",
+      "active": "Active",
+      "actions": "Actions"
+    },
+    "editLink": "Edit",
+    "deactivateLink": "Deactivate",
+    "deactivateConfirm": "Deactivate this department?",
+    "modalTitleNew": "New Department",
+    "modalTitleEdit": "Edit Department",
+    "nameLabel": "Name",
+    "companyLabel": "Company",
+    "updated": "Department updated",
+    "created": "Department created",
+    "deactivated": "Department deactivated"
+  },
+  "auditLog": {
+    "columns": {
+      "entity": "Entity",
+      "action": "Action",
+      "user": "User",
+      "when": "When"
+    }
+  },
+  "settings": {
+    "accountTitle": "Account",
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "roleLabel": "Role",
+    "jobTitleLabel": "Title",
+    "changePasswordTitle": "Change Password",
+    "currentPasswordLabel": "Current Password",
+    "newPasswordLabel": "New Password",
+    "updateButton": "Update Password",
+    "systemTitle": "System",
+    "systemDescription": "Unified Compliance Risk Management Information System (MVP) · Session timeout enforced via JWT access token expiry with automatic refresh.",
+    "passwordChanged": "Password changed",
+    "passwordChangeFailed": "Could not change password. Check your current password."
+  }
+}

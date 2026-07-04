@@ -1,5 +1,6 @@
 import { Button, Descriptions, Form, Input, message, Select, Space } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { risksApi } from '../../../api/endpoints';
 import { useCategories, useCompanies, useDepartments, useUsersList } from '../../../hooks/useReferenceData';
 import type { RiskDetail } from '../../../types';
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function RiskInfoTab({ risk, onUpdated, canEdit }: Props) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
@@ -37,7 +39,7 @@ export function RiskInfoTab({ risk, onUpdated, canEdit }: Props) {
     setSaving(true);
     try {
       await risksApi.update(risk.id, values);
-      message.success('Risk updated');
+      message.success(t('riskInfo.updated'));
       setEditing(false);
       onUpdated();
     } finally {
@@ -49,21 +51,21 @@ export function RiskInfoTab({ risk, onUpdated, canEdit }: Props) {
     return (
       <div>
         <Descriptions column={2} bordered size="small">
-          <Descriptions.Item label="Code">{risk.code}</Descriptions.Item>
-          <Descriptions.Item label="Version">v{risk.version}</Descriptions.Item>
-          <Descriptions.Item label="Category">{risk.category?.name ?? '—'}</Descriptions.Item>
-          <Descriptions.Item label="Owner">{risk.owner?.fullName ?? '—'}</Descriptions.Item>
-          <Descriptions.Item label="Company">{risk.company?.name ?? '—'}</Descriptions.Item>
-          <Descriptions.Item label="Department">{risk.department?.name ?? '—'}</Descriptions.Item>
-          <Descriptions.Item label="Business Process">{risk.businessProcess?.name ?? '—'}</Descriptions.Item>
-          <Descriptions.Item label="Created By">{risk.createdBy?.fullName ?? '—'}</Descriptions.Item>
-          <Descriptions.Item label="Description" span={2}>
-            {risk.description || <span style={{ color: '#999' }}>No description</span>}
+          <Descriptions.Item label={t('riskInfo.code')}>{risk.code}</Descriptions.Item>
+          <Descriptions.Item label={t('riskInfo.version')}>v{risk.version}</Descriptions.Item>
+          <Descriptions.Item label={t('riskInfo.category')}>{risk.category?.name ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label={t('riskInfo.owner')}>{risk.owner?.fullName ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label={t('riskInfo.company')}>{risk.company?.name ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label={t('riskInfo.department')}>{risk.department?.name ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label={t('riskInfo.businessProcess')}>{risk.businessProcess?.name ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label={t('riskInfo.createdBy')}>{risk.createdBy?.fullName ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label={t('riskInfo.description')} span={2}>
+            {risk.description || <span style={{ color: '#999' }}>{t('riskInfo.noDescription')}</span>}
           </Descriptions.Item>
         </Descriptions>
         {canEdit && (
           <Button style={{ marginTop: 16 }} onClick={() => setEditing(true)}>
-            Edit
+            {t('riskInfo.edit')}
           </Button>
         )}
       </div>
@@ -72,26 +74,26 @@ export function RiskInfoTab({ risk, onUpdated, canEdit }: Props) {
 
   return (
     <Form form={form} layout="vertical">
-      <Form.Item name="title" label="Title" rules={[{ required: true }]}>
+      <Form.Item name="title" label={t('riskInfo.titleLabel')} rules={[{ required: true }]}>
         <Input />
       </Form.Item>
-      <Form.Item name="description" label="Description">
+      <Form.Item name="description" label={t('riskInfo.descriptionLabel')}>
         <Input.TextArea rows={3} />
       </Form.Item>
-      <Form.Item name="categoryId" label="Category">
+      <Form.Item name="categoryId" label={t('riskInfo.categoryLabel')}>
         <Select allowClear options={categories?.map((c) => ({ value: c.id, label: c.name }))} />
       </Form.Item>
-      <Form.Item name="companyId" label="Company">
+      <Form.Item name="companyId" label={t('riskInfo.companyLabel')}>
         <Select
           allowClear
           options={companies?.map((c) => ({ value: c.id, label: c.name }))}
           onChange={() => form.setFieldValue('departmentId', undefined)}
         />
       </Form.Item>
-      <Form.Item name="departmentId" label="Department">
+      <Form.Item name="departmentId" label={t('riskInfo.departmentLabel')}>
         <Select allowClear options={departments?.map((d) => ({ value: d.id, label: d.name }))} />
       </Form.Item>
-      <Form.Item name="ownerId" label="Owner">
+      <Form.Item name="ownerId" label={t('riskInfo.ownerLabel')}>
         <Select
           allowClear
           showSearch
@@ -101,9 +103,9 @@ export function RiskInfoTab({ risk, onUpdated, canEdit }: Props) {
       </Form.Item>
       <Space>
         <Button type="primary" onClick={handleSave} loading={saving}>
-          Save
+          {t('riskInfo.save')}
         </Button>
-        <Button onClick={() => setEditing(false)}>Cancel</Button>
+        <Button onClick={() => setEditing(false)}>{t('riskInfo.cancel')}</Button>
       </Space>
     </Form>
   );

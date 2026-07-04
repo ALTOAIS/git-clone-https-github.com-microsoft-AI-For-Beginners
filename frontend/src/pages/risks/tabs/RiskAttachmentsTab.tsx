@@ -1,6 +1,7 @@
 import { InboxOutlined } from '@ant-design/icons';
 import { App, List, Typography, Upload } from 'antd';
 import type { UploadProps } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { attachmentsApi } from '../../../api/endpoints';
 import type { Attachment, RiskDetail } from '../../../types';
 import { downloadViaApi } from '../../../utils/download';
@@ -18,6 +19,7 @@ function formatSize(bytes: number) {
 }
 
 export function RiskAttachmentsTab({ risk, onUpdated, canEdit }: Props) {
+  const { t } = useTranslation();
   const { message } = App.useApp();
 
   const uploadProps: UploadProps = {
@@ -26,11 +28,11 @@ export function RiskAttachmentsTab({ risk, onUpdated, canEdit }: Props) {
     customRequest: async ({ file, onSuccess, onError }) => {
       try {
         await attachmentsApi.upload(file as File, 'RISK', risk.id, risk.id);
-        message.success('File uploaded');
+        message.success(t('riskAttachments.uploaded'));
         onSuccess?.({});
         onUpdated();
       } catch (err) {
-        message.error('Upload failed');
+        message.error(t('riskAttachments.uploadFailed'));
         onError?.(err as Error);
       }
     },
@@ -38,7 +40,7 @@ export function RiskAttachmentsTab({ risk, onUpdated, canEdit }: Props) {
 
   const handleDelete = async (id: string) => {
     await attachmentsApi.remove(id);
-    message.success('Attachment removed');
+    message.success(t('riskAttachments.removed'));
     onUpdated();
   };
 
@@ -53,28 +55,28 @@ export function RiskAttachmentsTab({ risk, onUpdated, canEdit }: Props) {
           <p className="ant-upload-drag-icon">
             <InboxOutlined />
           </p>
-          <p className="ant-upload-text">Click or drag a file to upload</p>
-          <p className="ant-upload-hint">PDF, Word, Excel, images or CSV up to 20MB</p>
+          <p className="ant-upload-text">{t('riskAttachments.dragText')}</p>
+          <p className="ant-upload-hint">{t('riskAttachments.dragHint')}</p>
         </Upload.Dragger>
       )}
       <List
         bordered
         dataSource={risk.attachments}
-        locale={{ emptyText: 'No attachments yet' }}
+        locale={{ emptyText: t('riskAttachments.noAttachmentsYet') }}
         renderItem={(attachment) => (
           <List.Item
             actions={[
               <a key="download" onClick={() => handleDownload(attachment)}>
-                Download
+                {t('riskAttachments.download')}
               </a>,
-              ...(canEdit ? [<a key="delete" onClick={() => handleDelete(attachment.id)}>Delete</a>] : []),
+              ...(canEdit ? [<a key="delete" onClick={() => handleDelete(attachment.id)}>{t('riskAttachments.delete')}</a>] : []),
             ]}
           >
             <List.Item.Meta
               title={attachment.fileName}
               description={
                 <Typography.Text type="secondary">
-                  {formatSize(attachment.size)} · uploaded by {attachment.uploadedBy?.fullName ?? 'Unknown'}
+                  {formatSize(attachment.size)} · {t('riskAttachments.uploadedByPrefix')} {attachment.uploadedBy?.fullName ?? t('common.unknown')}
                 </Typography.Text>
               }
             />

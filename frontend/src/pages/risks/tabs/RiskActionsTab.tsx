@@ -2,10 +2,11 @@ import { PlusOutlined } from '@ant-design/icons';
 import { Button, DatePicker, Form, Input, message, Modal, Popconfirm, Select, Table, Tag } from 'antd';
 import dayjs from 'dayjs';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { actionsApi } from '../../../api/endpoints';
 import { useUsersList } from '../../../hooks/useReferenceData';
 import type { Action, RiskDetail } from '../../../types';
-import { ACTION_STATUS_COLORS, ACTION_STATUS_LABELS } from '../../../utils/riskDisplay';
+import { ACTION_STATUS_COLORS, ALL_ACTION_STATUSES, actionStatusLabel } from '../../../utils/riskDisplay';
 
 interface Props {
   risk: RiskDetail;
@@ -13,14 +14,15 @@ interface Props {
   canEdit: boolean;
 }
 
-const STATUS_OPTIONS = Object.entries(ACTION_STATUS_LABELS).map(([value, label]) => ({ value, label }));
-
 export function RiskActionsTab({ risk, onUpdated, canEdit }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Action | null>(null);
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
   const { data: users } = useUsersList();
+
+  const statusOptions = ALL_ACTION_STATUSES.map((value) => ({ value, label: actionStatusLabel(value) }));
 
   const openCreate = () => {
     setEditing(null);
@@ -41,10 +43,10 @@ export function RiskActionsTab({ risk, onUpdated, canEdit }: Props) {
     try {
       if (editing) {
         await actionsApi.update(editing.id, payload);
-        message.success('Action updated');
+        message.success(t('riskActions.updated'));
       } else {
         await actionsApi.create({ ...payload, riskId: risk.id });
-        message.success('Action created');
+        message.success(t('riskActions.created'));
       }
       setOpen(false);
       onUpdated();
@@ -55,7 +57,7 @@ export function RiskActionsTab({ risk, onUpdated, canEdit }: Props) {
 
   const handleDelete = async (id: string) => {
     await actionsApi.remove(id);
-    message.success('Action removed');
+    message.success(t('riskActions.removed'));
     onUpdated();
   };
 
@@ -63,39 +65,39 @@ export function RiskActionsTab({ risk, onUpdated, canEdit }: Props) {
     <div>
       {canEdit && (
         <Button icon={<PlusOutlined />} style={{ marginBottom: 16 }} onClick={openCreate}>
-          Add Action
+          {t('riskActions.addButton')}
         </Button>
       )}
       <Table
         rowKey="id"
         dataSource={risk.actions}
         pagination={false}
-        locale={{ emptyText: 'No action plans yet' }}
+        locale={{ emptyText: t('riskActions.noActionsYet') }}
         columns={[
-          { title: 'Title', dataIndex: 'title' },
-          { title: 'Owner', dataIndex: ['owner', 'fullName'], width: 150 },
+          { title: t('riskActions.columns.title'), dataIndex: 'title' },
+          { title: t('riskActions.columns.owner'), dataIndex: ['owner', 'fullName'], width: 150 },
           {
-            title: 'Deadline',
+            title: t('riskActions.columns.deadline'),
             dataIndex: 'deadline',
             width: 120,
             render: (v: string | null) => (v ? dayjs(v).format('YYYY-MM-DD') : '—'),
           },
           {
-            title: 'Status',
+            title: t('riskActions.columns.status'),
             dataIndex: 'status',
             width: 130,
-            render: (v: Action['status']) => <Tag color={ACTION_STATUS_COLORS[v]}>{ACTION_STATUS_LABELS[v]}</Tag>,
+            render: (v: Action['status']) => <Tag color={ACTION_STATUS_COLORS[v]}>{actionStatusLabel(v)}</Tag>,
           },
           ...(canEdit
             ? [
                 {
-                  title: 'Actions',
+                  title: t('riskActions.columns.actions'),
                   width: 140,
                   render: (_: unknown, record: Action) => (
                     <>
-                      <a onClick={() => openEdit(record)}>Edit</a>{' '}
-                      <Popconfirm title="Remove this action?" onConfirm={() => handleDelete(record.id)}>
-                        <a>Delete</a>
+                      <a onClick={() => openEdit(record)}>{t('riskActions.editLink')}</a>{' '}
+                      <Popconfirm title={t('riskActions.deleteConfirm')} onConfirm={() => handleDelete(record.id)}>
+                        <a>{t('riskActions.deleteLink')}</a>
                       </Popconfirm>
                     </>
                   ),
@@ -106,20 +108,20 @@ export function RiskActionsTab({ risk, onUpdated, canEdit }: Props) {
       />
 
       <Modal
-        title={editing ? 'Edit Action' : 'Add Action'}
+        title={editing ? t('riskActions.modalTitleEdit') : t('riskActions.modalTitleAdd')}
         open={open}
         onCancel={() => setOpen(false)}
         onOk={handleSave}
         confirmLoading={saving}
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="title" label="Title" rules={[{ required: true }]}>
+          <Form.Item name="title" label={t('riskActions.titleLabel')} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="description" label="Description">
+          <Form.Item name="description" label={t('riskActions.descriptionLabel')}>
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item name="ownerId" label="Owner">
+          <Form.Item name="ownerId" label={t('riskActions.ownerLabel')}>
             <Select
               allowClear
               showSearch
@@ -127,19 +129,19 @@ export function RiskActionsTab({ risk, onUpdated, canEdit }: Props) {
               options={users?.items.map((u) => ({ value: u.id, label: `${u.fullName} (${u.email})` }))}
             />
           </Form.Item>
-          <Form.Item name="deadline" label="Deadline">
+          <Form.Item name="deadline" label={t('riskActions.deadlineLabel')}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item name="status" label="Status">
-            <Select options={STATUS_OPTIONS} />
+          <Form.Item name="status" label={t('riskActions.statusLabel')}>
+            <Select options={statusOptions} />
           </Form.Item>
-          <Form.Item name="evidence" label="Evidence">
+          <Form.Item name="evidence" label={t('riskActions.evidenceLabel')}>
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item name="result" label="Result">
+          <Form.Item name="result" label={t('riskActions.resultLabel')}>
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item name="residualRiskImpact" label="Residual Risk Impact">
+          <Form.Item name="residualRiskImpact" label={t('riskActions.residualImpactLabel')}>
             <Input />
           </Form.Item>
         </Form>

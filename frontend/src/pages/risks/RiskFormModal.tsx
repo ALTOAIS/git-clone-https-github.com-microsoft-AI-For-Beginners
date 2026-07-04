@@ -1,5 +1,6 @@
 import { Form, Input, Modal, Select } from 'antd';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { risksApi } from '../../api/endpoints';
 import { useCategories, useCompanies, useDepartments, useUsersList } from '../../hooks/useReferenceData';
 
@@ -10,6 +11,7 @@ interface RiskFormModalProps {
 }
 
 export function RiskFormModal({ open, onClose, onCreated }: RiskFormModalProps) {
+  const { t } = useTranslation();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const companyId = Form.useWatch('companyId', form);
@@ -37,48 +39,48 @@ export function RiskFormModal({ open, onClose, onCreated }: RiskFormModalProps) 
 
   return (
     <Modal
-      title="Register New Risk"
+      title={t('riskForm.modalTitle')}
       open={open}
       onCancel={onClose}
       onOk={handleOk}
       confirmLoading={submitting}
-      okText="Create Risk"
+      okText={t('riskForm.createButton')}
       destroyOnHidden
     >
       <Form form={form} layout="vertical">
-        <Form.Item name="title" label="Title" rules={[{ required: true, message: 'Title is required' }]}>
-          <Input placeholder="e.g. Bribery risk in vendor selection" />
+        <Form.Item name="title" label={t('riskForm.titleLabel')} rules={[{ required: true, message: t('riskForm.titleRequired') }]}>
+          <Input placeholder={t('riskForm.titlePlaceholder')} />
         </Form.Item>
-        <Form.Item name="description" label="Description">
+        <Form.Item name="description" label={t('riskForm.descriptionLabel')}>
           <Input.TextArea rows={3} />
         </Form.Item>
-        <Form.Item name="categoryId" label="Category">
+        <Form.Item name="categoryId" label={t('riskForm.categoryLabel')}>
           <Select
             allowClear
-            placeholder="Select risk category"
+            placeholder={t('riskForm.categoryPlaceholder')}
             options={categories?.map((c) => ({ value: c.id, label: c.name }))}
           />
         </Form.Item>
-        <Form.Item name="companyId" label="Company">
+        <Form.Item name="companyId" label={t('riskForm.companyLabel')}>
           <Select
             allowClear
-            placeholder="Select company"
+            placeholder={t('riskForm.companyPlaceholder')}
             options={companies?.map((c) => ({ value: c.id, label: c.name }))}
             onChange={() => form.setFieldValue('departmentId', undefined)}
           />
         </Form.Item>
-        <Form.Item name="departmentId" label="Department">
+        <Form.Item name="departmentId" label={t('riskForm.departmentLabel')}>
           <Select
             allowClear
-            placeholder="Select department"
+            placeholder={t('riskForm.departmentPlaceholder')}
             options={departments?.map((d) => ({ value: d.id, label: d.name }))}
           />
         </Form.Item>
-        <Form.Item name="ownerId" label="Risk Owner">
+        <Form.Item name="ownerId" label={t('riskForm.ownerLabel')}>
           <Select
             allowClear
             showSearch
-            placeholder="Select owner"
+            placeholder={t('riskForm.ownerPlaceholder')}
             optionFilterProp="label"
             options={users?.items.map((u) => ({ value: u.id, label: `${u.fullName} (${u.email})` }))}
           />

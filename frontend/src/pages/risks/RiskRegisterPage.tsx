@@ -2,14 +2,16 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Input, Select, Space, Table, Tag, Typography } from 'antd';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { risksApi } from '../../api/endpoints';
 import { useCategories, useCompanies, useDepartments } from '../../hooks/useReferenceData';
 import type { RiskListItem, RiskStatus } from '../../types';
-import { RISK_STATUS_COLORS, RISK_STATUS_LABELS, SCORE_LEVEL_COLORS, scoreLevel } from '../../utils/riskDisplay';
+import { ALL_RISK_STATUSES, RISK_STATUS_COLORS, riskStatusLabel, SCORE_LEVEL_COLORS, scoreLevel } from '../../utils/riskDisplay';
 import { RiskFormModal } from './RiskFormModal';
 
 export function RiskRegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -35,54 +37,54 @@ export function RiskRegisterPage() {
 
   const columns = useMemo(
     () => [
-      { title: 'Code', dataIndex: 'code', width: 130 },
+      { title: t('riskRegister.columns.code'), dataIndex: 'code', width: 130 },
       {
-        title: 'Title',
+        title: t('riskRegister.columns.title'),
         dataIndex: 'title',
         render: (title: string, record: RiskListItem) => (
           <a onClick={() => navigate(`/risks/${record.id}`)}>{title}</a>
         ),
       },
       {
-        title: 'Status',
+        title: t('riskRegister.columns.status'),
         dataIndex: 'status',
         width: 160,
-        render: (value: RiskStatus) => <Tag color={RISK_STATUS_COLORS[value]}>{RISK_STATUS_LABELS[value]}</Tag>,
+        render: (value: RiskStatus) => <Tag color={RISK_STATUS_COLORS[value]}>{riskStatusLabel(value)}</Tag>,
       },
-      { title: 'Category', dataIndex: ['category', 'name'], width: 160 },
-      { title: 'Company', dataIndex: ['company', 'name'], width: 150 },
-      { title: 'Department', dataIndex: ['department', 'name'], width: 150 },
-      { title: 'Owner', dataIndex: ['owner', 'fullName'], width: 150 },
+      { title: t('riskRegister.columns.category'), dataIndex: ['category', 'name'], width: 160 },
+      { title: t('riskRegister.columns.company'), dataIndex: ['company', 'name'], width: 150 },
+      { title: t('riskRegister.columns.department'), dataIndex: ['department', 'name'], width: 150 },
+      { title: t('riskRegister.columns.owner'), dataIndex: ['owner', 'fullName'], width: 150 },
       {
-        title: 'Inherent',
+        title: t('riskRegister.columns.inherent'),
         dataIndex: 'inherentScore',
         width: 100,
         render: (value: number | null) => renderScore(value),
       },
       {
-        title: 'Residual',
+        title: t('riskRegister.columns.residual'),
         dataIndex: 'residualScore',
         width: 100,
         render: (value: number | null) => renderScore(value),
       },
     ],
-    [navigate],
+    [navigate, t],
   );
 
   return (
     <div>
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
         <Typography.Title level={3} style={{ margin: 0 }}>
-          Risk Register
+          {t('riskRegister.title')}
         </Typography.Title>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-          Register Risk
+          {t('riskRegister.registerButton')}
         </Button>
       </Space>
 
       <Space style={{ marginBottom: 16 }} wrap>
         <Input.Search
-          placeholder="Search title, code, description"
+          placeholder={t('riskRegister.searchPlaceholder')}
           allowClear
           style={{ width: 260 }}
           onSearch={(v) => {
@@ -92,18 +94,18 @@ export function RiskRegisterPage() {
         />
         <Select
           allowClear
-          placeholder="Status"
+          placeholder={t('riskRegister.statusPlaceholder')}
           style={{ width: 180 }}
           value={status}
           onChange={(v) => {
             setStatus(v);
             setPage(1);
           }}
-          options={Object.entries(RISK_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
+          options={ALL_RISK_STATUSES.map((value) => ({ value, label: riskStatusLabel(value) }))}
         />
         <Select
           allowClear
-          placeholder="Category"
+          placeholder={t('riskRegister.categoryPlaceholder')}
           style={{ width: 200 }}
           value={categoryId}
           onChange={(v) => {
@@ -114,7 +116,7 @@ export function RiskRegisterPage() {
         />
         <Select
           allowClear
-          placeholder="Company"
+          placeholder={t('riskRegister.companyPlaceholder')}
           style={{ width: 200 }}
           value={companyId}
           onChange={(v) => {
@@ -126,7 +128,7 @@ export function RiskRegisterPage() {
         />
         <Select
           allowClear
-          placeholder="Department"
+          placeholder={t('riskRegister.departmentPlaceholder')}
           style={{ width: 200 }}
           value={departmentId}
           onChange={(v) => {

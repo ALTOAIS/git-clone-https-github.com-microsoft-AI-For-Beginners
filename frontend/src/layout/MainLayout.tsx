@@ -1,16 +1,25 @@
-import { BellOutlined, LogoutOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
-import { Avatar, Badge, Dropdown, Layout, Menu, Popover, Space, Typography, List, Empty } from 'antd';
+import { BellOutlined, GlobalOutlined, LogoutOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Badge, Dropdown, Layout, Menu, Popover, Select, Space, Typography, List, Empty } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { notificationsApi } from '../api/endpoints';
 import { useAuthStore } from '../auth/authStore';
-import { ROLE_LABELS } from '../auth/roles';
+import { roleLabel } from '../auth/roles';
+import { setLanguage, SUPPORTED_LANGUAGES, type SupportedLanguage } from '../i18n';
 import type { AppNotification } from '../types';
 import { NAV_ITEMS } from './navConfig';
 
 const { Header, Sider, Content } = Layout;
 
+const LANGUAGE_OPTIONS: Record<SupportedLanguage, string> = {
+  ru: 'Русский',
+  kk: 'Қазақша',
+  en: 'English',
+};
+
 export function MainLayout() {
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,7 +63,7 @@ export function MainLayout() {
   const notificationContent = (
     <div style={{ width: 340, maxHeight: 400, overflowY: 'auto' }}>
       {notifications.length === 0 ? (
-        <Empty description="No notifications" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty description={t('layout.noNotifications')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       ) : (
         <List
           size="small"
@@ -102,7 +111,7 @@ export function MainLayout() {
           items={visibleNavItems.map((item) => ({
             key: item.key,
             icon: <item.icon />,
-            label: <Link to={item.path}>{item.label}</Link>,
+            label: <Link to={item.path}>{t(item.labelKey)}</Link>,
           }))}
         />
       </Sider>
@@ -118,7 +127,15 @@ export function MainLayout() {
           }}
         >
           <Space size="large">
-            <Popover content={notificationContent} title="Notifications" trigger="click" placement="bottomRight">
+            <Select
+              value={i18n.language as SupportedLanguage}
+              onChange={(value: SupportedLanguage) => setLanguage(value)}
+              variant="borderless"
+              suffixIcon={<GlobalOutlined />}
+              style={{ width: 130 }}
+              options={SUPPORTED_LANGUAGES.map((code) => ({ value: code, label: LANGUAGE_OPTIONS[code] }))}
+            />
+            <Popover content={notificationContent} title={t('layout.notifications')} trigger="click" placement="bottomRight">
               <Badge count={unreadCount} size="small">
                 <BellOutlined style={{ fontSize: 18, cursor: 'pointer' }} />
               </Badge>
@@ -126,7 +143,7 @@ export function MainLayout() {
             <Dropdown
               menu={{
                 items: [
-                  { key: 'logout', icon: <LogoutOutlined />, label: 'Sign out', onClick: handleLogout },
+                  { key: 'logout', icon: <LogoutOutlined />, label: t('layout.signOut'), onClick: handleLogout },
                 ],
               }}
               placement="bottomRight"
@@ -136,7 +153,7 @@ export function MainLayout() {
                 <div style={{ lineHeight: 1.2 }}>
                   <div>{user?.fullName}</div>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {user ? ROLE_LABELS[user.role] : ''}
+                    {user ? roleLabel(user.role) : ''}
                   </Typography.Text>
                 </div>
               </Space>

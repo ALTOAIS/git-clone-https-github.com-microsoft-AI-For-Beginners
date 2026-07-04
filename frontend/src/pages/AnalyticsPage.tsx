@@ -1,11 +1,21 @@
 import { Column, Line, Pie } from '@ant-design/charts';
 import { useQuery } from '@tanstack/react-query';
 import { Card, Col, Row, Table, Tabs, Tag, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { analyticsApi } from '../api/endpoints';
 import { RiskHeatMap } from '../components/RiskHeatMap';
-import { CONTROL_EFFECTIVENESS_COLORS, CONTROL_EFFECTIVENESS_LABELS, RISK_STATUS_COLORS, RISK_STATUS_LABELS, SCORE_LEVEL_COLORS, scoreLevel } from '../utils/riskDisplay';
+import type { RiskStatus } from '../types';
+import {
+  CONTROL_EFFECTIVENESS_COLORS,
+  controlEffectivenessLabel,
+  RISK_STATUS_COLORS,
+  riskStatusLabel,
+  SCORE_LEVEL_COLORS,
+  scoreLevel,
+} from '../utils/riskDisplay';
 
 export function AnalyticsPage() {
+  const { t } = useTranslation();
   const heatmapInherent = useQuery({
     queryKey: ['analytics-heatmap', 'inherent'],
     queryFn: () => analyticsApi.heatmap('inherent').then((r) => r.data as { grid: number[][] }),
@@ -47,35 +57,35 @@ export function AnalyticsPage() {
         .then((r) => r.data as { averageInherent: number; averageResidual: number; reductionPercent: number; count: number }),
   });
 
-  const trendData = (trends.data ?? []).flatMap((t) => [
-    { month: t.month, value: t.created, series: 'Created' },
-    { month: t.month, value: t.closed, series: 'Closed' },
+  const trendData = (trends.data ?? []).flatMap((tr) => [
+    { month: tr.month, value: tr.created, series: t('dashboard.seriesCreated') },
+    { month: tr.month, value: tr.closed, series: t('dashboard.seriesClosed') },
   ]);
 
   const controlData = Object.entries(controlEffectiveness.data ?? {}).map(([key, value]) => ({
-    type: CONTROL_EFFECTIVENESS_LABELS[key as keyof typeof CONTROL_EFFECTIVENESS_LABELS],
+    type: controlEffectivenessLabel(key as any),
     value,
     color: CONTROL_EFFECTIVENESS_COLORS[key as keyof typeof CONTROL_EFFECTIVENESS_COLORS],
   }));
 
   return (
     <div>
-      <Typography.Title level={3}>Analytics</Typography.Title>
+      <Typography.Title level={3}>{t('analytics.title')}</Typography.Title>
 
       <Tabs
         items={[
           {
             key: 'heatmaps',
-            label: 'Heat Maps',
+            label: t('analytics.tabs.heatmaps'),
             children: (
               <Row gutter={16}>
                 <Col xs={24} lg={12}>
-                  <Card title="Inherent Risk Heat Map" loading={heatmapInherent.isLoading} bodyStyle={{ overflowX: 'auto' }}>
+                  <Card title={t('analytics.inherentHeatMap')} loading={heatmapInherent.isLoading} bodyStyle={{ overflowX: 'auto' }}>
                     <RiskHeatMap grid={heatmapInherent.data?.grid ?? []} />
                   </Card>
                 </Col>
                 <Col xs={24} lg={12}>
-                  <Card title="Residual Risk Heat Map" loading={heatmapResidual.isLoading} bodyStyle={{ overflowX: 'auto' }}>
+                  <Card title={t('analytics.residualHeatMap')} loading={heatmapResidual.isLoading} bodyStyle={{ overflowX: 'auto' }}>
                     <RiskHeatMap grid={heatmapResidual.data?.grid ?? []} />
                   </Card>
                 </Col>
@@ -84,7 +94,7 @@ export function AnalyticsPage() {
           },
           {
             key: 'trends',
-            label: 'Risk Trends',
+            label: t('analytics.tabs.trends'),
             children: (
               <Card loading={trends.isLoading}>
                 <Line
@@ -101,7 +111,7 @@ export function AnalyticsPage() {
           },
           {
             key: 'top-risks',
-            label: 'Top Risks',
+            label: t('analytics.tabs.topRisks'),
             children: (
               <Table
                 rowKey="id"
@@ -109,18 +119,16 @@ export function AnalyticsPage() {
                 dataSource={topRisks.data}
                 pagination={false}
                 columns={[
-                  { title: 'Code', dataIndex: 'code', width: 130 },
-                  { title: 'Title', dataIndex: 'title' },
+                  { title: t('analytics.topRisksColumns.code'), dataIndex: 'code', width: 130 },
+                  { title: t('analytics.topRisksColumns.title'), dataIndex: 'title' },
                   {
-                    title: 'Status',
+                    title: t('analytics.topRisksColumns.status'),
                     dataIndex: 'status',
                     width: 150,
-                    render: (v: keyof typeof RISK_STATUS_LABELS) => (
-                      <Tag color={RISK_STATUS_COLORS[v]}>{RISK_STATUS_LABELS[v]}</Tag>
-                    ),
+                    render: (v: RiskStatus) => <Tag color={RISK_STATUS_COLORS[v]}>{riskStatusLabel(v)}</Tag>,
                   },
                   {
-                    title: 'Inherent Score',
+                    title: t('analytics.topRisksColumns.inherentScore'),
                     dataIndex: 'inherentScore',
                     width: 140,
                     render: (v: number) => {
@@ -128,19 +136,19 @@ export function AnalyticsPage() {
                       return <Tag color={level ? SCORE_LEVEL_COLORS[level] : undefined} style={{ color: '#fff' }}>{v}</Tag>;
                     },
                   },
-                  { title: 'Company', dataIndex: ['company', 'name'], width: 160 },
-                  { title: 'Department', dataIndex: ['department', 'name'], width: 160 },
+                  { title: t('analytics.topRisksColumns.company'), dataIndex: ['company', 'name'], width: 160 },
+                  { title: t('analytics.topRisksColumns.department'), dataIndex: ['department', 'name'], width: 160 },
                 ]}
               />
             ),
           },
           {
             key: 'top-lists',
-            label: 'Top Companies / Departments / Sources',
+            label: t('analytics.tabs.topLists'),
             children: (
               <Row gutter={16}>
                 <Col xs={24} lg={8}>
-                  <Card title="Top Companies" loading={topCompanies.isLoading}>
+                  <Card title={t('analytics.topCompanies')} loading={topCompanies.isLoading}>
                     <Column
                       data={topCompanies.data ?? []}
                       xField="name"
@@ -151,7 +159,7 @@ export function AnalyticsPage() {
                   </Card>
                 </Col>
                 <Col xs={24} lg={8}>
-                  <Card title="Top Departments" loading={topDepartments.isLoading}>
+                  <Card title={t('analytics.topDepartments')} loading={topDepartments.isLoading}>
                     <Column
                       data={topDepartments.data ?? []}
                       xField="name"
@@ -162,7 +170,7 @@ export function AnalyticsPage() {
                   </Card>
                 </Col>
                 <Col xs={24} lg={8}>
-                  <Card title="Top Sources" loading={topSources.isLoading}>
+                  <Card title={t('analytics.topSources')} loading={topSources.isLoading}>
                     <Column
                       data={topSources.data ?? []}
                       xField="title"
@@ -177,22 +185,22 @@ export function AnalyticsPage() {
           },
           {
             key: 'controls',
-            label: 'Control Effectiveness',
+            label: t('analytics.tabs.controls'),
             children: (
               <Row gutter={16}>
                 <Col xs={24} lg={12}>
-                  <Card title="Control Effectiveness Distribution" loading={controlEffectiveness.isLoading}>
+                  <Card title={t('analytics.controlEffectivenessDist')} loading={controlEffectiveness.isLoading}>
                     <Pie data={controlData} angleField="value" colorField="type" height={280} label={{ text: 'value' }} />
                   </Card>
                 </Col>
                 <Col xs={24} lg={12}>
-                  <Card title="Residual Risk Reduction" loading={residualRisk.isLoading}>
+                  <Card title={t('analytics.residualReductionTitle')} loading={residualRisk.isLoading}>
                     {residualRisk.data && (
                       <div style={{ fontSize: 16, lineHeight: 2 }}>
-                        <div>Average inherent score: <strong>{residualRisk.data.averageInherent}</strong></div>
-                        <div>Average residual score: <strong>{residualRisk.data.averageResidual}</strong></div>
-                        <div>Reduction: <strong style={{ color: '#52c41a' }}>{residualRisk.data.reductionPercent}%</strong></div>
-                        <div>Risks assessed: <strong>{residualRisk.data.count}</strong></div>
+                        <div>{t('analytics.avgInherentScore')}: <strong>{residualRisk.data.averageInherent}</strong></div>
+                        <div>{t('analytics.avgResidualScore')}: <strong>{residualRisk.data.averageResidual}</strong></div>
+                        <div>{t('analytics.reductionLabel')}: <strong style={{ color: '#52c41a' }}>{residualRisk.data.reductionPercent}%</strong></div>
+                        <div>{t('analytics.risksAssessed')}: <strong>{residualRisk.data.count}</strong></div>
                       </div>
                     )}
                   </Card>

@@ -1,23 +1,28 @@
 import { DownloadOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { App, Button, Card, Col, Row, Space, Typography } from 'antd';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { reportsApi } from '../api/endpoints';
 import { downloadViaApi } from '../utils/download';
 
-const TABLE_REPORTS = [
-  { kind: 'risk-register', title: 'Risk Register', description: 'Full export of all risks with scores and ownership.' },
-  { kind: 'action-plan', title: 'Action Plan Report', description: 'All action plans with owners, deadlines and status.' },
-  { kind: 'critical-risks', title: 'Critical Risks', description: 'Active risks with an inherent score of 15 or higher.' },
-  { kind: 'overdue-actions', title: 'Overdue Actions', description: 'Action plans past their deadline and not yet completed.' },
-] as const;
+const TABLE_REPORT_KINDS = ['risk-register', 'action-plan', 'critical-risks', 'overdue-actions'] as const;
+const PDF_REPORT_KINDS = ['board', 'audit-committee', 'compliance'] as const;
 
-const PDF_REPORTS = [
-  { kind: 'board', title: 'Board Report', description: 'Executive summary for the Board of Directors.' },
-  { kind: 'audit-committee', title: 'Audit Committee Report', description: 'Control effectiveness and critical risks for Internal Audit.' },
-  { kind: 'compliance', title: 'Compliance Report', description: 'Risk trend, top sources and categories for the compliance function.' },
-] as const;
+const TABLE_REPORT_I18N_KEY: Record<(typeof TABLE_REPORT_KINDS)[number], string> = {
+  'risk-register': 'riskRegister',
+  'action-plan': 'actionPlan',
+  'critical-risks': 'criticalRisks',
+  'overdue-actions': 'overdueActions',
+};
+
+const PDF_REPORT_I18N_KEY: Record<(typeof PDF_REPORT_KINDS)[number], string> = {
+  board: 'board',
+  'audit-committee': 'auditCommittee',
+  compliance: 'compliance',
+};
 
 export function ReportsPage() {
+  const { t } = useTranslation();
   const { message } = App.useApp();
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
 
@@ -27,7 +32,7 @@ export function ReportsPage() {
     try {
       await downloadViaApi(reportsApi.exportPath(kind, format), `${kind}.${format}`);
     } catch {
-      message.error('Failed to generate report');
+      message.error(t('reports.downloadFailed'));
     } finally {
       setLoadingKey(null);
     }
@@ -38,7 +43,7 @@ export function ReportsPage() {
     try {
       await downloadViaApi(reportsApi.pdfPath(kind), `${kind}-report.pdf`);
     } catch {
-      message.error('Failed to generate report');
+      message.error(t('reports.downloadFailed'));
     } finally {
       setLoadingKey(null);
     }
@@ -46,33 +51,31 @@ export function ReportsPage() {
 
   return (
     <div>
-      <Typography.Title level={3}>Reports</Typography.Title>
-      <Typography.Paragraph type="secondary">
-        Generate management and regulatory reports directly from live Risk Register data.
-      </Typography.Paragraph>
+      <Typography.Title level={3}>{t('reports.title')}</Typography.Title>
+      <Typography.Paragraph type="secondary">{t('reports.description')}</Typography.Paragraph>
 
-      <Typography.Title level={5}>Data Exports</Typography.Title>
+      <Typography.Title level={5}>{t('reports.dataExportsHeading')}</Typography.Title>
       <Row gutter={16}>
-        {TABLE_REPORTS.map((report) => (
-          <Col xs={24} md={12} lg={6} key={report.kind} style={{ marginBottom: 16 }}>
-            <Card title={report.title} styles={{ body: { minHeight: 90 } }}>
+        {TABLE_REPORT_KINDS.map((kind) => (
+          <Col xs={24} md={12} lg={6} key={kind} style={{ marginBottom: 16 }}>
+            <Card title={t(`reports.${TABLE_REPORT_I18N_KEY[kind]}.title`)} styles={{ body: { minHeight: 90 } }}>
               <Typography.Paragraph type="secondary" style={{ minHeight: 44 }}>
-                {report.description}
+                {t(`reports.${TABLE_REPORT_I18N_KEY[kind]}.description`)}
               </Typography.Paragraph>
               <Space>
                 <Button
                   icon={<DownloadOutlined />}
-                  loading={loadingKey === `${report.kind}-csv`}
-                  onClick={() => handleTableDownload(report.kind, 'csv')}
+                  loading={loadingKey === `${kind}-csv`}
+                  onClick={() => handleTableDownload(kind, 'csv')}
                 >
-                  CSV
+                  {t('common.csv')}
                 </Button>
                 <Button
                   icon={<DownloadOutlined />}
-                  loading={loadingKey === `${report.kind}-xlsx`}
-                  onClick={() => handleTableDownload(report.kind, 'xlsx')}
+                  loading={loadingKey === `${kind}-xlsx`}
+                  onClick={() => handleTableDownload(kind, 'xlsx')}
                 >
-                  Excel
+                  {t('common.excel')}
                 </Button>
               </Space>
             </Card>
@@ -81,22 +84,22 @@ export function ReportsPage() {
       </Row>
 
       <Typography.Title level={5} style={{ marginTop: 16 }}>
-        Narrative Reports
+        {t('reports.narrativeReportsHeading')}
       </Typography.Title>
       <Row gutter={16}>
-        {PDF_REPORTS.map((report) => (
-          <Col xs={24} md={8} key={report.kind} style={{ marginBottom: 16 }}>
-            <Card title={report.title}>
+        {PDF_REPORT_KINDS.map((kind) => (
+          <Col xs={24} md={8} key={kind} style={{ marginBottom: 16 }}>
+            <Card title={t(`reports.${PDF_REPORT_I18N_KEY[kind]}.title`)}>
               <Typography.Paragraph type="secondary" style={{ minHeight: 44 }}>
-                {report.description}
+                {t(`reports.${PDF_REPORT_I18N_KEY[kind]}.description`)}
               </Typography.Paragraph>
               <Button
                 type="primary"
                 icon={<FilePdfOutlined />}
-                loading={loadingKey === report.kind}
-                onClick={() => handlePdfDownload(report.kind)}
+                loading={loadingKey === kind}
+                onClick={() => handlePdfDownload(kind)}
               >
-                Download PDF
+                {t('common.downloadPdf')}
               </Button>
             </Card>
           </Col>

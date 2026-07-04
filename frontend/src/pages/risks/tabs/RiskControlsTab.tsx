@@ -1,9 +1,10 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Form, Input, message, Modal, Popconfirm, Select, Table, Tag } from 'antd';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { controlsApi } from '../../../api/endpoints';
 import type { Control, RiskDetail } from '../../../types';
-import { CONTROL_EFFECTIVENESS_COLORS, CONTROL_EFFECTIVENESS_LABELS } from '../../../utils/riskDisplay';
+import { ALL_CONTROL_EFFECTIVENESS, CONTROL_EFFECTIVENESS_COLORS, controlEffectivenessLabel } from '../../../utils/riskDisplay';
 
 interface Props {
   risk: RiskDetail;
@@ -11,14 +12,17 @@ interface Props {
   canEdit: boolean;
 }
 
-const TYPE_OPTIONS = ['PREVENTIVE', 'DETECTIVE', 'CORRECTIVE'].map((v) => ({ value: v, label: v }));
-const EFFECTIVENESS_OPTIONS = Object.entries(CONTROL_EFFECTIVENESS_LABELS).map(([value, label]) => ({ value, label }));
+const TYPE_VALUES = ['PREVENTIVE', 'DETECTIVE', 'CORRECTIVE'] as const;
 
 export function RiskControlsTab({ risk, onUpdated, canEdit }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Control | null>(null);
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+
+  const typeOptions = TYPE_VALUES.map((v) => ({ value: v, label: t(`controlType.${v}`) }));
+  const effectivenessOptions = ALL_CONTROL_EFFECTIVENESS.map((value) => ({ value, label: controlEffectivenessLabel(value) }));
 
   const openCreate = () => {
     setEditing(null);
@@ -38,10 +42,10 @@ export function RiskControlsTab({ risk, onUpdated, canEdit }: Props) {
     try {
       if (editing) {
         await controlsApi.update(editing.id, values);
-        message.success('Control updated');
+        message.success(t('riskControls.updated'));
       } else {
         await controlsApi.create({ ...values, riskId: risk.id });
-        message.success('Control added');
+        message.success(t('riskControls.added'));
       }
       setOpen(false);
       onUpdated();
@@ -52,7 +56,7 @@ export function RiskControlsTab({ risk, onUpdated, canEdit }: Props) {
 
   const handleDelete = async (id: string) => {
     await controlsApi.remove(id);
-    message.success('Control removed');
+    message.success(t('riskControls.removed'));
     onUpdated();
   };
 
@@ -60,36 +64,36 @@ export function RiskControlsTab({ risk, onUpdated, canEdit }: Props) {
     <div>
       {canEdit && (
         <Button icon={<PlusOutlined />} style={{ marginBottom: 16 }} onClick={openCreate}>
-          Add Control
+          {t('riskControls.addButton')}
         </Button>
       )}
       <Table
         rowKey="id"
         dataSource={risk.controls}
         pagination={false}
-        locale={{ emptyText: 'No controls defined for this risk' }}
+        locale={{ emptyText: t('riskControls.noControlsYet') }}
         columns={[
-          { title: 'Type', dataIndex: 'type', width: 120 },
-          { title: 'Title', dataIndex: 'title' },
+          { title: t('riskControls.columns.type'), dataIndex: 'type', width: 120, render: (v: Control['type']) => t(`controlType.${v}`) },
+          { title: t('riskControls.columns.title'), dataIndex: 'title' },
           {
-            title: 'Effectiveness',
+            title: t('riskControls.columns.effectiveness'),
             dataIndex: 'effectiveness',
             width: 160,
             render: (v: Control['effectiveness']) => (
-              <Tag color={CONTROL_EFFECTIVENESS_COLORS[v]}>{CONTROL_EFFECTIVENESS_LABELS[v]}</Tag>
+              <Tag color={CONTROL_EFFECTIVENESS_COLORS[v]}>{controlEffectivenessLabel(v)}</Tag>
             ),
           },
-          { title: 'Owner', dataIndex: ['owner', 'fullName'], width: 150 },
+          { title: t('riskControls.columns.owner'), dataIndex: ['owner', 'fullName'], width: 150 },
           ...(canEdit
             ? [
                 {
-                  title: 'Actions',
+                  title: t('riskControls.columns.actions'),
                   width: 140,
                   render: (_: unknown, record: Control) => (
                     <>
-                      <a onClick={() => openEdit(record)}>Edit</a>{' '}
-                      <Popconfirm title="Remove this control?" onConfirm={() => handleDelete(record.id)}>
-                        <a>Delete</a>
+                      <a onClick={() => openEdit(record)}>{t('riskControls.editLink')}</a>{' '}
+                      <Popconfirm title={t('riskControls.deleteConfirm')} onConfirm={() => handleDelete(record.id)}>
+                        <a>{t('riskControls.deleteLink')}</a>
                       </Popconfirm>
                     </>
                   ),
@@ -100,24 +104,24 @@ export function RiskControlsTab({ risk, onUpdated, canEdit }: Props) {
       />
 
       <Modal
-        title={editing ? 'Edit Control' : 'Add Control'}
+        title={editing ? t('riskControls.modalTitleEdit') : t('riskControls.modalTitleAdd')}
         open={open}
         onCancel={() => setOpen(false)}
         onOk={handleSave}
         confirmLoading={saving}
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="type" label="Type" rules={[{ required: true }]}>
-            <Select options={TYPE_OPTIONS} />
+          <Form.Item name="type" label={t('riskControls.typeLabel')} rules={[{ required: true }]}>
+            <Select options={typeOptions} />
           </Form.Item>
-          <Form.Item name="title" label="Title" rules={[{ required: true }]}>
+          <Form.Item name="title" label={t('riskControls.titleLabel')} rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="description" label="Description">
+          <Form.Item name="description" label={t('riskControls.descriptionLabel')}>
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item name="effectiveness" label="Effectiveness">
-            <Select options={EFFECTIVENESS_OPTIONS} />
+          <Form.Item name="effectiveness" label={t('riskControls.effectivenessLabel')}>
+            <Select options={effectivenessOptions} />
           </Form.Item>
         </Form>
       </Modal>

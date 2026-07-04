@@ -1,4 +1,5 @@
 import { Tooltip, Typography } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 interface RiskHeatMapProps {
   grid: number[][]; // grid[likelihood-1][impact-1] = count
@@ -13,6 +14,7 @@ function cellColor(likelihood: number, impact: number): string {
 }
 
 export function RiskHeatMap({ grid }: RiskHeatMapProps) {
+  const { t } = useTranslation();
   const impacts = [1, 2, 3, 4, 5];
   const likelihoods = [5, 4, 3, 2, 1]; // render highest likelihood at top
 
@@ -29,7 +31,7 @@ export function RiskHeatMap({ grid }: RiskHeatMapProps) {
             flex: 1,
           }}
         >
-          Likelihood
+          {t('heatMap.likelihoodAxis')}
         </Typography.Text>
       </div>
       <div>
@@ -42,7 +44,9 @@ export function RiskHeatMap({ grid }: RiskHeatMapProps) {
                   const count = grid[l - 1]?.[i - 1] ?? 0;
                   return (
                     <td key={i}>
-                      <Tooltip title={`Likelihood ${l} × Impact ${i} = ${l * i} — ${count} risk(s)`}>
+                      <Tooltip
+                        title={t('heatMap.tooltip', { likelihood: l, impact: i, score: l * i, count })}
+                      >
                         <div
                           style={{
                             width: 56,
@@ -76,7 +80,7 @@ export function RiskHeatMap({ grid }: RiskHeatMapProps) {
           </tbody>
         </table>
         <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', textAlign: 'center' }}>
-          Impact
+          {t('heatMap.impactAxis')}
         </Typography.Text>
       </div>
     </div>

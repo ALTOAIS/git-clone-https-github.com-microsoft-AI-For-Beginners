@@ -1,10 +1,12 @@
 import { App, Button, Card, Descriptions, Form, Input, Typography } from 'antd';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '../../api/endpoints';
 import { useAuthStore } from '../../auth/authStore';
-import { ROLE_LABELS } from '../../auth/roles';
+import { roleLabel } from '../../auth/roles';
 
 export function SettingsTab() {
+  const { t } = useTranslation();
   const { message } = App.useApp();
   const user = useAuthStore((s) => s.user);
   const [form] = Form.useForm();
@@ -15,10 +17,10 @@ export function SettingsTab() {
     setSaving(true);
     try {
       await authApi.changePassword(values.currentPassword, values.newPassword);
-      message.success('Password changed');
+      message.success(t('settings.passwordChanged'));
       form.resetFields();
     } catch {
-      message.error('Could not change password. Check your current password.');
+      message.error(t('settings.passwordChangeFailed'));
     } finally {
       setSaving(false);
     }
@@ -26,32 +28,32 @@ export function SettingsTab() {
 
   return (
     <div>
-      <Card title="Account" style={{ marginBottom: 16 }}>
+      <Card title={t('settings.accountTitle')} style={{ marginBottom: 16 }}>
         <Descriptions column={2} size="small">
-          <Descriptions.Item label="Name">{user?.fullName}</Descriptions.Item>
-          <Descriptions.Item label="Email">{user?.email}</Descriptions.Item>
-          <Descriptions.Item label="Role">{user ? ROLE_LABELS[user.role] : ''}</Descriptions.Item>
-          <Descriptions.Item label="Title">{user?.title ?? '—'}</Descriptions.Item>
+          <Descriptions.Item label={t('settings.nameLabel')}>{user?.fullName}</Descriptions.Item>
+          <Descriptions.Item label={t('settings.emailLabel')}>{user?.email}</Descriptions.Item>
+          <Descriptions.Item label={t('settings.roleLabel')}>{user ? roleLabel(user.role) : ''}</Descriptions.Item>
+          <Descriptions.Item label={t('settings.jobTitleLabel')}>{user?.title ?? '—'}</Descriptions.Item>
         </Descriptions>
       </Card>
 
-      <Card title="Change Password" style={{ marginBottom: 16 }}>
+      <Card title={t('settings.changePasswordTitle')} style={{ marginBottom: 16 }}>
         <Form form={form} layout="vertical" style={{ maxWidth: 360 }}>
-          <Form.Item name="currentPassword" label="Current Password" rules={[{ required: true }]}>
+          <Form.Item name="currentPassword" label={t('settings.currentPasswordLabel')} rules={[{ required: true }]}>
             <Input.Password />
           </Form.Item>
-          <Form.Item name="newPassword" label="New Password" rules={[{ required: true, min: 8 }]}>
+          <Form.Item name="newPassword" label={t('settings.newPasswordLabel')} rules={[{ required: true, min: 8 }]}>
             <Input.Password />
           </Form.Item>
           <Button type="primary" onClick={handleChangePassword} loading={saving}>
-            Update Password
+            {t('settings.updateButton')}
           </Button>
         </Form>
       </Card>
 
-      <Card title="System">
+      <Card title={t('settings.systemTitle')}>
         <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          Compliance Risk Hub MVP · Session timeout enforced via JWT access token expiry with automatic refresh.
+          {t('settings.systemDescription')}
         </Typography.Paragraph>
       </Card>
     </div>

@@ -1,16 +1,9 @@
+import i18n from '../i18n';
 import type { ActionStatus, ControlEffectiveness, IncidentStatus, RiskStatus, SourceType } from '../types';
 
-export const RISK_STATUS_LABELS: Record<RiskStatus, string> = {
-  DRAFT: 'Draft',
-  NEW: 'New',
-  ASSESSMENT: 'Assessment',
-  APPROVED: 'Approved',
-  MONITORING: 'Monitoring',
-  MITIGATION: 'Mitigation',
-  RESIDUAL_ASSESSMENT: 'Residual Assessment',
-  CLOSED: 'Closed',
-  ARCHIVED: 'Archived',
-};
+export function riskStatusLabel(status: RiskStatus): string {
+  return i18n.t(`riskStatus.${status}`);
+}
 
 export const RISK_STATUS_COLORS: Record<RiskStatus, string> = {
   DRAFT: 'default',
@@ -24,12 +17,28 @@ export const RISK_STATUS_COLORS: Record<RiskStatus, string> = {
   ARCHIVED: 'default',
 };
 
+export const ALL_RISK_STATUSES: RiskStatus[] = [
+  'DRAFT',
+  'NEW',
+  'ASSESSMENT',
+  'APPROVED',
+  'MONITORING',
+  'MITIGATION',
+  'RESIDUAL_ASSESSMENT',
+  'CLOSED',
+  'ARCHIVED',
+];
+
 export function scoreLevel(score?: number | null): 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null {
   if (score === null || score === undefined) return null;
   if (score >= 15) return 'CRITICAL';
   if (score >= 9) return 'HIGH';
   if (score >= 5) return 'MEDIUM';
   return 'LOW';
+}
+
+export function scoreLevelLabel(level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'): string {
+  return i18n.t(`scoreLevel.${level}`);
 }
 
 export const SCORE_LEVEL_COLORS: Record<string, string> = {
@@ -39,30 +48,38 @@ export const SCORE_LEVEL_COLORS: Record<string, string> = {
   CRITICAL: '#f5222d',
 };
 
-export const SOURCE_TYPE_LABELS: Record<SourceType, string> = {
-  CORRUPTION_RISK_ASSESSMENT: 'Corruption Risk Assessment',
-  ANTI_CORRUPTION_MONITORING: 'Anti-Corruption Monitoring',
-  CANDIDATE_DUE_DILIGENCE: 'Candidate Due Diligence',
-  COUNTERPARTY_DUE_DILIGENCE: 'Counterparty Due Diligence',
-  INVESTIGATION: 'Investigation',
-  HOTLINE: 'Hotline',
-  CONFLICT_OF_INTEREST: 'Conflict of Interest',
-  GIFTS: 'Gifts',
-  AUDIT: 'Audit',
-  STATE_INSPECTION: 'State Inspection',
-  MEDIA: 'Media',
-  HR: 'HR',
-  PROCUREMENT: 'Procurement',
-  INVESTMENT: 'Investment',
-  ESG: 'ESG',
-};
+export const ALL_SOURCE_TYPES: SourceType[] = [
+  'CORRUPTION_RISK_ASSESSMENT',
+  'ANTI_CORRUPTION_MONITORING',
+  'CANDIDATE_DUE_DILIGENCE',
+  'COUNTERPARTY_DUE_DILIGENCE',
+  'INVESTIGATION',
+  'HOTLINE',
+  'CONFLICT_OF_INTEREST',
+  'GIFTS',
+  'AUDIT',
+  'STATE_INSPECTION',
+  'MEDIA',
+  'HR',
+  'PROCUREMENT',
+  'INVESTMENT',
+  'ESG',
+];
 
-export const CONTROL_EFFECTIVENESS_LABELS: Record<ControlEffectiveness, string> = {
-  EFFECTIVE: 'Effective',
-  PARTIALLY_EFFECTIVE: 'Partially Effective',
-  INEFFECTIVE: 'Ineffective',
-  NOT_TESTED: 'Not Tested',
-};
+export function sourceTypeLabel(type: SourceType): string {
+  return i18n.t(`sourceType.${type}`);
+}
+
+export const ALL_CONTROL_EFFECTIVENESS: ControlEffectiveness[] = [
+  'EFFECTIVE',
+  'PARTIALLY_EFFECTIVE',
+  'INEFFECTIVE',
+  'NOT_TESTED',
+];
+
+export function controlEffectivenessLabel(value: ControlEffectiveness): string {
+  return i18n.t(`controlEffectiveness.${value}`);
+}
 
 export const CONTROL_EFFECTIVENESS_COLORS: Record<ControlEffectiveness, string> = {
   EFFECTIVE: 'green',
@@ -71,13 +88,11 @@ export const CONTROL_EFFECTIVENESS_COLORS: Record<ControlEffectiveness, string> 
   NOT_TESTED: 'default',
 };
 
-export const ACTION_STATUS_LABELS: Record<ActionStatus, string> = {
-  PLANNED: 'Planned',
-  IN_PROGRESS: 'In Progress',
-  COMPLETED: 'Completed',
-  OVERDUE: 'Overdue',
-  CANCELLED: 'Cancelled',
-};
+export const ALL_ACTION_STATUSES: ActionStatus[] = ['PLANNED', 'IN_PROGRESS', 'COMPLETED', 'OVERDUE', 'CANCELLED'];
+
+export function actionStatusLabel(status: ActionStatus): string {
+  return i18n.t(`actionStatus.${status}`);
+}
 
 export const ACTION_STATUS_COLORS: Record<ActionStatus, string> = {
   PLANNED: 'blue',
@@ -87,9 +102,8 @@ export const ACTION_STATUS_COLORS: Record<ActionStatus, string> = {
   CANCELLED: 'default',
 };
 
-export const INCIDENT_STATUS_LABELS: Record<IncidentStatus, string> = {
-  OPEN: 'Open',
-  UNDER_REVIEW: 'Under Review',
-  RESOLVED: 'Resolved',
-  CLOSED: 'Closed',
-};
+export const ALL_INCIDENT_STATUSES: IncidentStatus[] = ['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED'];
+
+export function incidentStatusLabel(status: IncidentStatus): string {
+  return i18n.t(`incidentStatus.${status}`);
+}
