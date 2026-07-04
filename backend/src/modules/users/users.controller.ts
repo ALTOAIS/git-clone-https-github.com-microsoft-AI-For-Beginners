@@ -32,8 +32,9 @@ export class UsersController {
     return this.usersService.findOne(user.id);
   }
 
+  // Directory lookup (name/email/role only, via SAFE_SELECT) is open to any authenticated
+  // role since every role needs it to assign risk/action owners; mutations stay admin-only.
   @Get()
-  @Roles(Role.ADMINISTRATOR, Role.COMPLIANCE_MANAGER)
   findAll(
     @Query('page') page = '1',
     @Query('pageSize') pageSize = '20',
@@ -49,7 +50,6 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMINISTRATOR, Role.COMPLIANCE_MANAGER)
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
