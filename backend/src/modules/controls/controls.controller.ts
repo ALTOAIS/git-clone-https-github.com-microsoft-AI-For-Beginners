@@ -17,7 +17,7 @@ export class ControlsController {
   constructor(private readonly controlsService: ControlsService) {}
 
   @Get()
-  findAllForRisk(@Query('riskId') riskId: string) {
+  findAllForRisk(@Query('riskId') riskId?: string) {
     return this.controlsService.findAllForRisk(riskId);
   }
 

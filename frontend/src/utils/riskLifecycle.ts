@@ -1,0 +1,13 @@
+import type { RiskStatus } from '../types';
+
+export const RISK_LIFECYCLE: Record<RiskStatus, RiskStatus[]> = {
+  DRAFT: ['NEW'],
+  NEW: ['ASSESSMENT', 'DRAFT'],
+  ASSESSMENT: ['APPROVED', 'NEW'],
+  APPROVED: ['MONITORING', 'ASSESSMENT'],
+  MONITORING: ['MITIGATION', 'APPROVED'],
+  MITIGATION: ['RESIDUAL_ASSESSMENT', 'MONITORING'],
+  RESIDUAL_ASSESSMENT: ['CLOSED', 'MITIGATION'],
+  CLOSED: ['ARCHIVED', 'MONITORING'],
+  ARCHIVED: [],
+};

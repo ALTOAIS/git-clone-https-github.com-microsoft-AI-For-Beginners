@@ -13,10 +13,13 @@ export class ControlsService {
     private audit: AuditService,
   ) {}
 
-  findAllForRisk(riskId: string) {
+  findAllForRisk(riskId?: string) {
     return this.prisma.control.findMany({
-      where: { riskId },
-      include: { owner: { select: { id: true, fullName: true } } },
+      where: riskId ? { riskId } : undefined,
+      include: {
+        owner: { select: { id: true, fullName: true } },
+        risk: { select: { id: true, code: true, title: true, status: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
