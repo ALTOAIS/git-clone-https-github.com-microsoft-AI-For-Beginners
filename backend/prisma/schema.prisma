@@ -1,0 +1,459 @@
+// Compliance Risk Hub - Prisma schema
+// Data model derived from PRD section 8 (Data Model) and section 6 (Functional Requirements)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------------
+// Enums
+// ------------------------------------------------------------------
+
+enum Role {
+  ADMINISTRATOR
+  COMPLIANCE_OFFICER
+  COMPLIANCE_MANAGER
+  RISK_OWNER
+  DEPARTMENT_MANAGER
+  INTERNAL_AUDIT
+  BOARD
+}
+
+/// Risk lifecycle per PRD section 7
+enum RiskStatus {
+  DRAFT
+  NEW
+  ASSESSMENT
+  APPROVED
+  MONITORING
+  MITIGATION
+  RESIDUAL_ASSESSMENT
+  CLOSED
+  ARCHIVED
+}
+
+enum SourceType {
+  CORRUPTION_RISK_ASSESSMENT
+  ANTI_CORRUPTION_MONITORING
+  CANDIDATE_DUE_DILIGENCE
+  COUNTERPARTY_DUE_DILIGENCE
+  INVESTIGATION
+  HOTLINE
+  CONFLICT_OF_INTEREST
+  GIFTS
+  AUDIT
+  STATE_INSPECTION
+  MEDIA
+  HR
+  PROCUREMENT
+  INVESTMENT
+  ESG
+}
+
+enum ControlType {
+  PREVENTIVE
+  DETECTIVE
+  CORRECTIVE
+}
+
+enum ControlEffectiveness {
+  EFFECTIVE
+  PARTIALLY_EFFECTIVE
+  INEFFECTIVE
+  NOT_TESTED
+}
+
+enum ActionStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+enum IncidentAction {
+  CREATE_RISK
+  UPDATE_RISK
+  CLOSE_RISK
+  ESCALATE_RISK
+  NONE
+}
+
+enum IncidentStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+enum EntityType {
+  RISK
+  SOURCE
+  CONTROL
+  ACTION
+  INCIDENT
+}
+
+enum NotificationType {
+  ACTION_DUE_SOON
+  ACTION_OVERDUE
+  RISK_ASSIGNED
+  RISK_STATUS_CHANGED
+  INCIDENT_CREATED
+  COMMENT_MENTION
+  SYSTEM
+}
+
+// ------------------------------------------------------------------
+// Organization structure
+// ------------------------------------------------------------------
+
+model Company {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  description String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  departments Department[]
+  users       User[]
+  risks       Risk[]
+
+  @@map("companies")
+}
+
+model Department {
+  id        String            @id @default(uuid())
+  name      String
+  companyId String
+  company   Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  isActive  Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  processes BusinessProcess[]
+  users     User[]
+  risks     Risk[]
+
+  @@unique([companyId, name])
+  @@map("departments")
+}
+
+model BusinessProcess {
+  id           String     @id @default(uuid())
+  name         String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  risks        Risk[]
+
+  @@unique([departmentId, name])
+  @@map("business_processes")
+}
+
+/// Risk Library / risk category catalog (section 5 "Risk Library")
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  parentId    String?
+  parent      Category?  @relation("CategoryToCategory", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryToCategory")
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  risks       Risk[]
+
+  @@map("categories")
+}
+
+// ------------------------------------------------------------------
+// Users & auth
+// ------------------------------------------------------------------
+
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  passwordHash  String
+  fullName      String
+  role          Role         @default(RISK_OWNER)
+  title         String?
+  isActive      Boolean      @default(true)
+  companyId     String?
+  company       Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  departmentId  String?
+  department    Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  lastLoginAt   DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  ownedRisks       Risk[]          @relation("RiskOwner")
+  createdRisks     Risk[]          @relation("RiskCreatedBy")
+  ownedControls    Control[]       @relation("ControlOwner")
+  ownedActions     Action[]        @relation("ActionOwner")
+  reportedIncidents Incident[]     @relation("IncidentReportedBy")
+  comments         Comment[]
+  attachments      Attachment[]
+  auditLogs        AuditLog[]
+  notifications    Notification[]
+  refreshTokens    RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
+}
+
+// ------------------------------------------------------------------
+// Risk sources
+// ------------------------------------------------------------------
+
+model Source {
+  id              String     @id @default(uuid())
+  type            SourceType
+  title           String
+  description     String?
+  referenceNumber String?
+  occurredAt      DateTime?
+  createdById     String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  risks           RiskSource[]
+  incidents       Incident[]
+
+  @@map("sources")
+}
+
+/// Many-to-many: a risk can have any number of sources (PRD section 6 "Sources")
+model RiskSource {
+  riskId    String
+  sourceId  String
+  risk      Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  source    Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  linkedAt  DateTime @default(now())
+
+  @@id([riskId, sourceId])
+  @@map("risk_sources")
+}
+
+// ------------------------------------------------------------------
+// Risk register
+// ------------------------------------------------------------------
+
+model Risk {
+  id                     String      @id @default(uuid())
+  code                    String      @unique
+  title                   String
+  description             String?
+  status                  RiskStatus  @default(DRAFT)
+
+  categoryId              String?
+  category                Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  companyId               String?
+  company                 Company?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  departmentId            String?
+  department              Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  businessProcessId       String?
+  businessProcess         BusinessProcess? @relation(fields: [businessProcessId], references: [id], onDelete: SetNull)
+
+  ownerId                 String?
+  owner                   User?       @relation("RiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdById             String?
+  createdBy               User?       @relation("RiskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  // Inherent assessment
+  likelihood              Int?        // 1-5
+  impact                  Int?        // 1-5
+  inherentScore           Int?        // likelihood * impact
+
+  // Residual assessment (after controls / mitigation)
+  residualLikelihood      Int?
+  residualImpact          Int?
+  residualScore           Int?
+
+  controlEffectivenessAvg Float?
+
+  version                 Int         @default(1)
+  approvedAt              DateTime?
+  closedAt                DateTime?
+  archivedAt              DateTime?
+
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+
+  sources                 RiskSource[]
+  controls                Control[]
+  actions                 Action[]
+  incidents               Incident[]
+  comments                Comment[]
+  attachments             Attachment[]
+  history                 RiskHistory[]
+
+  @@map("risks")
+}
+
+/// Versioned change history for a risk (PRD: "История изменений" / "Версионность")
+model RiskHistory {
+  id        String   @id @default(uuid())
+  riskId    String
+  risk      Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  version   Int
+  snapshot  Json
+  changedById String?
+  changeNote String?
+  createdAt DateTime @default(now())
+
+  @@map("risk_history")
+}
+
+// ------------------------------------------------------------------
+// Controls
+// ------------------------------------------------------------------
+
+model Control {
+  id                 String               @id @default(uuid())
+  riskId             String
+  risk               Risk                 @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  type               ControlType
+  title              String
+  description        String?
+  ownerId            String?
+  owner              User?                @relation("ControlOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  effectiveness      ControlEffectiveness @default(NOT_TESTED)
+  lastTestedAt       DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@map("controls")
+}
+
+// ------------------------------------------------------------------
+// Action plans
+// ------------------------------------------------------------------
+
+model Action {
+  id                   String       @id @default(uuid())
+  riskId               String
+  risk                 Risk         @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  title                String
+  description          String?
+  ownerId              String?
+  owner                User?        @relation("ActionOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  deadline             DateTime?
+  status               ActionStatus @default(PLANNED)
+  evidence             String?
+  result               String?
+  residualRiskImpact   String?
+  completedAt          DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@map("actions")
+}
+
+// ------------------------------------------------------------------
+// Incidents
+// ------------------------------------------------------------------
+
+model Incident {
+  id             String         @id @default(uuid())
+  title          String
+  description    String?
+  occurredAt     DateTime?
+  status         IncidentStatus @default(OPEN)
+  action         IncidentAction @default(NONE)
+  sourceId       String?
+  source         Source?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  riskId         String?
+  risk           Risk?          @relation(fields: [riskId], references: [id], onDelete: SetNull)
+  reportedById   String?
+  reportedBy     User?          @relation("IncidentReportedBy", fields: [reportedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@map("incidents")
+}
+
+// ------------------------------------------------------------------
+// Cross-cutting: comments, attachments, audit log, notifications
+// ------------------------------------------------------------------
+
+model Comment {
+  id         String     @id @default(uuid())
+  riskId     String
+  risk       Risk       @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  authorId   String?
+  author     User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  text       String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@map("comments")
+}
+
+model Attachment {
+  id           String     @id @default(uuid())
+  entityType   EntityType
+  entityId     String
+  riskId       String?
+  risk         Risk?      @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  fileName     String
+  storedName   String
+  mimeType     String
+  size         Int
+  uploadedById String?
+  uploadedBy   User?      @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime   @default(now())
+
+  @@map("attachments")
+}
+
+model AuditLog {
+  id         String     @id @default(uuid())
+  entityType String
+  entityId   String
+  action     String
+  userId     String?
+  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  changes    Json?
+  ipAddress  String?
+  createdAt  DateTime   @default(now())
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@map("notifications")
+}
