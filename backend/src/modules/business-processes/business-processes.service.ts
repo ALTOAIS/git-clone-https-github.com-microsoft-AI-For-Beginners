@@ -17,7 +17,7 @@ export class BusinessProcessesService {
     const process = await this.prisma.businessProcess.findUnique({
       where: { id },
     });
-    if (!process) throw new NotFoundException('Business process not found');
+    if (!process) throw new NotFoundException('Бизнес-процесс не найден');
     return process;
   }
 

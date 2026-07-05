@@ -53,7 +53,7 @@ export class SourcesService {
         incidents: true,
       },
     });
-    if (!source) throw new NotFoundException('Source not found');
+    if (!source) throw new NotFoundException('Источник не найден');
     return source;
   }
 

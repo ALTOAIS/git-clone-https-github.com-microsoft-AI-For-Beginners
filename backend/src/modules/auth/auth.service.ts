@@ -28,11 +28,11 @@ export class AuthService {
   async validateUser(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Неверный email или пароль');
     }
     const passwordValid = await bcrypt.compare(password, user.passwordHash);
     if (!passwordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Неверный email или пароль');
     }
     return user;
   }
@@ -53,7 +53,9 @@ export class AuthService {
         secret: this.config.get<string>('JWT_REFRESH_SECRET'),
       });
     } catch {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      throw new UnauthorizedException(
+        'Недействительный или просроченный refresh-токен',
+      );
     }
 
     const tokenHash = hashToken(refreshToken);
@@ -61,14 +63,16 @@ export class AuthService {
       where: { token: tokenHash },
     });
     if (!stored || stored.revoked || stored.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh token is no longer valid');
+      throw new UnauthorizedException('Refresh-токен более недействителен');
     }
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('User is inactive or does not exist');
+      throw new UnauthorizedException(
+        'Пользователь неактивен или не существует',
+      );
     }
 
     // Rotate: revoke old, issue new
@@ -97,7 +101,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException();
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!valid) throw new ConflictException('Current password is incorrect');
+    if (!valid) throw new ConflictException('Текущий пароль указан неверно');
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
     await this.prisma.user.update({
       where: { id: userId },

@@ -14,6 +14,18 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 const DEMO_PASSWORD = 'ChangeMe123!';
 
+const RISK_STATUS_LABELS_RU: Record<RiskStatus, string> = {
+  [RiskStatus.DRAFT]: 'Черновик',
+  [RiskStatus.NEW]: 'Новый',
+  [RiskStatus.ASSESSMENT]: 'Оценка',
+  [RiskStatus.APPROVED]: 'Утверждён',
+  [RiskStatus.MONITORING]: 'Мониторинг',
+  [RiskStatus.MITIGATION]: 'Устранение',
+  [RiskStatus.RESIDUAL_ASSESSMENT]: 'Оценка остаточного риска',
+  [RiskStatus.CLOSED]: 'Закрыт',
+  [RiskStatus.ARCHIVED]: 'В архиве',
+};
+
 async function hash(password: string) {
   return bcrypt.hash(password, 10);
 }
@@ -23,29 +35,29 @@ function score(l?: number, i?: number) {
 }
 
 async function main() {
-  console.log('Seeding Compliance Risk Hub demo data...');
+  console.log('Заполнение ЕИСУКР демонстрационными данными...');
 
   // ---------------------------------------------------------------
-  // Companies / Departments / Business processes
+  // Компании / Департаменты / Бизнес-процессы
   // ---------------------------------------------------------------
   const northwind = await prisma.company.upsert({
-    where: { name: 'Northwind Holdings' },
+    where: { name: 'ТОО «Нордвинд Холдинг»' },
     update: {},
-    create: { name: 'Northwind Holdings', description: 'Group holding company' },
+    create: { name: 'ТОО «Нордвинд Холдинг»', description: 'Головная холдинговая компания группы' },
   });
   const southbridge = await prisma.company.upsert({
-    where: { name: 'Southbridge Industries' },
+    where: { name: 'АО «Саутбридж Индастриз»' },
     update: {},
-    create: { name: 'Southbridge Industries', description: 'Manufacturing subsidiary' },
+    create: { name: 'АО «Саутбридж Индастриз»', description: 'Производственная дочерняя компания' },
   });
 
   const deptData: [string, string][] = [
-    ['Procurement', northwind.id],
-    ['Human Resources', northwind.id],
-    ['Finance', northwind.id],
-    ['Legal & Compliance', northwind.id],
-    ['Operations', southbridge.id],
-    ['Sales', southbridge.id],
+    ['Департамент закупок', northwind.id],
+    ['Департамент по управлению персоналом', northwind.id],
+    ['Финансовый департамент', northwind.id],
+    ['Департамент правового обеспечения и комплаенса', northwind.id],
+    ['Департамент операционной деятельности', southbridge.id],
+    ['Департамент продаж', southbridge.id],
   ];
   const departments: Record<string, string> = {};
   for (const [name, companyId] of deptData) {
@@ -58,12 +70,12 @@ async function main() {
   }
 
   const processData: [string, string][] = [
-    ['Vendor Onboarding', 'Procurement'],
-    ['Tender Management', 'Procurement'],
-    ['Recruitment', 'Human Resources'],
-    ['Expense Reimbursement', 'Finance'],
-    ['Contract Review', 'Legal & Compliance'],
-    ['Production Line QA', 'Operations'],
+    ['Онбординг поставщиков', 'Департамент закупок'],
+    ['Управление тендерами', 'Департамент закупок'],
+    ['Подбор персонала', 'Департамент по управлению персоналом'],
+    ['Возмещение расходов', 'Финансовый департамент'],
+    ['Юридическая экспертиза договоров', 'Департамент правового обеспечения и комплаенса'],
+    ['Контроль качества производственной линии', 'Департамент операционной деятельности'],
   ];
   const processes: Record<string, string> = {};
   for (const [name, deptName] of processData) {
@@ -77,7 +89,7 @@ async function main() {
   }
 
   // ---------------------------------------------------------------
-  // Risk Library categories (tree)
+  // Категории Библиотеки рисков (дерево)
   // ---------------------------------------------------------------
   async function upsertCategory(name: string, parentId?: string, description?: string) {
     const existing = await prisma.category.findFirst({ where: { name, parentId: parentId ?? null } });
@@ -85,25 +97,25 @@ async function main() {
     return prisma.category.create({ data: { name, parentId, description } });
   }
 
-  const corruption = await upsertCategory('Corruption & Bribery', undefined, 'Bribery, kickbacks and improper payments');
-  const gifts = await upsertCategory('Gifts & Hospitality', corruption.id);
-  const facilitation = await upsertCategory('Facilitation Payments', corruption.id);
+  const corruption = await upsertCategory('Коррупция и взяточничество', undefined, 'Взяточничество, откаты и неправомерные платежи');
+  const gifts = await upsertCategory('Подарки и представительские расходы', corruption.id);
+  const facilitation = await upsertCategory('Платежи за содействие', corruption.id);
 
-  const thirdParty = await upsertCategory('Third-Party Risk', undefined, 'Risks arising from external parties');
-  const counterpartyDd = await upsertCategory('Counterparty Due Diligence', thirdParty.id);
-  const vendorRisk = await upsertCategory('Vendor Risk', thirdParty.id);
+  const thirdParty = await upsertCategory('Риски третьих сторон', undefined, 'Риски, возникающие со стороны внешних контрагентов');
+  const counterpartyDd = await upsertCategory('Комплаенс-проверка контрагентов', thirdParty.id);
+  const vendorRisk = await upsertCategory('Риски поставщиков', thirdParty.id);
 
-  const coi = await upsertCategory('Conflict of Interest');
-  const fraud = await upsertCategory('Fraud');
+  const coi = await upsertCategory('Конфликт интересов');
+  const fraud = await upsertCategory('Мошенничество');
 
-  const esgCat = await upsertCategory('Data Privacy & ESG');
-  const esgSub = await upsertCategory('ESG Compliance', esgCat.id);
-  const dataProtection = await upsertCategory('Data Protection', esgCat.id);
+  const esgCat = await upsertCategory('Защита данных и ESG');
+  const esgSub = await upsertCategory('Соответствие принципам ESG', esgCat.id);
+  const dataProtection = await upsertCategory('Защита персональных данных', esgCat.id);
 
-  const regulatory = await upsertCategory('Regulatory & Legal');
+  const regulatory = await upsertCategory('Регуляторные и правовые риски');
 
   // ---------------------------------------------------------------
-  // Users
+  // Пользователи
   // ---------------------------------------------------------------
   const passwordHash = await hash(DEMO_PASSWORD);
   const userSpecs: Array<{
@@ -114,47 +126,47 @@ async function main() {
     companyId?: string;
     departmentId?: string;
   }> = [
-    { email: 'admin@crh.local', fullName: 'Alex Morgan', role: Role.ADMINISTRATOR, title: 'System Administrator' },
+    { email: 'admin@crh.local', fullName: 'Алексей Морозов', role: Role.ADMINISTRATOR, title: 'Системный администратор' },
     {
       email: 'officer@crh.local',
-      fullName: 'Jamie Chen',
+      fullName: 'Жанна Ахметова',
       role: Role.COMPLIANCE_OFFICER,
-      title: 'Compliance Officer',
+      title: 'Комплаенс-офицер',
       companyId: northwind.id,
-      departmentId: departments['Legal & Compliance'],
+      departmentId: departments['Департамент правового обеспечения и комплаенса'],
     },
     {
       email: 'manager@crh.local',
-      fullName: 'Taylor Reid',
+      fullName: 'Тимур Райымбеков',
       role: Role.COMPLIANCE_MANAGER,
-      title: 'Compliance Manager',
+      title: 'Руководитель службы комплаенса',
       companyId: northwind.id,
-      departmentId: departments['Legal & Compliance'],
+      departmentId: departments['Департамент правового обеспечения и комплаенса'],
     },
     {
       email: 'owner@crh.local',
-      fullName: 'Morgan Blake',
+      fullName: 'Марат Бекенов',
       role: Role.RISK_OWNER,
-      title: 'Procurement Lead',
+      title: 'Руководитель отдела закупок',
       companyId: northwind.id,
-      departmentId: departments['Procurement'],
+      departmentId: departments['Департамент закупок'],
     },
     {
       email: 'deptmgr@crh.local',
-      fullName: 'Casey Nolan',
+      fullName: 'Каусар Нурланова',
       role: Role.DEPARTMENT_MANAGER,
-      title: 'Operations Manager',
+      title: 'Руководитель производственного департамента',
       companyId: southbridge.id,
-      departmentId: departments['Operations'],
+      departmentId: departments['Департамент операционной деятельности'],
     },
     {
       email: 'audit@crh.local',
-      fullName: 'Riley Adams',
+      fullName: 'Дмитрий Ким',
       role: Role.INTERNAL_AUDIT,
-      title: 'Internal Auditor',
+      title: 'Внутренний аудитор',
       companyId: northwind.id,
     },
-    { email: 'board@crh.local', fullName: 'Jordan Wells', role: Role.BOARD, title: 'Board Member' },
+    { email: 'board@crh.local', fullName: 'Асель Жунусова', role: Role.BOARD, title: 'Член Совета директоров' },
   ];
 
   const users: Record<string, string> = {};
@@ -168,21 +180,21 @@ async function main() {
   }
 
   // ---------------------------------------------------------------
-  // Sources
+  // Источники
   // ---------------------------------------------------------------
   const sourceSpecs: Array<{ type: SourceType; title: string; description?: string }> = [
-    { type: SourceType.HOTLINE, title: 'Whistleblower report #2026-014', description: 'Anonymous hotline tip' },
-    { type: SourceType.AUDIT, title: 'Internal Audit Q1 2026', description: 'Quarterly internal audit findings' },
-    { type: SourceType.COUNTERPARTY_DUE_DILIGENCE, title: 'Vendor DD - Acme Supplies' },
-    { type: SourceType.CANDIDATE_DUE_DILIGENCE, title: 'Candidate DD - Senior Buyer role' },
-    { type: SourceType.MEDIA, title: 'Press coverage - industry bribery scandal' },
-    { type: SourceType.STATE_INSPECTION, title: 'Regulator inspection notice' },
-    { type: SourceType.GIFTS, title: 'Gift register entry - Q2 2026' },
-    { type: SourceType.CONFLICT_OF_INTEREST, title: 'COI disclosure - Finance director' },
-    { type: SourceType.PROCUREMENT, title: 'Procurement anomaly flagged by ERP' },
-    { type: SourceType.ESG, title: 'ESG supplier assessment' },
-    { type: SourceType.INVESTIGATION, title: 'Investigation case #INV-2026-002' },
-    { type: SourceType.CORRUPTION_RISK_ASSESSMENT, title: 'Annual corruption risk assessment 2026' },
+    { type: SourceType.HOTLINE, title: 'Обращение на линию доверия №2026-014', description: 'Анонимное сообщение по горячей линии' },
+    { type: SourceType.AUDIT, title: 'Внутренний аудит, I квартал 2026', description: 'Результаты квартального внутреннего аудита' },
+    { type: SourceType.COUNTERPARTY_DUE_DILIGENCE, title: 'Комплаенс-проверка контрагента — ТОО «АкмеСнаб»' },
+    { type: SourceType.CANDIDATE_DUE_DILIGENCE, title: 'Проверка кандидата на должность ведущего специалиста по закупкам' },
+    { type: SourceType.MEDIA, title: 'Публикация в СМИ о коррупционном скандале в отрасли' },
+    { type: SourceType.STATE_INSPECTION, title: 'Уведомление о проверке уполномоченного государственного органа' },
+    { type: SourceType.GIFTS, title: 'Запись в реестре подарков — II квартал 2026' },
+    { type: SourceType.CONFLICT_OF_INTEREST, title: 'Декларация о конфликте интересов — финансовый директор' },
+    { type: SourceType.PROCUREMENT, title: 'Аномалия в закупках, выявленная ERP-системой' },
+    { type: SourceType.ESG, title: 'Оценка поставщика по критериям ESG' },
+    { type: SourceType.INVESTIGATION, title: 'Служебная проверка №INV-2026-002' },
+    { type: SourceType.CORRUPTION_RISK_ASSESSMENT, title: 'Ежегодная оценка коррупционных рисков за 2026 год' },
   ];
   const sources: Record<string, string> = {};
   for (const spec of sourceSpecs) {
@@ -194,7 +206,7 @@ async function main() {
   }
 
   // ---------------------------------------------------------------
-  // Risks + controls + actions + incidents + comments
+  // Риски + контрольные мероприятия + план действий + инциденты + комментарии
   // ---------------------------------------------------------------
   const riskSpecs: Array<{
     title: string;
@@ -214,95 +226,95 @@ async function main() {
     actions?: Array<{ title: string; status: ActionStatus; deadlineOffsetDays: number; ownerEmail: string }>;
   }> = [
     {
-      title: 'Bribery risk in vendor selection process',
-      description: 'Risk of improper payments influencing vendor selection during tenders.',
+      title: 'Риск взяточничества при выборе поставщиков',
+      description: 'Риск неправомерного влияния на выбор поставщика в ходе тендерных процедур посредством неправомерных платежей.',
       categoryId: corruption.id,
       companyId: northwind.id,
-      departmentId: departments['Procurement'],
-      businessProcessId: processes['Tender Management'],
+      departmentId: departments['Департамент закупок'],
+      businessProcessId: processes['Управление тендерами'],
       ownerId: users['owner@crh.local'],
       status: RiskStatus.MONITORING,
       likelihood: 4,
       impact: 5,
       residualLikelihood: 2,
       residualImpact: 4,
-      sourceTitles: ['Internal Audit Q1 2026', 'Procurement anomaly flagged by ERP'],
+      sourceTitles: ['Внутренний аудит, I квартал 2026', 'Аномалия в закупках, выявленная ERP-системой'],
       controls: [
-        { type: ControlType.PREVENTIVE, title: 'Dual approval on tenders above threshold', effectiveness: ControlEffectiveness.EFFECTIVE },
-        { type: ControlType.DETECTIVE, title: 'Automated ERP anomaly detection', effectiveness: ControlEffectiveness.PARTIALLY_EFFECTIVE },
+        { type: ControlType.PREVENTIVE, title: 'Двойное согласование тендеров сверх установленного порога', effectiveness: ControlEffectiveness.EFFECTIVE },
+        { type: ControlType.DETECTIVE, title: 'Автоматизированное выявление аномалий в ERP-системе', effectiveness: ControlEffectiveness.PARTIALLY_EFFECTIVE },
       ],
       actions: [
-        { title: 'Roll out enhanced vendor scoring model', status: ActionStatus.IN_PROGRESS, deadlineOffsetDays: 20, ownerEmail: 'owner@crh.local' },
-        { title: 'Retrain procurement staff on anti-bribery policy', status: ActionStatus.OVERDUE, deadlineOffsetDays: -5, ownerEmail: 'owner@crh.local' },
+        { title: 'Внедрение усовершенствованной модели оценки поставщиков', status: ActionStatus.IN_PROGRESS, deadlineOffsetDays: 20, ownerEmail: 'owner@crh.local' },
+        { title: 'Повторное обучение сотрудников отдела закупок политике противодействия взяточничеству', status: ActionStatus.OVERDUE, deadlineOffsetDays: -5, ownerEmail: 'owner@crh.local' },
       ],
     },
     {
-      title: 'Excessive gifts and hospitality to public officials',
-      description: 'Risk of gifts exceeding policy thresholds being offered to government counterparts.',
+      title: 'Чрезмерные подарки и представительские расходы для государственных должностных лиц',
+      description: 'Риск предоставления подарков государственным партнёрам сверх установленных политикой лимитов.',
       categoryId: gifts.id,
       companyId: northwind.id,
-      departmentId: departments['Legal & Compliance'],
+      departmentId: departments['Департамент правового обеспечения и комплаенса'],
       ownerId: users['officer@crh.local'],
       status: RiskStatus.APPROVED,
       likelihood: 3,
       impact: 4,
-      sourceTitles: ['Gift register entry - Q2 2026'],
+      sourceTitles: ['Запись в реестре подарков — II квартал 2026'],
       controls: [
-        { type: ControlType.PREVENTIVE, title: 'Gift pre-approval workflow', effectiveness: ControlEffectiveness.EFFECTIVE },
+        { type: ControlType.PREVENTIVE, title: 'Процедура предварительного согласования подарков', effectiveness: ControlEffectiveness.EFFECTIVE },
       ],
       actions: [
-        { title: 'Publish updated gifts & hospitality policy', status: ActionStatus.PLANNED, deadlineOffsetDays: 30, ownerEmail: 'officer@crh.local' },
+        { title: 'Публикация обновлённой политики по подаркам и представительским расходам', status: ActionStatus.PLANNED, deadlineOffsetDays: 30, ownerEmail: 'officer@crh.local' },
       ],
     },
     {
-      title: 'Inadequate due diligence on high-risk counterparties',
-      description: 'Counterparty onboarding may not sufficiently screen for sanctions or PEP exposure.',
+      title: 'Недостаточная комплаенс-проверка контрагентов повышенного риска',
+      description: 'Процедура онбординга контрагентов может не обеспечивать достаточную проверку на предмет санкционных списков и статуса публичных должностных лиц (PEP).',
       categoryId: counterpartyDd.id,
       companyId: northwind.id,
-      departmentId: departments['Procurement'],
-      businessProcessId: processes['Vendor Onboarding'],
+      departmentId: departments['Департамент закупок'],
+      businessProcessId: processes['Онбординг поставщиков'],
       ownerId: users['owner@crh.local'],
       status: RiskStatus.MITIGATION,
       likelihood: 4,
       impact: 4,
       residualLikelihood: 2,
       residualImpact: 3,
-      sourceTitles: ['Vendor DD - Acme Supplies'],
+      sourceTitles: ['Комплаенс-проверка контрагента — ТОО «АкмеСнаб»'],
       controls: [
-        { type: ControlType.PREVENTIVE, title: 'Sanctions & PEP screening at onboarding', effectiveness: ControlEffectiveness.EFFECTIVE },
-        { type: ControlType.CORRECTIVE, title: 'Offboarding of flagged counterparties', effectiveness: ControlEffectiveness.PARTIALLY_EFFECTIVE },
+        { type: ControlType.PREVENTIVE, title: 'Проверка по санкционным спискам и PEP при онбординге', effectiveness: ControlEffectiveness.EFFECTIVE },
+        { type: ControlType.CORRECTIVE, title: 'Прекращение сотрудничества с выявленными контрагентами', effectiveness: ControlEffectiveness.PARTIALLY_EFFECTIVE },
       ],
       actions: [
-        { title: 'Implement continuous sanctions monitoring', status: ActionStatus.IN_PROGRESS, deadlineOffsetDays: 15, ownerEmail: 'owner@crh.local' },
+        { title: 'Внедрение непрерывного мониторинга санкционных списков', status: ActionStatus.IN_PROGRESS, deadlineOffsetDays: 15, ownerEmail: 'owner@crh.local' },
       ],
     },
     {
-      title: 'Undisclosed conflicts of interest in finance leadership',
-      description: 'Risk that undisclosed financial interests influence finance decision-making.',
+      title: 'Нераскрытый конфликт интересов в руководстве финансового блока',
+      description: 'Риск влияния нераскрытых финансовых интересов на принятие решений в финансовом департаменте.',
       categoryId: coi.id,
       companyId: northwind.id,
-      departmentId: departments['Finance'],
+      departmentId: departments['Финансовый департамент'],
       ownerId: users['manager@crh.local'],
       status: RiskStatus.RESIDUAL_ASSESSMENT,
       likelihood: 3,
       impact: 4,
       residualLikelihood: 1,
       residualImpact: 3,
-      sourceTitles: ['COI disclosure - Finance director'],
+      sourceTitles: ['Декларация о конфликте интересов — финансовый директор'],
       controls: [
-        { type: ControlType.PREVENTIVE, title: 'Annual COI disclosure attestation', effectiveness: ControlEffectiveness.EFFECTIVE },
+        { type: ControlType.PREVENTIVE, title: 'Ежегодное декларирование конфликта интересов', effectiveness: ControlEffectiveness.EFFECTIVE },
       ],
       actions: [
-        { title: 'Review finance director disclosure', status: ActionStatus.COMPLETED, deadlineOffsetDays: -10, ownerEmail: 'manager@crh.local' },
+        { title: 'Рассмотрение декларации финансового директора', status: ActionStatus.COMPLETED, deadlineOffsetDays: -10, ownerEmail: 'manager@crh.local' },
       ],
     },
     {
-      title: 'Expense fraud via inflated reimbursement claims',
-      description: 'Employees submitting inflated or fictitious expense claims.',
+      title: 'Мошенничество при возмещении расходов путём завышения сумм',
+      description: 'Работники подают завышенные или фиктивные заявки на возмещение расходов.',
       categoryId: fraud.id,
       companyId: northwind.id,
-      departmentId: departments['Finance'],
-      businessProcessId: processes['Expense Reimbursement'],
+      departmentId: departments['Финансовый департамент'],
+      businessProcessId: processes['Возмещение расходов'],
       ownerId: users['manager@crh.local'],
       status: RiskStatus.CLOSED,
       likelihood: 2,
@@ -310,55 +322,55 @@ async function main() {
       residualLikelihood: 1,
       residualImpact: 2,
       controls: [
-        { type: ControlType.DETECTIVE, title: 'Automated expense anomaly flagging', effectiveness: ControlEffectiveness.EFFECTIVE },
+        { type: ControlType.DETECTIVE, title: 'Автоматическое выявление аномалий в расходах', effectiveness: ControlEffectiveness.EFFECTIVE },
       ],
       actions: [
-        { title: 'Close out finance investigation', status: ActionStatus.COMPLETED, deadlineOffsetDays: -30, ownerEmail: 'manager@crh.local' },
+        { title: 'Завершение финансового расследования', status: ActionStatus.COMPLETED, deadlineOffsetDays: -30, ownerEmail: 'manager@crh.local' },
       ],
     },
     {
-      title: 'Data privacy breach in candidate screening data',
-      description: 'HR may retain candidate personal data beyond required retention periods.',
+      title: 'Нарушение конфиденциальности персональных данных кандидатов',
+      description: 'Департамент по управлению персоналом может хранить персональные данные кандидатов дольше установленного срока.',
       categoryId: dataProtection.id,
       companyId: northwind.id,
-      departmentId: departments['Human Resources'],
-      businessProcessId: processes['Recruitment'],
+      departmentId: departments['Департамент по управлению персоналом'],
+      businessProcessId: processes['Подбор персонала'],
       ownerId: users['deptmgr@crh.local'],
       status: RiskStatus.ASSESSMENT,
       likelihood: 3,
       impact: 3,
-      sourceTitles: ['Candidate DD - Senior Buyer role'],
+      sourceTitles: ['Проверка кандидата на должность ведущего специалиста по закупкам'],
       actions: [
-        { title: 'Define candidate data retention schedule', status: ActionStatus.PLANNED, deadlineOffsetDays: 45, ownerEmail: 'deptmgr@crh.local' },
+        { title: 'Установление графика хранения персональных данных кандидатов', status: ActionStatus.PLANNED, deadlineOffsetDays: 45, ownerEmail: 'deptmgr@crh.local' },
       ],
     },
     {
-      title: 'Supplier ESG non-compliance in manufacturing supply chain',
-      description: 'Key suppliers may not meet environmental and labor standards.',
+      title: 'Несоответствие поставщиков требованиям ESG в производственной цепочке поставок',
+      description: 'Ключевые поставщики могут не соответствовать экологическим и трудовым стандартам.',
       categoryId: esgSub.id,
       companyId: southbridge.id,
-      departmentId: departments['Operations'],
-      businessProcessId: processes['Production Line QA'],
+      departmentId: departments['Департамент операционной деятельности'],
+      businessProcessId: processes['Контроль качества производственной линии'],
       ownerId: users['deptmgr@crh.local'],
       status: RiskStatus.NEW,
-      sourceTitles: ['ESG supplier assessment'],
+      sourceTitles: ['Оценка поставщика по критериям ESG'],
     },
     {
-      title: 'Regulatory non-compliance following state inspection findings',
-      description: 'Findings from a recent regulator inspection indicate control gaps.',
+      title: 'Несоответствие регуляторным требованиям по результатам государственной проверки',
+      description: 'Результаты недавней государственной проверки указывают на пробелы в системе контролей.',
       categoryId: regulatory.id,
       companyId: southbridge.id,
-      departmentId: departments['Operations'],
+      departmentId: departments['Департамент операционной деятельности'],
       ownerId: users['officer@crh.local'],
       status: RiskStatus.DRAFT,
-      sourceTitles: ['Regulator inspection notice'],
+      sourceTitles: ['Уведомление о проверке уполномоченного государственного органа'],
     },
     {
-      title: 'Facilitation payments at customs clearance',
-      description: 'Local logistics staff may make small facilitation payments to expedite customs clearance.',
+      title: 'Платежи за содействие при таможенном оформлении',
+      description: 'Сотрудники логистики на местах могут производить небольшие платежи за содействие для ускорения таможенного оформления.',
       categoryId: facilitation.id,
       companyId: southbridge.id,
-      departmentId: departments['Operations'],
+      departmentId: departments['Департамент операционной деятельности'],
       ownerId: users['deptmgr@crh.local'],
       status: RiskStatus.MONITORING,
       likelihood: 3,
@@ -366,52 +378,52 @@ async function main() {
       residualLikelihood: 2,
       residualImpact: 2,
       controls: [
-        { type: ControlType.PREVENTIVE, title: 'Pre-cleared customs broker agreements', effectiveness: ControlEffectiveness.PARTIALLY_EFFECTIVE },
+        { type: ControlType.PREVENTIVE, title: 'Договоры с предварительно аккредитованными таможенными брокерами', effectiveness: ControlEffectiveness.PARTIALLY_EFFECTIVE },
       ],
       actions: [
-        { title: 'Audit customs broker payment records', status: ActionStatus.IN_PROGRESS, deadlineOffsetDays: 10, ownerEmail: 'deptmgr@crh.local' },
+        { title: 'Аудит платежей таможенным брокерам', status: ActionStatus.IN_PROGRESS, deadlineOffsetDays: 10, ownerEmail: 'deptmgr@crh.local' },
       ],
     },
     {
-      title: 'Vendor concentration risk in critical raw materials',
-      description: 'Over-reliance on a small number of vendors for critical raw materials.',
+      title: 'Риск концентрации поставщиков критически важного сырья',
+      description: 'Чрезмерная зависимость от небольшого числа поставщиков критически важного сырья.',
       categoryId: vendorRisk.id,
       companyId: southbridge.id,
-      departmentId: departments['Operations'],
+      departmentId: departments['Департамент операционной деятельности'],
       ownerId: users['deptmgr@crh.local'],
       status: RiskStatus.APPROVED,
       likelihood: 3,
       impact: 5,
-      sourceTitles: ['Vendor DD - Acme Supplies'],
+      sourceTitles: ['Комплаенс-проверка контрагента — ТОО «АкмеСнаб»'],
       actions: [
-        { title: 'Qualify two additional alternate suppliers', status: ActionStatus.PLANNED, deadlineOffsetDays: 60, ownerEmail: 'deptmgr@crh.local' },
+        { title: 'Квалификация двух дополнительных альтернативных поставщиков', status: ActionStatus.PLANNED, deadlineOffsetDays: 60, ownerEmail: 'deptmgr@crh.local' },
       ],
     },
     {
-      title: 'Historical bribery allegation now archived',
-      description: 'Legacy allegation investigated and closed with no findings; retained for reference.',
+      title: 'Архивное обвинение во взяточничестве (историческое)',
+      description: 'Ранее рассмотренное обвинение расследовано и закрыто без выявленных нарушений; сохранено для справки.',
       categoryId: corruption.id,
       companyId: northwind.id,
-      departmentId: departments['Legal & Compliance'],
+      departmentId: departments['Департамент правового обеспечения и комплаенса'],
       ownerId: users['officer@crh.local'],
       status: RiskStatus.ARCHIVED,
       likelihood: 2,
       impact: 3,
       residualLikelihood: 1,
       residualImpact: 1,
-      sourceTitles: ['Investigation case #INV-2026-002'],
+      sourceTitles: ['Служебная проверка №INV-2026-002'],
     },
     {
-      title: 'Media allegations of anti-competitive practices',
-      description: 'Press reports allege anti-competitive coordination in a regional market.',
+      title: 'Обвинения в СМИ в антиконкурентных практиках',
+      description: 'Публикации в прессе содержат обвинения в антиконкурентном сговоре на региональном рынке.',
       categoryId: regulatory.id,
       companyId: northwind.id,
-      departmentId: departments['Legal & Compliance'],
+      departmentId: departments['Департамент правового обеспечения и комплаенса'],
       ownerId: users['manager@crh.local'],
       status: RiskStatus.ASSESSMENT,
       likelihood: 2,
       impact: 5,
-      sourceTitles: ['Press coverage - industry bribery scandal'],
+      sourceTitles: ['Публикация в СМИ о коррупционном скандале в отрасли'],
     },
   ];
 
@@ -484,7 +496,7 @@ async function main() {
             deadline,
             ownerId: users[action.ownerEmail],
             completedAt: action.status === ActionStatus.COMPLETED ? new Date() : undefined,
-            result: action.status === ActionStatus.COMPLETED ? 'Completed as planned.' : undefined,
+            result: action.status === ActionStatus.COMPLETED ? 'Выполнено согласно плану.' : undefined,
           },
         });
       }
@@ -494,7 +506,7 @@ async function main() {
       data: {
         riskId: risk.id,
         authorId: users['officer@crh.local'],
-        text: `Risk registered and routed for ${spec.status.toLowerCase().replace('_', ' ')}.`,
+        text: `Риск зарегистрирован и направлен на этап «${RISK_STATUS_LABELS_RU[spec.status]}».`,
       },
     });
 
@@ -504,25 +516,25 @@ async function main() {
         version: 1,
         snapshot: JSON.parse(JSON.stringify(risk)),
         changedById: users['officer@crh.local'],
-        changeNote: 'Initial creation via seed data',
+        changeNote: 'Первоначальное создание из демонстрационных данных',
       },
     });
 
     created += 1;
   }
 
-  // A couple of incidents linked to risks, demonstrating the incident->risk lifecycle actions
-  const briberyRisk = await prisma.risk.findFirst({ where: { title: 'Bribery risk in vendor selection process' } });
+  // Инцидент, связанный с риском, демонстрирующий сценарий «инцидент → риск»
+  const briberyRisk = await prisma.risk.findFirst({ where: { title: 'Риск взяточничества при выборе поставщиков' } });
   if (briberyRisk) {
-    const existingIncident = await prisma.incident.findFirst({ where: { title: 'Hotline tip on vendor kickback' } });
+    const existingIncident = await prisma.incident.findFirst({ where: { title: 'Обращение на горячую линию об откате при выборе поставщика' } });
     if (!existingIncident) {
       await prisma.incident.create({
         data: {
-          title: 'Hotline tip on vendor kickback',
-          description: 'Anonymous tip alleging kickbacks in vendor selection.',
+          title: 'Обращение на горячую линию об откате при выборе поставщика',
+          description: 'Анонимное обращение с утверждением о выплате откатов при выборе поставщика.',
           status: IncidentStatus.UNDER_REVIEW,
           action: IncidentAction.UPDATE_RISK,
-          sourceId: sources['Whistleblower report #2026-014'],
+          sourceId: sources['Обращение на линию доверия №2026-014'],
           riskId: briberyRisk.id,
           reportedById: users['audit@crh.local'],
         },
@@ -530,10 +542,10 @@ async function main() {
     }
   }
 
-  console.log(`Seed complete. ${created} risks created (existing risks left untouched).`);
-  console.log('Demo login: admin@crh.local / officer@crh.local / manager@crh.local / owner@crh.local /');
-  console.log('            deptmgr@crh.local / audit@crh.local / board@crh.local');
-  console.log(`Password for all demo users: ${DEMO_PASSWORD}`);
+  console.log(`Заполнение завершено. Создано рисков: ${created} (существующие риски не изменялись).`);
+  console.log('Демонстрационные учётные записи: admin@crh.local / officer@crh.local / manager@crh.local / owner@crh.local /');
+  console.log('                                  deptmgr@crh.local / audit@crh.local / board@crh.local');
+  console.log(`Пароль для всех демонстрационных пользователей: ${DEMO_PASSWORD}`);
 }
 
 main()

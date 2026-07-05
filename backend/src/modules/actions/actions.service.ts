@@ -65,7 +65,7 @@ export class ActionsService {
       where: { id },
       include: INCLUDE,
     });
-    if (!action) throw new NotFoundException('Action not found');
+    if (!action) throw new NotFoundException('Мероприятие не найдено');
     return action;
   }
 

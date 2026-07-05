@@ -59,8 +59,8 @@ export class NotificationsService {
         action.ownerId!,
         NotificationType.ACTION_OVERDUE,
         {
-          title: 'Action plan overdue',
-          message: `"${action.title}" for risk ${action.risk?.code ?? ''} is overdue.`,
+          title: 'Просрочено мероприятие плана действий',
+          message: `Мероприятие «${action.title}» по риску ${action.risk?.code ?? ''} просрочено.`,
           link: `/risks/${action.riskId}`,
         },
       );
@@ -81,8 +81,8 @@ export class NotificationsService {
         action.ownerId!,
         NotificationType.ACTION_DUE_SOON,
         {
-          title: 'Action plan due soon',
-          message: `"${action.title}" for risk ${action.risk?.code ?? ''} is due within 3 days.`,
+          title: 'Приближается срок мероприятия',
+          message: `Срок мероприятия «${action.title}» по риску ${action.risk?.code ?? ''} истекает в течение 3 дней.`,
           link: `/risks/${action.riskId}`,
         },
       );

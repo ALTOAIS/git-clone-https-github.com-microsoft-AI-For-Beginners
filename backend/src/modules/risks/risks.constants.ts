@@ -16,6 +16,19 @@ export const RISK_LIFECYCLE: Record<RiskStatus, RiskStatus[]> = {
   [RiskStatus.ARCHIVED]: [],
 };
 
+/** Russian display labels for RiskStatus, used in server-generated audit/history text. */
+export const RISK_STATUS_LABELS_RU: Record<RiskStatus, string> = {
+  [RiskStatus.DRAFT]: 'Черновик',
+  [RiskStatus.NEW]: 'Новый',
+  [RiskStatus.ASSESSMENT]: 'Оценка',
+  [RiskStatus.APPROVED]: 'Утверждён',
+  [RiskStatus.MONITORING]: 'Мониторинг',
+  [RiskStatus.MITIGATION]: 'Устранение',
+  [RiskStatus.RESIDUAL_ASSESSMENT]: 'Оценка остаточного риска',
+  [RiskStatus.CLOSED]: 'Закрыт',
+  [RiskStatus.ARCHIVED]: 'В архиве',
+};
+
 export function scoreToLevel(
   score: number | null | undefined,
 ): 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null {

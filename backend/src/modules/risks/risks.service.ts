@@ -11,7 +11,7 @@ import { ChangeStatusDto } from './dto/change-status.dto';
 import { CreateRiskDto } from './dto/create-risk.dto';
 import { QueryRisksDto } from './dto/query-risks.dto';
 import { UpdateRiskDto } from './dto/update-risk.dto';
-import { RISK_LIFECYCLE } from './risks.constants';
+import { RISK_LIFECYCLE, RISK_STATUS_LABELS_RU } from './risks.constants';
 
 const DETAIL_INCLUDE = {
   category: true,
@@ -92,7 +92,7 @@ export class RisksService {
       where: { id },
       include: DETAIL_INCLUDE,
     });
-    if (!risk) throw new NotFoundException('Risk not found');
+    if (!risk) throw new NotFoundException('Риск не найден');
     return risk;
   }
 
@@ -122,7 +122,7 @@ export class RisksService {
       include: DETAIL_INCLUDE,
     });
 
-    await this.snapshotHistory(risk.id, 1, risk, userId, 'Risk created');
+    await this.snapshotHistory(risk.id, 1, risk, userId, 'Риск создан');
     await this.audit.record({
       entityType: 'RISK',
       entityId: risk.id,
@@ -155,7 +155,7 @@ export class RisksService {
       updated.version,
       updated,
       userId,
-      'Risk updated',
+      'Риск обновлён',
     );
     await this.audit.record({
       entityType: 'RISK',
@@ -202,7 +202,7 @@ export class RisksService {
       updated.version,
       updated,
       userId,
-      'Risk assessed',
+      'Риск оценён',
     );
     await this.audit.record({
       entityType: 'RISK',
@@ -218,8 +218,11 @@ export class RisksService {
     const existing = await this.findOne(id);
     const allowed = RISK_LIFECYCLE[existing.status];
     if (!allowed.includes(dto.status)) {
+      const allowedLabels = allowed
+        .map((status) => RISK_STATUS_LABELS_RU[status])
+        .join(', ');
       throw new BadRequestException(
-        `Cannot transition risk from ${existing.status} to ${dto.status}. Allowed: ${allowed.join(', ') || 'none'}`,
+        `Невозможно перевести риск из статуса «${RISK_STATUS_LABELS_RU[existing.status]}» в статус «${RISK_STATUS_LABELS_RU[dto.status]}». Допустимые статусы: ${allowedLabels || 'нет'}`,
       );
     }
 
@@ -239,7 +242,7 @@ export class RisksService {
       updated.version,
       updated,
       userId,
-      dto.note ?? `Status changed to ${dto.status}`,
+      dto.note ?? `Статус изменён на «${RISK_STATUS_LABELS_RU[dto.status]}»`,
     );
     await this.audit.record({
       entityType: 'RISK',

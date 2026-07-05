@@ -49,7 +49,7 @@ export class IncidentsService {
       where: { id },
       include: INCLUDE,
     });
-    if (!incident) throw new NotFoundException('Incident not found');
+    if (!incident) throw new NotFoundException('Инцидент не найден');
     return incident;
   }
 
@@ -59,7 +59,7 @@ export class IncidentsService {
     if (dto.action === IncidentAction.CREATE_RISK && !riskId) {
       const risk = await this.risksService.create(
         {
-          title: `[Incident] ${dto.title}`,
+          title: `[Инцидент] ${dto.title}`,
           description: dto.description,
           sourceIds: dto.sourceId ? [dto.sourceId] : undefined,
         },

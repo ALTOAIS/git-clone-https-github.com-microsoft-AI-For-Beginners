@@ -21,7 +21,7 @@ export class DepartmentsService {
         company: { select: { id: true, name: true } },
       },
     });
-    if (!dept) throw new NotFoundException('Department not found');
+    if (!dept) throw new NotFoundException('Департамент не найден');
     return dept;
   }
 

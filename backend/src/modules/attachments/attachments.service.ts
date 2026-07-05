@@ -52,7 +52,7 @@ export class AttachmentsService {
     const attachment = await this.prisma.attachment.findUnique({
       where: { id },
     });
-    if (!attachment) throw new NotFoundException('Attachment not found');
+    if (!attachment) throw new NotFoundException('Вложение не найдено');
     return attachment;
   }
 
