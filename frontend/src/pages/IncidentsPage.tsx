@@ -124,7 +124,15 @@ export function IncidentsPage() {
           <Form.Item name="occurredAt" label={t('incidentsPage.occurredLabel')}>
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item name="sourceId" label={t('incidentsPage.sourceLabel')}>
+          <Form.Item
+            name="sourceId"
+            label={
+              <span>
+                {t('incidentsPage.sourceLabel')}
+                <InfoTooltip text={t('tooltips.incidents.sourceField')} />
+              </span>
+            }
+          >
             <Select
               allowClear
               showSearch
@@ -135,7 +143,15 @@ export function IncidentsPage() {
           <Form.Item name="status" label={t('incidentsPage.statusLabel')}>
             <Select options={ALL_INCIDENT_STATUSES.map((value) => ({ value, label: incidentStatusLabel(value) }))} />
           </Form.Item>
-          <Form.Item name="action" label={t('incidentsPage.riskActionLabel')}>
+          <Form.Item
+            name="action"
+            label={
+              <span>
+                {t('incidentsPage.riskActionLabel')}
+                <InfoTooltip text={t('tooltips.incidents.riskActionField')} />
+              </span>
+            }
+          >
             <Select options={actionOptions} />
           </Form.Item>
           {action && action !== 'NONE' && action !== 'CREATE_RISK' && (

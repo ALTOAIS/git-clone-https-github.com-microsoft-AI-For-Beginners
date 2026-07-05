@@ -41,7 +41,7 @@ export function DashboardPage() {
               title={
                 <span>
                   {t('dashboard.activeRisks')}
-                  <InfoTooltip text={t('tooltips.dashboard.indicators')} />
+                  <InfoTooltip text={t('tooltips.dashboard.activeRisksCard')} />
                 </span>
               }
               value={data.kpis.activeRisks}
@@ -52,7 +52,12 @@ export function DashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title={t('dashboard.criticalRisks')}
+              title={
+                <span>
+                  {t('dashboard.criticalRisks')}
+                  <InfoTooltip text={t('tooltips.dashboard.criticalRisksCard')} />
+                </span>
+              }
               value={data.kpis.criticalRisks}
               valueStyle={{ color: '#f5222d' }}
               prefix={<FireOutlined style={{ color: '#f5222d' }} />}
@@ -62,7 +67,12 @@ export function DashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title={t('dashboard.residualRisks')}
+              title={
+                <span>
+                  {t('dashboard.residualRisks')}
+                  <InfoTooltip text={t('tooltips.dashboard.residualRisksCard')} />
+                </span>
+              }
               value={data.kpis.residualRisks}
               prefix={<SafetyOutlined style={{ color: '#13a8a8' }} />}
             />
@@ -71,7 +81,12 @@ export function DashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title={t('dashboard.overdueActions')}
+              title={
+                <span>
+                  {t('dashboard.overdueActions')}
+                  <InfoTooltip text={t('tooltips.dashboard.overdueActionsCard')} />
+                </span>
+              }
               value={data.kpis.overdueActions}
               valueStyle={{ color: data.kpis.overdueActions > 0 ? '#fa8c16' : undefined }}
               prefix={<ClockCircleOutlined style={{ color: '#fa8c16' }} />}

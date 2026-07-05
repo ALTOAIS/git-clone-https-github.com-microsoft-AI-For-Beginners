@@ -80,10 +80,25 @@ export function RiskControlsTab({ risk, onUpdated, canEdit }: Props) {
         pagination={false}
         locale={{ emptyText: t('riskControls.noControlsYet') }}
         columns={[
-          { title: t('riskControls.columns.type'), dataIndex: 'type', width: 120, render: (v: Control['type']) => t(`controlType.${v}`) },
+          {
+            title: (
+              <span>
+                {t('riskControls.columns.type')}
+                <InfoTooltip text={t('tooltips.controls.controlType')} />
+              </span>
+            ),
+            dataIndex: 'type',
+            width: 120,
+            render: (v: Control['type']) => t(`controlType.${v}`),
+          },
           { title: t('riskControls.columns.title'), dataIndex: 'title' },
           {
-            title: t('riskControls.columns.effectiveness'),
+            title: (
+              <span>
+                {t('riskControls.columns.effectiveness')}
+                <InfoTooltip text={t('tooltips.controls.controlEffectiveness')} />
+              </span>
+            ),
             dataIndex: 'effectiveness',
             width: 160,
             render: (v: Control['effectiveness']) => (

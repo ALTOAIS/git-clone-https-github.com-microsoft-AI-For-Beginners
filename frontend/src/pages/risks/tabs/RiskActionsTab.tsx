@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { actionsApi } from '../../../api/endpoints';
+import { InfoTooltip } from '../../../components/InfoTooltip';
 import { useUsersList } from '../../../hooks/useReferenceData';
 import type { Action, RiskDetail } from '../../../types';
 import { ACTION_STATUS_COLORS, ALL_ACTION_STATUSES, actionStatusLabel } from '../../../utils/riskDisplay';
@@ -77,13 +78,23 @@ export function RiskActionsTab({ risk, onUpdated, canEdit }: Props) {
           { title: t('riskActions.columns.title'), dataIndex: 'title' },
           { title: t('riskActions.columns.owner'), dataIndex: ['owner', 'fullName'], width: 150 },
           {
-            title: t('riskActions.columns.deadline'),
+            title: (
+              <span>
+                {t('riskActions.columns.deadline')}
+                <InfoTooltip text={t('tooltips.actions.deadline')} />
+              </span>
+            ),
             dataIndex: 'deadline',
             width: 120,
             render: (v: string | null) => (v ? dayjs(v).format('YYYY-MM-DD') : '—'),
           },
           {
-            title: t('riskActions.columns.status'),
+            title: (
+              <span>
+                {t('riskActions.columns.status')}
+                <InfoTooltip text={t('tooltips.actions.actionStatus')} />
+              </span>
+            ),
             dataIndex: 'status',
             width: 130,
             render: (v: Action['status']) => <Tag color={ACTION_STATUS_COLORS[v]}>{actionStatusLabel(v)}</Tag>,
