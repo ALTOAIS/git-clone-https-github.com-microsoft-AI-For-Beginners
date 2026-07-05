@@ -95,7 +95,7 @@ export function MainLayout() {
           }}
         >
           <SafetyCertificateOutlined style={{ fontSize: 20 }} />
-          <span>ЕИСУКР</span>
+          <span>CRH</span>
         </div>
         <Menu
           theme="dark"

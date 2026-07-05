@@ -207,7 +207,7 @@ export class ReportsService {
       ]);
 
     return buildPdfReport(
-      'Отчёт для Совета директоров — ЕИСУКР',
+      'Отчёт для Совета директоров — CRH',
       new Date().toLocaleDateString('ru-RU'),
       [
         {
@@ -257,7 +257,7 @@ export class ReportsService {
     ]);
 
     return buildPdfReport(
-      'Отчёт для Комитета по аудиту — ЕИСУКР',
+      'Отчёт для Комитета по аудиту — CRH',
       new Date().toLocaleDateString('ru-RU'),
       [
         {
@@ -311,7 +311,7 @@ export class ReportsService {
     ]);
 
     return buildPdfReport(
-      'Комплаенс-отчёт — ЕИСУКР',
+      'Комплаенс-отчёт — CRH',
       new Date().toLocaleDateString('ru-RU'),
       [
         {

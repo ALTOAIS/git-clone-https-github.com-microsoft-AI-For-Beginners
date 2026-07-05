@@ -34,9 +34,9 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('ЕИСУКР API')
+    .setTitle('Compliance Risk Hub API')
     .setDescription(
-      'REST API Единой информационной системы управления комплаенс-рисками',
+      'REST API системы управления комплаенс-рисками Compliance Risk Hub',
     )
     .setVersion('1.0')
     .addBearerAuth()
@@ -48,7 +48,7 @@ async function bootstrap() {
   await app.listen(port);
   // eslint-disable-next-line no-console
   console.log(
-    `ЕИСУКР API запущен на http://localhost:${port}/api (документация: /api/docs)`,
+    `Compliance Risk Hub API запущен на http://localhost:${port}/api (документация: /api/docs)`,
   );
 }
 bootstrap();
