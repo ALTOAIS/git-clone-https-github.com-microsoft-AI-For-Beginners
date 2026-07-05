@@ -2,6 +2,7 @@ import { Button, Descriptions, Form, Input, message, Select, Space } from 'antd'
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { risksApi } from '../../../api/endpoints';
+import { InfoTooltip } from '../../../components/InfoTooltip';
 import { useCategories, useCompanies, useDepartments, useUsersList } from '../../../hooks/useReferenceData';
 import type { RiskDetail } from '../../../types';
 
@@ -53,8 +54,26 @@ export function RiskInfoTab({ risk, onUpdated, canEdit }: Props) {
         <Descriptions column={2} bordered size="small">
           <Descriptions.Item label={t('riskInfo.code')}>{risk.code}</Descriptions.Item>
           <Descriptions.Item label={t('riskInfo.version')}>v{risk.version}</Descriptions.Item>
-          <Descriptions.Item label={t('riskInfo.category')}>{risk.category?.name ?? '—'}</Descriptions.Item>
-          <Descriptions.Item label={t('riskInfo.owner')}>{risk.owner?.fullName ?? '—'}</Descriptions.Item>
+          <Descriptions.Item
+            label={
+              <span>
+                {t('riskInfo.category')}
+                <InfoTooltip text={t('tooltips.riskRegister.riskCategory')} />
+              </span>
+            }
+          >
+            {risk.category?.name ?? '—'}
+          </Descriptions.Item>
+          <Descriptions.Item
+            label={
+              <span>
+                {t('riskInfo.owner')}
+                <InfoTooltip text={t('tooltips.riskRegister.riskOwner')} />
+              </span>
+            }
+          >
+            {risk.owner?.fullName ?? '—'}
+          </Descriptions.Item>
           <Descriptions.Item label={t('riskInfo.company')}>{risk.company?.name ?? '—'}</Descriptions.Item>
           <Descriptions.Item label={t('riskInfo.department')}>{risk.department?.name ?? '—'}</Descriptions.Item>
           <Descriptions.Item label={t('riskInfo.businessProcess')}>{risk.businessProcess?.name ?? '—'}</Descriptions.Item>

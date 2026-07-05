@@ -5,6 +5,8 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { risksApi } from '../../api/endpoints';
+import { InfoTooltip } from '../../components/InfoTooltip';
+import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import { useCategories, useCompanies, useDepartments } from '../../hooks/useReferenceData';
 import type { RiskListItem, RiskStatus } from '../../types';
 import { ALL_RISK_STATUSES, RISK_STATUS_COLORS, riskStatusLabel, SCORE_LEVEL_COLORS, scoreLevel } from '../../utils/riskDisplay';
@@ -46,23 +48,56 @@ export function RiskRegisterPage() {
         ),
       },
       {
-        title: t('riskRegister.columns.status'),
+        title: (
+          <span>
+            {t('riskRegister.columns.status')}
+            <InfoTooltip text={t('tooltips.riskRegister.riskStatus')} />
+          </span>
+        ),
         dataIndex: 'status',
         width: 160,
         render: (value: RiskStatus) => <Tag color={RISK_STATUS_COLORS[value]}>{riskStatusLabel(value)}</Tag>,
       },
-      { title: t('riskRegister.columns.category'), dataIndex: ['category', 'name'], width: 160 },
+      {
+        title: (
+          <span>
+            {t('riskRegister.columns.category')}
+            <InfoTooltip text={t('tooltips.riskRegister.riskCategory')} />
+          </span>
+        ),
+        dataIndex: ['category', 'name'],
+        width: 160,
+      },
       { title: t('riskRegister.columns.company'), dataIndex: ['company', 'name'], width: 150 },
       { title: t('riskRegister.columns.department'), dataIndex: ['department', 'name'], width: 150 },
-      { title: t('riskRegister.columns.owner'), dataIndex: ['owner', 'fullName'], width: 150 },
       {
-        title: t('riskRegister.columns.inherent'),
+        title: (
+          <span>
+            {t('riskRegister.columns.owner')}
+            <InfoTooltip text={t('tooltips.riskRegister.riskOwner')} />
+          </span>
+        ),
+        dataIndex: ['owner', 'fullName'],
+        width: 150,
+      },
+      {
+        title: (
+          <span>
+            {t('riskRegister.columns.inherent')}
+            <InfoTooltip text={t('tooltips.riskRegister.riskLevel')} />
+          </span>
+        ),
         dataIndex: 'inherentScore',
         width: 100,
         render: (value: number | null) => renderScore(value),
       },
       {
-        title: t('riskRegister.columns.residual'),
+        title: (
+          <span>
+            {t('riskRegister.columns.residual')}
+            <InfoTooltip text={t('tooltips.riskRegister.residualRisk')} />
+          </span>
+        ),
         dataIndex: 'residualScore',
         width: 100,
         render: (value: number | null) => renderScore(value),
@@ -76,10 +111,14 @@ export function RiskRegisterPage() {
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
         <Typography.Title level={3} style={{ margin: 0 }}>
           {t('riskRegister.title')}
+          <InfoTooltip text={t('tooltips.riskRegister.complianceRisk')} />
         </Typography.Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-          {t('riskRegister.registerButton')}
-        </Button>
+        <Space>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+            {t('riskRegister.registerButton')}
+          </Button>
+          <ModuleHelpButton moduleKey="riskRegister" />
+        </Space>
       </Space>
 
       <Space style={{ marginBottom: 16 }} wrap>

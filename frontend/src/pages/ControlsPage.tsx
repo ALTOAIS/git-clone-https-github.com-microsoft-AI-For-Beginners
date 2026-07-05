@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { controlsApi } from '../api/endpoints';
+import { ModuleHelpButton } from '../components/ModuleHelpButton';
 import type { Control } from '../types';
 import { ALL_CONTROL_EFFECTIVENESS, CONTROL_EFFECTIVENESS_COLORS, controlEffectivenessLabel } from '../utils/riskDisplay';
 
@@ -26,7 +27,10 @@ export function ControlsPage() {
 
   return (
     <div>
-      <Typography.Title level={3}>{t('controlsPage.title')}</Typography.Title>
+      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Typography.Title level={3}>{t('controlsPage.title')}</Typography.Title>
+        <ModuleHelpButton moduleKey="controls" />
+      </Space>
       <Typography.Paragraph type="secondary">{t('controlsPage.description')}</Typography.Paragraph>
 
       <Space style={{ marginBottom: 16 }} wrap>

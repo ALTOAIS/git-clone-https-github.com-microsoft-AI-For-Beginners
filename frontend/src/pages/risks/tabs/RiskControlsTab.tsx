@@ -1,8 +1,9 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, message, Modal, Popconfirm, Select, Table, Tag } from 'antd';
+import { Button, Form, Input, message, Modal, Popconfirm, Select, Space, Table, Tag } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { controlsApi } from '../../../api/endpoints';
+import { InfoTooltip } from '../../../components/InfoTooltip';
 import type { Control, RiskDetail } from '../../../types';
 import { ALL_CONTROL_EFFECTIVENESS, CONTROL_EFFECTIVENESS_COLORS, controlEffectivenessLabel } from '../../../utils/riskDisplay';
 
@@ -62,11 +63,17 @@ export function RiskControlsTab({ risk, onUpdated, canEdit }: Props) {
 
   return (
     <div>
-      {canEdit && (
-        <Button icon={<PlusOutlined />} style={{ marginBottom: 16 }} onClick={openCreate}>
-          {t('riskControls.addButton')}
-        </Button>
-      )}
+      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
+        <span style={{ color: '#8c8c8c' }}>
+          {t('riskCard.tabs.controls')}
+          <InfoTooltip text={t('tooltips.riskRegister.controls')} />
+        </span>
+        {canEdit && (
+          <Button icon={<PlusOutlined />} onClick={openCreate}>
+            {t('riskControls.addButton')}
+          </Button>
+        )}
+      </Space>
       <Table
         rowKey="id"
         dataSource={risk.controls}

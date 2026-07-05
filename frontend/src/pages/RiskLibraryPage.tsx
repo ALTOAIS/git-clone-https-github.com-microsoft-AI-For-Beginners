@@ -6,6 +6,8 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { categoriesApi } from '../api/endpoints';
 import { useAuthStore } from '../auth/authStore';
+import { InfoTooltip } from '../components/InfoTooltip';
+import { ModuleHelpButton } from '../components/ModuleHelpButton';
 import type { Category } from '../types';
 
 const MANAGE_ROLES = ['ADMINISTRATOR', 'COMPLIANCE_MANAGER'];
@@ -60,14 +62,21 @@ export function RiskLibraryPage() {
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
         <Typography.Title level={3} style={{ margin: 0 }}>
           {t('riskLibrary.title')}
+          <InfoTooltip text={t('tooltips.riskLibrary.purpose')} />
         </Typography.Title>
-        {canManage && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
-            {t('riskLibrary.addCategoryButton')}
-          </Button>
-        )}
+        <Space>
+          {canManage && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
+              {t('riskLibrary.addCategoryButton')}
+            </Button>
+          )}
+          <ModuleHelpButton moduleKey="riskLibrary" />
+        </Space>
       </Space>
-      <Typography.Paragraph type="secondary">{t('riskLibrary.description')}</Typography.Paragraph>
+      <Typography.Paragraph type="secondary">
+        {t('riskLibrary.description')}
+        <InfoTooltip text={t('tooltips.riskLibrary.vsRegister')} />
+      </Typography.Paragraph>
 
       <Card loading={isLoading}>
         <Tree treeData={toTreeData(tree ?? [])} defaultExpandAll showLine />

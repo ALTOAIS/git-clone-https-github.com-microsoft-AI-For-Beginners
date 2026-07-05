@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { risksApi } from '../../api/endpoints';
 import { useAuthStore } from '../../auth/authStore';
+import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import { RISK_STATUS_COLORS, riskStatusLabel } from '../../utils/riskDisplay';
 import { RISK_LIFECYCLE } from '../../utils/riskLifecycle';
 import { RiskInfoTab } from './tabs/RiskInfoTab';
@@ -67,19 +68,22 @@ export function RiskCardPage() {
           <Typography.Text type="secondary">{risk.code}</Typography.Text>
         </div>
 
-        {canEdit && allowedTransitions.length > 0 && (
-          <Dropdown
-            menu={{
-              items: allowedTransitions.map((status) => ({
-                key: status,
-                label: t('riskCard.moveTo', { status: riskStatusLabel(status) }),
-                onClick: () => handleTransition(status),
-              })),
-            }}
-          >
-            <Button type="primary">{t('riskCard.changeStatusButton')}</Button>
-          </Dropdown>
-        )}
+        <Space>
+          {canEdit && allowedTransitions.length > 0 && (
+            <Dropdown
+              menu={{
+                items: allowedTransitions.map((status) => ({
+                  key: status,
+                  label: t('riskCard.moveTo', { status: riskStatusLabel(status) }),
+                  onClick: () => handleTransition(status),
+                })),
+              }}
+            >
+              <Button type="primary">{t('riskCard.changeStatusButton')}</Button>
+            </Dropdown>
+          )}
+          <ModuleHelpButton moduleKey="riskRegister" />
+        </Space>
       </Space>
 
       <Tabs

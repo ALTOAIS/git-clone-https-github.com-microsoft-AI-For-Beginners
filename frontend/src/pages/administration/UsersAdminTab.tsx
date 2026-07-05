@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usersApi } from '../../api/endpoints';
 import { ALL_ROLES, roleLabel } from '../../auth/roles';
+import { InfoTooltip } from '../../components/InfoTooltip';
 import { useCompanies, useDepartments } from '../../hooks/useReferenceData';
 import type { User } from '../../types';
 
@@ -70,7 +71,16 @@ export function UsersAdminTab() {
         columns={[
           { title: t('usersAdmin.columns.name'), dataIndex: 'fullName' },
           { title: t('usersAdmin.columns.email'), dataIndex: 'email' },
-          { title: t('usersAdmin.columns.role'), dataIndex: 'role', render: (v: User['role']) => <Tag>{roleLabel(v)}</Tag> },
+          {
+            title: (
+              <span>
+                {t('usersAdmin.columns.role')}
+                <InfoTooltip text={t('tooltips.administration.roles')} />
+              </span>
+            ),
+            dataIndex: 'role',
+            render: (v: User['role']) => <Tag>{roleLabel(v)}</Tag>,
+          },
           { title: t('usersAdmin.columns.company'), dataIndex: ['company', 'name'] },
           { title: t('usersAdmin.columns.department'), dataIndex: ['department', 'name'] },
           {

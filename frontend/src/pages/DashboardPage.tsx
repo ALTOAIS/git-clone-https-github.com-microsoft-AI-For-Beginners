@@ -1,9 +1,11 @@
 import { AlertOutlined, ClockCircleOutlined, FireOutlined, SafetyOutlined } from '@ant-design/icons';
 import { Line } from '@ant-design/charts';
-import { Card, Col, List, Row, Skeleton, Statistic, Typography } from 'antd';
+import { Card, Col, List, Row, Skeleton, Space, Statistic, Typography } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { dashboardApi } from '../api/endpoints';
+import { InfoTooltip } from '../components/InfoTooltip';
+import { ModuleHelpButton } from '../components/ModuleHelpButton';
 import { RiskHeatMap } from '../components/RiskHeatMap';
 
 export function DashboardPage() {
@@ -24,15 +26,24 @@ export function DashboardPage() {
 
   return (
     <div>
-      <Typography.Title level={3} style={{ marginTop: 0 }}>
-        {t('dashboard.title')}
-      </Typography.Title>
+      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 0 }} align="center">
+        <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 0 }}>
+          {t('dashboard.title')}
+          <InfoTooltip text={t('tooltips.dashboard.whatIsSystem')} />
+        </Typography.Title>
+        <ModuleHelpButton moduleKey="dashboard" />
+      </Space>
 
-      <Row gutter={16}>
+      <Row gutter={16} style={{ marginTop: 16 }}>
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title={t('dashboard.activeRisks')}
+              title={
+                <span>
+                  {t('dashboard.activeRisks')}
+                  <InfoTooltip text={t('tooltips.dashboard.indicators')} />
+                </span>
+              }
               value={data.kpis.activeRisks}
               prefix={<AlertOutlined style={{ color: '#0f5fa8' }} />}
             />
@@ -71,7 +82,15 @@ export function DashboardPage() {
 
       <Row gutter={16} style={{ marginTop: 16 }}>
         <Col xs={24} lg={12}>
-          <Card title={t('dashboard.inherentHeatMapTitle')} bodyStyle={{ overflowX: 'auto' }}>
+          <Card
+            title={
+              <span>
+                {t('dashboard.inherentHeatMapTitle')}
+                <InfoTooltip text={t('tooltips.dashboard.howToUse')} />
+              </span>
+            }
+            bodyStyle={{ overflowX: 'auto' }}
+          >
             <RiskHeatMap grid={data.heatMap.grid} />
           </Card>
         </Col>
