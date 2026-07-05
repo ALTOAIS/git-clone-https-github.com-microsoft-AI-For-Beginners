@@ -1,25 +1,18 @@
-import { BellOutlined, GlobalOutlined, LogoutOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
-import { Avatar, Badge, Dropdown, Layout, Menu, Popover, Select, Space, Typography, List, Empty } from 'antd';
+import { BellOutlined, LogoutOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Badge, Dropdown, Layout, Menu, Popover, Space, Typography, List, Empty } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { notificationsApi } from '../api/endpoints';
 import { useAuthStore } from '../auth/authStore';
 import { roleLabel } from '../auth/roles';
-import { setLanguage, SUPPORTED_LANGUAGES, type SupportedLanguage } from '../i18n';
 import type { AppNotification } from '../types';
 import { NAV_ITEMS } from './navConfig';
 
 const { Header, Sider, Content } = Layout;
 
-const LANGUAGE_OPTIONS: Record<SupportedLanguage, string> = {
-  ru: 'Русский',
-  kk: 'Қазақша',
-  en: 'English',
-};
-
 export function MainLayout() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -127,14 +120,6 @@ export function MainLayout() {
           }}
         >
           <Space size="large">
-            <Select
-              value={i18n.language as SupportedLanguage}
-              onChange={(value: SupportedLanguage) => setLanguage(value)}
-              variant="borderless"
-              suffixIcon={<GlobalOutlined />}
-              style={{ width: 130 }}
-              options={SUPPORTED_LANGUAGES.map((code) => ({ value: code, label: LANGUAGE_OPTIONS[code] }))}
-            />
             <Popover content={notificationContent} title={t('layout.notifications')} trigger="click" placement="bottomRight">
               <Badge count={unreadCount} size="small">
                 <BellOutlined style={{ fontSize: 18, cursor: 'pointer' }} />

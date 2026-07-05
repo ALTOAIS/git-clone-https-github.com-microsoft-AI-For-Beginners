@@ -32,7 +32,7 @@ export class CategoriesService {
 
   async findOne(id: string) {
     const category = await this.prisma.category.findUnique({ where: { id } });
-    if (!category) throw new NotFoundException('Category not found');
+    if (!category) throw new NotFoundException('Категория не найдена');
     return category;
   }
 

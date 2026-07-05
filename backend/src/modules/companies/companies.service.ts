@@ -14,7 +14,7 @@ export class CompaniesService {
       where: { id },
       include: { departments: true },
     });
-    if (!company) throw new NotFoundException('Company not found');
+    if (!company) throw new NotFoundException('Компания не найдена');
     return company;
   }
 

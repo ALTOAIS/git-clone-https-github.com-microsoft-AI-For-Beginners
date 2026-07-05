@@ -33,7 +33,7 @@ export function attachmentsMulterOptions(uploadDir: string) {
     ) => {
       if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
         callback(
-          new BadRequestException(`File type not allowed: ${file.mimetype}`),
+          new BadRequestException(`Недопустимый тип файла: ${file.mimetype}`),
           false,
         );
         return;

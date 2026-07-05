@@ -33,7 +33,7 @@ export class CommentsService {
 
   async update(id: string, text: string, userId?: string) {
     const existing = await this.prisma.comment.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Comment not found');
+    if (!existing) throw new NotFoundException('Комментарий не найден');
     const comment = await this.prisma.comment.update({
       where: { id },
       data: { text },
@@ -50,7 +50,7 @@ export class CommentsService {
 
   async remove(id: string, userId?: string) {
     const existing = await this.prisma.comment.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Comment not found');
+    if (!existing) throw new NotFoundException('Комментарий не найден');
     await this.prisma.comment.delete({ where: { id } });
     await this.audit.record({
       entityType: 'RISK',

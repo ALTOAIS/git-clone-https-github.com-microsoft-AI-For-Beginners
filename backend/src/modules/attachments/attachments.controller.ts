@@ -50,7 +50,7 @@ export class AttachmentsController {
     @Query('riskId') riskId: string | undefined,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    if (!file) throw new BadRequestException('No file uploaded');
+    if (!file) throw new BadRequestException('Файл не был загружен');
     return this.attachmentsService.create({
       file,
       entityType,

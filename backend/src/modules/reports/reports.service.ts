@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ActionStatus, RiskStatus } from '@prisma/client';
+import {
+  ACTION_STATUS_LABELS_RU,
+  SOURCE_TYPE_LABELS_RU,
+} from '../../common/ru-labels';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RISK_STATUS_LABELS_RU } from '../risks/risks.constants';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { toCsv, toXlsx } from './export.util';
 import { buildPdfReport } from './pdf.util';
@@ -34,7 +39,7 @@ export class ReportsService {
     return risks.map((r) => ({
       code: r.code,
       title: r.title,
-      status: r.status,
+      status: RISK_STATUS_LABELS_RU[r.status],
       category: r.category?.name ?? '',
       company: r.company?.name ?? '',
       department: r.department?.name ?? '',
@@ -62,7 +67,7 @@ export class ReportsService {
       title: a.title,
       owner: a.owner?.fullName ?? '',
       deadline: a.deadline ? a.deadline.toISOString().slice(0, 10) : '',
-      status: a.status,
+      status: ACTION_STATUS_LABELS_RU[a.status],
       result: a.result ?? '',
     }));
   }
@@ -84,7 +89,7 @@ export class ReportsService {
       department: r.department?.name ?? '',
       owner: r.owner?.fullName ?? '',
       inherentScore: r.inherentScore ?? '',
-      status: r.status,
+      status: RISK_STATUS_LABELS_RU[r.status],
     }));
   }
 
@@ -105,7 +110,7 @@ export class ReportsService {
       title: a.title,
       owner: a.owner?.fullName ?? '',
       deadline: a.deadline ? a.deadline.toISOString().slice(0, 10) : '',
-      status: a.status,
+      status: ACTION_STATUS_LABELS_RU[a.status],
     }));
   }
 
@@ -133,56 +138,59 @@ export class ReportsService {
       case 'risk-register':
         return {
           columns: [
-            { id: 'code', title: 'Code' },
-            { id: 'title', title: 'Title' },
-            { id: 'status', title: 'Status' },
-            { id: 'category', title: 'Category' },
-            { id: 'company', title: 'Company' },
-            { id: 'department', title: 'Department' },
-            { id: 'owner', title: 'Owner' },
-            { id: 'likelihood', title: 'Likelihood' },
-            { id: 'impact', title: 'Impact' },
-            { id: 'inherentScore', title: 'Inherent Score' },
-            { id: 'residualScore', title: 'Residual Score' },
-            { id: 'controlEffectivenessAvg', title: 'Control Effectiveness %' },
-            { id: 'createdAt', title: 'Created' },
+            { id: 'code', title: 'Код' },
+            { id: 'title', title: 'Наименование' },
+            { id: 'status', title: 'Статус' },
+            { id: 'category', title: 'Категория' },
+            { id: 'company', title: 'Компания' },
+            { id: 'department', title: 'Департамент' },
+            { id: 'owner', title: 'Владелец риска' },
+            { id: 'likelihood', title: 'Вероятность' },
+            { id: 'impact', title: 'Воздействие' },
+            { id: 'inherentScore', title: 'Присущий риск (балл)' },
+            { id: 'residualScore', title: 'Остаточный риск (балл)' },
+            {
+              id: 'controlEffectivenessAvg',
+              title: 'Эффективность контролей, %',
+            },
+            { id: 'createdAt', title: 'Дата создания' },
           ],
           rows: await this.riskRegisterRows(),
         };
       case 'action-plan':
         return {
           columns: [
-            { id: 'riskCode', title: 'Risk Code' },
-            { id: 'riskTitle', title: 'Risk Title' },
-            { id: 'title', title: 'Action' },
-            { id: 'owner', title: 'Owner' },
-            { id: 'deadline', title: 'Deadline' },
-            { id: 'status', title: 'Status' },
-            { id: 'result', title: 'Result' },
+            { id: 'riskCode', title: 'Код риска' },
+            { id: 'riskTitle', title: 'Наименование риска' },
+            { id: 'title', title: 'Мероприятие' },
+            { id: 'owner', title: 'Ответственный' },
+            { id: 'deadline', title: 'Срок исполнения' },
+            { id: 'status', title: 'Статус' },
+            { id: 'result', title: 'Результат' },
           ],
           rows: await this.actionPlanRows(),
         };
       case 'critical-risks':
         return {
           columns: [
-            { id: 'code', title: 'Code' },
-            { id: 'title', title: 'Title' },
-            { id: 'company', title: 'Company' },
-            { id: 'department', title: 'Department' },
-            { id: 'owner', title: 'Owner' },
-            { id: 'inherentScore', title: 'Inherent Score' },
-            { id: 'status', title: 'Status' },
+            { id: 'code', title: 'Код' },
+            { id: 'title', title: 'Наименование' },
+            { id: 'company', title: 'Компания' },
+            { id: 'department', title: 'Департамент' },
+            { id: 'owner', title: 'Владелец риска' },
+            { id: 'inherentScore', title: 'Присущий риск (балл)' },
+            { id: 'status', title: 'Статус' },
           ],
           rows: await this.criticalRiskRows(),
         };
       case 'overdue-actions':
         return {
           columns: [
-            { id: 'riskCode', title: 'Risk Code' },
-            { id: 'title', title: 'Action' },
-            { id: 'owner', title: 'Owner' },
-            { id: 'deadline', title: 'Deadline' },
-            { id: 'status', title: 'Status' },
+            { id: 'riskCode', title: 'Код риска' },
+            { id: 'title', title: 'Мероприятие' },
+            { id: 'owner', title: 'Ответственный' },
+            { id: 'deadline', title: 'Срок исполнения' },
+            { id: 'status', title: 'Статус' },
           ],
           rows: await this.overdueActionRows(),
         };
@@ -199,36 +207,36 @@ export class ReportsService {
       ]);
 
     return buildPdfReport(
-      'Board Report — Compliance Risk Hub',
-      new Date().toDateString(),
+      'Отчёт для Совета директоров — CRH',
+      new Date().toLocaleDateString('ru-RU'),
       [
         {
-          heading: 'Executive Summary',
+          heading: 'Краткое резюме',
           lines: [
-            `Active risks under residual assessment: ${residual.count}`,
-            `Average inherent score: ${residual.averageInherent}`,
-            `Average residual score: ${residual.averageResidual}`,
-            `Residual risk reduction: ${residual.reductionPercent}%`,
+            `Активные риски на этапе оценки остаточного риска: ${residual.count}`,
+            `Средний балл присущего риска: ${residual.averageInherent}`,
+            `Средний балл остаточного риска: ${residual.averageResidual}`,
+            `Снижение остаточного риска: ${residual.reductionPercent}%`,
           ],
         },
         {
-          heading: 'Top Companies by Active Risk Count',
+          heading: 'Компании с наибольшим числом активных рисков',
           table: {
-            headers: ['Company', 'Risks'],
-            rows: topCompanies.map((c) => [c.name ?? 'Unknown', c.count]),
+            headers: ['Компания', 'Риски'],
+            rows: topCompanies.map((c) => [c.name ?? 'Не указано', c.count]),
           },
         },
         {
-          heading: 'Top Departments by Active Risk Count',
+          heading: 'Департаменты с наибольшим числом активных рисков',
           table: {
-            headers: ['Department', 'Risks'],
-            rows: topDepartments.map((d) => [d.name ?? 'Unknown', d.count]),
+            headers: ['Департамент', 'Риски'],
+            rows: topDepartments.map((d) => [d.name ?? 'Не указано', d.count]),
           },
         },
         {
-          heading: 'Critical Risks',
+          heading: 'Критические риски',
           table: {
-            headers: ['Code', 'Title', 'Score', 'Status'],
+            headers: ['Код', 'Наименование', 'Балл', 'Статус'],
             rows: criticalRows.map((r) => [
               r.code,
               r.title,
@@ -249,22 +257,22 @@ export class ReportsService {
     ]);
 
     return buildPdfReport(
-      'Audit Committee Report — Compliance Risk Hub',
-      new Date().toDateString(),
+      'Отчёт для Комитета по аудиту — CRH',
+      new Date().toLocaleDateString('ru-RU'),
       [
         {
-          heading: 'Control Effectiveness Overview',
+          heading: 'Обзор эффективности контролей',
           lines: [
-            `Effective: ${controlEff.EFFECTIVE}`,
-            `Partially effective: ${controlEff.PARTIALLY_EFFECTIVE}`,
-            `Ineffective: ${controlEff.INEFFECTIVE}`,
-            `Not tested: ${controlEff.NOT_TESTED}`,
+            `Эффективны: ${controlEff.EFFECTIVE}`,
+            `Частично эффективны: ${controlEff.PARTIALLY_EFFECTIVE}`,
+            `Неэффективны: ${controlEff.INEFFECTIVE}`,
+            `Не проверялись: ${controlEff.NOT_TESTED}`,
           ],
         },
         {
-          heading: 'Critical Risks Requiring Attention',
+          heading: 'Критические риски, требующие внимания',
           table: {
-            headers: ['Code', 'Title', 'Company', 'Department', 'Score'],
+            headers: ['Код', 'Наименование', 'Компания', 'Департамент', 'Балл'],
             rows: criticalRows.map((r) => [
               r.code,
               r.title,
@@ -275,9 +283,14 @@ export class ReportsService {
           },
         },
         {
-          heading: 'Overdue Action Plans',
+          heading: 'Просроченные мероприятия плана действий',
           table: {
-            headers: ['Risk', 'Action', 'Owner', 'Deadline'],
+            headers: [
+              'Риск',
+              'Мероприятие',
+              'Ответственный',
+              'Срок исполнения',
+            ],
             rows: overdue.map((a) => [
               a.riskCode,
               a.title,
@@ -298,28 +311,32 @@ export class ReportsService {
     ]);
 
     return buildPdfReport(
-      'Compliance Report — Compliance Risk Hub',
-      new Date().toDateString(),
+      'Комплаенс-отчёт — CRH',
+      new Date().toLocaleDateString('ru-RU'),
       [
         {
-          heading: 'Risk Trend (last 6 months)',
+          heading: 'Динамика рисков (последние 6 месяцев)',
           table: {
-            headers: ['Month', 'Created', 'Closed'],
+            headers: ['Месяц', 'Создано', 'Закрыто'],
             rows: trends.map((t) => [t.month, t.created, t.closed]),
           },
         },
         {
-          heading: 'Top Risk Sources',
+          heading: 'Основные источники рисков',
           table: {
-            headers: ['Source', 'Type', 'Linked Risks'],
-            rows: topSources.map((s) => [s.title ?? '', s.type ?? '', s.count]),
+            headers: ['Источник', 'Тип', 'Связанные риски'],
+            rows: topSources.map((s) => [
+              s.title ?? '',
+              s.type ? SOURCE_TYPE_LABELS_RU[s.type] : '',
+              s.count,
+            ]),
           },
         },
         {
-          heading: 'Top Risk Categories',
+          heading: 'Основные категории рисков',
           table: {
-            headers: ['Category', 'Active Risks'],
-            rows: topCategories.map((c) => [c.name ?? 'Unknown', c.count]),
+            headers: ['Категория', 'Активные риски'],
+            rows: topCategories.map((c) => [c.name ?? 'Не указано', c.count]),
           },
         },
       ],

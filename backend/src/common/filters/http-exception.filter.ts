@@ -19,7 +19,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message: string | object = 'Internal server error';
+    let message: string | object = 'Внутренняя ошибка сервера';
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -27,10 +27,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       if (exception.code === 'P2002') {
         status = HttpStatus.CONFLICT;
-        message = `Unique constraint violated on: ${(exception.meta?.target as string[])?.join(', ')}`;
+        message = `Нарушено требование уникальности для поля: ${(exception.meta?.target as string[])?.join(', ')}`;
       } else if (exception.code === 'P2025') {
         status = HttpStatus.NOT_FOUND;
-        message = 'Record not found';
+        message = 'Запись не найдена';
       } else {
         status = HttpStatus.BAD_REQUEST;
         message = exception.message;

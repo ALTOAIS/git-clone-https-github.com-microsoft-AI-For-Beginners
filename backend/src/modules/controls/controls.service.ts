@@ -26,7 +26,8 @@ export class ControlsService {
 
   async findOne(id: string) {
     const control = await this.prisma.control.findUnique({ where: { id } });
-    if (!control) throw new NotFoundException('Control not found');
+    if (!control)
+      throw new NotFoundException('Контрольное мероприятие не найдено');
     return control;
   }
 

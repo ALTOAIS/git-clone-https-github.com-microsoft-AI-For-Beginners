@@ -64,7 +64,7 @@ export class UsersService {
       where: { id },
       select: SAFE_SELECT,
     });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException('Пользователь не найден');
     return user;
   }
 
@@ -72,7 +72,10 @@ export class UsersService {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
-    if (existing) throw new ConflictException('Email already registered');
+    if (existing)
+      throw new ConflictException(
+        'Пользователь с таким email уже зарегистрирован',
+      );
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const { password: _password, ...rest } = dto;
     return this.prisma.user.create({
