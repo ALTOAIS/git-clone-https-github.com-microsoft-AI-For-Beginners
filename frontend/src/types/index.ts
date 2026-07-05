@@ -265,6 +265,7 @@ export interface DashboardSummary {
   topCategories: Array<{ id: string; name?: string; count: number }>;
   heatMap: { grid: number[][] };
   trends: Array<{ month: string; created: number; closed: number }>;
+  analyses: AnalysesSummary;
 }
 
 export interface AppNotification {
@@ -275,4 +276,136 @@ export interface AppNotification {
   link?: string | null;
   isRead: boolean;
   createdAt: string;
+}
+
+// ------------------------------------------------------------------
+// Внутренний анализ коррупционных рисков (ВАКР)
+// ------------------------------------------------------------------
+
+export type AnalysisStage =
+  | 'CREATION'
+  | 'PLANNING'
+  | 'WORKING_GROUP'
+  | 'DOCUMENTS'
+  | 'PROCESS_MAP'
+  | 'FACTORS'
+  | 'RISKS'
+  | 'ASSESSMENT'
+  | 'RECOMMENDATIONS'
+  | 'ACTION_PLAN'
+  | 'COORDINATION'
+  | 'APPROVAL'
+  | 'MONITORING'
+  | 'REASSESSMENT';
+
+export const ANALYSIS_STAGE_ORDER: AnalysisStage[] = [
+  'CREATION',
+  'PLANNING',
+  'WORKING_GROUP',
+  'DOCUMENTS',
+  'PROCESS_MAP',
+  'FACTORS',
+  'RISKS',
+  'ASSESSMENT',
+  'RECOMMENDATIONS',
+  'ACTION_PLAN',
+  'COORDINATION',
+  'APPROVAL',
+  'MONITORING',
+  'REASSESSMENT',
+];
+
+export const IMPLEMENTED_ANALYSIS_STAGES: AnalysisStage[] = ['CREATION', 'PLANNING', 'WORKING_GROUP', 'DOCUMENTS'];
+
+export type AnalysisStatus = 'DRAFT' | 'IN_PROGRESS' | 'OVERDUE' | 'COMPLETED' | 'ARCHIVED';
+
+export type AnalysisDocumentCategory =
+  | 'LAW'
+  | 'INTERNAL_DOCUMENT'
+  | 'REGULATION'
+  | 'PROCEDURE'
+  | 'POLICY'
+  | 'INSTRUCTION'
+  | 'ORG_STRUCTURE'
+  | 'JOB_DESCRIPTION'
+  | 'PROCESS_MAP'
+  | 'PREVIOUS_ANALYSIS'
+  | 'INSPECTION_MATERIALS'
+  | 'APPEAL'
+  | 'COURT_PRACTICE'
+  | 'OTHER';
+
+export interface AnalysisDepartmentLink {
+  id: string;
+  departmentId: string;
+  department: NamedRef;
+}
+
+export interface AnalysisPlanItem {
+  id: string;
+  process: string;
+  direction?: string | null;
+  departmentId?: string | null;
+  department?: NamedRef | null;
+  ownerId?: string | null;
+  owner?: NamedRef | null;
+  deadline?: string | null;
+  checkpoint?: string | null;
+}
+
+export interface AnalysisWorkingGroupMember {
+  id: string;
+  userId: string;
+  user: NamedRef & { email: string; role: Role };
+  role: string;
+  functions?: string | null;
+  responsibilityArea?: string | null;
+  tasks?: string | null;
+  completed: boolean;
+}
+
+export interface AnalysisDocument {
+  id: string;
+  category: AnalysisDocumentCategory;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  uploadedBy?: NamedRef | null;
+  createdAt: string;
+}
+
+export interface AnalysisListItem {
+  id: string;
+  code: string;
+  name: string;
+  companyId?: string | null;
+  company?: NamedRef | null;
+  leadId?: string | null;
+  lead?: NamedRef | null;
+  stage: AnalysisStage;
+  status: AnalysisStatus;
+  deadline?: string | null;
+  createdAt: string;
+  _count?: { workingGroup: number; documents: number; planItems: number };
+}
+
+export interface AnalysisDetail extends AnalysisListItem {
+  subject?: string | null;
+  legalBasis?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  completedAt?: string | null;
+  createdById?: string | null;
+  createdBy?: NamedRef | null;
+  departments: AnalysisDepartmentLink[];
+  workingGroup: AnalysisWorkingGroupMember[];
+  planItems: AnalysisPlanItem[];
+  documents: AnalysisDocument[];
+}
+
+export interface AnalysesSummary {
+  total: number;
+  completed: number;
+  inProgress: number;
+  overdue: number;
 }

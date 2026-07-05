@@ -81,6 +81,38 @@ export function DashboardPage() {
       </Row>
 
       <Row gutter={16} style={{ marginTop: 16 }}>
+        <Col span={24}>
+          <Card
+            title={
+              <span>
+                {t('dashboard.analysesCardTitle')}
+                <InfoTooltip text={t('tooltips.dashboard.analysesCard')} />
+              </span>
+            }
+          >
+            <Row gutter={16}>
+              <Col xs={12} md={6}>
+                <Statistic title={t('dashboard.analysesTotal')} value={data.analyses.total} />
+              </Col>
+              <Col xs={12} md={6}>
+                <Statistic title={t('dashboard.analysesInProgress')} value={data.analyses.inProgress} valueStyle={{ color: '#0f5fa8' }} />
+              </Col>
+              <Col xs={12} md={6}>
+                <Statistic title={t('dashboard.analysesCompleted')} value={data.analyses.completed} valueStyle={{ color: '#52c41a' }} />
+              </Col>
+              <Col xs={12} md={6}>
+                <Statistic
+                  title={t('dashboard.analysesOverdue')}
+                  value={data.analyses.overdue}
+                  valueStyle={{ color: data.analyses.overdue > 0 ? '#fa8c16' : undefined }}
+                />
+              </Col>
+            </Row>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={16} style={{ marginTop: 16 }}>
         <Col xs={24} lg={12}>
           <Card
             title={

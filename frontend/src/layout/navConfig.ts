@@ -8,6 +8,7 @@ import {
   CheckSquareOutlined,
   DashboardOutlined,
   FileTextOutlined,
+  RadarChartOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
@@ -23,6 +24,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', path: '/dashboard', labelKey: 'nav.dashboard', icon: DashboardOutlined },
+  { key: 'analyses', path: '/analyses', labelKey: 'nav.analyses', icon: RadarChartOutlined },
   { key: 'risks', path: '/risks', labelKey: 'nav.riskRegister', icon: AlertOutlined },
   { key: 'risk-library', path: '/risk-library', labelKey: 'nav.riskLibrary', icon: BookOutlined },
   { key: 'sources', path: '/sources', labelKey: 'nav.sources', icon: ApartmentOutlined },
