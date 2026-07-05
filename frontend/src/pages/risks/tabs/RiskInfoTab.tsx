@@ -99,7 +99,15 @@ export function RiskInfoTab({ risk, onUpdated, canEdit }: Props) {
       <Form.Item name="description" label={t('riskInfo.descriptionLabel')}>
         <Input.TextArea rows={3} />
       </Form.Item>
-      <Form.Item name="categoryId" label={t('riskInfo.categoryLabel')}>
+      <Form.Item
+        name="categoryId"
+        label={
+          <span>
+            {t('riskInfo.categoryLabel')}
+            <InfoTooltip text={t('tooltips.riskRegister.riskCategory')} />
+          </span>
+        }
+      >
         <Select allowClear options={categories?.map((c) => ({ value: c.id, label: c.name }))} />
       </Form.Item>
       <Form.Item name="companyId" label={t('riskInfo.companyLabel')}>
@@ -112,7 +120,15 @@ export function RiskInfoTab({ risk, onUpdated, canEdit }: Props) {
       <Form.Item name="departmentId" label={t('riskInfo.departmentLabel')}>
         <Select allowClear options={departments?.map((d) => ({ value: d.id, label: d.name }))} />
       </Form.Item>
-      <Form.Item name="ownerId" label={t('riskInfo.ownerLabel')}>
+      <Form.Item
+        name="ownerId"
+        label={
+          <span>
+            {t('riskInfo.ownerLabel')}
+            <InfoTooltip text={t('tooltips.riskRegister.riskOwner')} />
+          </span>
+        }
+      >
         <Select
           allowClear
           showSearch

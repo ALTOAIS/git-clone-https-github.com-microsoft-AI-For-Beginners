@@ -124,7 +124,16 @@ export function UsersAdminTab() {
               <Input.Password />
             </Form.Item>
           )}
-          <Form.Item name="role" label={t('usersAdmin.roleLabel')} rules={[{ required: true }]}>
+          <Form.Item
+            name="role"
+            label={
+              <span>
+                {t('usersAdmin.roleLabel')}
+                <InfoTooltip text={t('tooltips.administration.roles')} />
+              </span>
+            }
+            rules={[{ required: true }]}
+          >
             <Select options={ALL_ROLES.map((role) => ({ value: role, label: roleLabel(role) }))} />
           </Form.Item>
           <Form.Item name="title" label={t('usersAdmin.jobTitleLabel')}>

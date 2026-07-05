@@ -2,6 +2,7 @@ import { Form, Input, Modal, Select } from 'antd';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { risksApi } from '../../api/endpoints';
+import { InfoTooltip } from '../../components/InfoTooltip';
 import { useCategories, useCompanies, useDepartments, useUsersList } from '../../hooks/useReferenceData';
 
 interface RiskFormModalProps {
@@ -48,13 +49,30 @@ export function RiskFormModal({ open, onClose, onCreated }: RiskFormModalProps) 
       destroyOnHidden
     >
       <Form form={form} layout="vertical">
-        <Form.Item name="title" label={t('riskForm.titleLabel')} rules={[{ required: true, message: t('riskForm.titleRequired') }]}>
+        <Form.Item
+          name="title"
+          label={
+            <span>
+              {t('riskForm.titleLabel')}
+              <InfoTooltip text={t('tooltips.riskRegister.complianceRisk')} />
+            </span>
+          }
+          rules={[{ required: true, message: t('riskForm.titleRequired') }]}
+        >
           <Input placeholder={t('riskForm.titlePlaceholder')} />
         </Form.Item>
         <Form.Item name="description" label={t('riskForm.descriptionLabel')}>
           <Input.TextArea rows={3} />
         </Form.Item>
-        <Form.Item name="categoryId" label={t('riskForm.categoryLabel')}>
+        <Form.Item
+          name="categoryId"
+          label={
+            <span>
+              {t('riskForm.categoryLabel')}
+              <InfoTooltip text={t('tooltips.riskRegister.riskCategory')} />
+            </span>
+          }
+        >
           <Select
             allowClear
             placeholder={t('riskForm.categoryPlaceholder')}
@@ -76,7 +94,15 @@ export function RiskFormModal({ open, onClose, onCreated }: RiskFormModalProps) 
             options={departments?.map((d) => ({ value: d.id, label: d.name }))}
           />
         </Form.Item>
-        <Form.Item name="ownerId" label={t('riskForm.ownerLabel')}>
+        <Form.Item
+          name="ownerId"
+          label={
+            <span>
+              {t('riskForm.ownerLabel')}
+              <InfoTooltip text={t('tooltips.riskRegister.riskOwner')} />
+            </span>
+          }
+        >
           <Select
             allowClear
             showSearch

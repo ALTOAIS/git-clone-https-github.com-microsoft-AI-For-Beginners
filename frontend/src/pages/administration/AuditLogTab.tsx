@@ -29,8 +29,18 @@ export function AuditLogTab() {
       dataSource={data?.items}
       pagination={{ current: page, pageSize: 20, total: data?.total, onChange: setPage }}
       columns={[
-        { title: t('auditLog.columns.entity'), dataIndex: 'entityType', width: 130, render: (v: string) => <Tag>{v}</Tag> },
-        { title: t('auditLog.columns.action'), dataIndex: 'action', width: 150 },
+        {
+          title: t('auditLog.columns.entity'),
+          dataIndex: 'entityType',
+          width: 130,
+          render: (v: string) => <Tag>{t(`auditLog.entityTypes.${v}`, v)}</Tag>,
+        },
+        {
+          title: t('auditLog.columns.action'),
+          dataIndex: 'action',
+          width: 150,
+          render: (v: string) => t(`auditLog.actions.${v}`, v),
+        },
         { title: t('auditLog.columns.user'), dataIndex: ['user', 'fullName'], width: 180 },
         {
           title: t('auditLog.columns.when'),
