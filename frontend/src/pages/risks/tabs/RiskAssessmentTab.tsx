@@ -2,6 +2,7 @@ import { Button, Col, Descriptions, Form, InputNumber, message, Row, Tag } from 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { risksApi } from '../../../api/endpoints';
+import { InfoTooltip } from '../../../components/InfoTooltip';
 import type { RiskDetail } from '../../../types';
 import { SCORE_LEVEL_COLORS, scoreLevel, scoreLevelLabel } from '../../../utils/riskDisplay';
 
@@ -41,13 +42,34 @@ export function RiskAssessmentTab({ risk, onUpdated, canEdit }: Props) {
   return (
     <div>
       <Descriptions bordered column={2} size="small" style={{ marginBottom: 24 }}>
-        <Descriptions.Item label={t('riskAssessment.inherentScoreLabel')}>
+        <Descriptions.Item
+          label={
+            <span>
+              {t('riskAssessment.inherentScoreLabel')}
+              <InfoTooltip text={t('tooltips.riskRegister.riskLevel')} />
+            </span>
+          }
+        >
           <ScoreTag score={risk.inherentScore} notAssessedLabel={t('riskAssessment.notAssessed')} />
         </Descriptions.Item>
-        <Descriptions.Item label={t('riskAssessment.residualScoreLabel')}>
+        <Descriptions.Item
+          label={
+            <span>
+              {t('riskAssessment.residualScoreLabel')}
+              <InfoTooltip text={t('tooltips.riskRegister.residualRisk')} />
+            </span>
+          }
+        >
           <ScoreTag score={risk.residualScore} notAssessedLabel={t('riskAssessment.notAssessed')} />
         </Descriptions.Item>
-        <Descriptions.Item label={t('riskAssessment.controlEffectivenessLabel')}>
+        <Descriptions.Item
+          label={
+            <span>
+              {t('riskAssessment.controlEffectivenessLabel')}
+              <InfoTooltip text={t('tooltips.riskRegister.controls')} />
+            </span>
+          }
+        >
           {risk.controlEffectivenessAvg != null ? `${risk.controlEffectivenessAvg}%` : t('riskAssessment.notTested')}
         </Descriptions.Item>
         <Descriptions.Item label={t('riskAssessment.controlsCountLabel')}>{risk.controls?.length ?? 0}</Descriptions.Item>
@@ -66,12 +88,28 @@ export function RiskAssessmentTab({ risk, onUpdated, canEdit }: Props) {
         >
           <Row gutter={16}>
             <Col span={6}>
-              <Form.Item name="likelihood" label={t('riskAssessment.likelihoodLabel')}>
+              <Form.Item
+                name="likelihood"
+                label={
+                  <span>
+                    {t('riskAssessment.likelihoodLabel')}
+                    <InfoTooltip text={t('tooltips.riskRegister.likelihood')} />
+                  </span>
+                }
+              >
                 <InputNumber min={1} max={5} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="impact" label={t('riskAssessment.impactLabel')}>
+              <Form.Item
+                name="impact"
+                label={
+                  <span>
+                    {t('riskAssessment.impactLabel')}
+                    <InfoTooltip text={t('tooltips.riskRegister.impact')} />
+                  </span>
+                }
+              >
                 <InputNumber min={1} max={5} style={{ width: '100%' }} />
               </Form.Item>
             </Col>

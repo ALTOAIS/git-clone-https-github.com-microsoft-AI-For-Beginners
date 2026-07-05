@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { sourcesApi } from '../api/endpoints';
 import { useAuthStore } from '../auth/authStore';
+import { InfoTooltip } from '../components/InfoTooltip';
+import { ModuleHelpButton } from '../components/ModuleHelpButton';
 import type { Source } from '../types';
 import { ALL_SOURCE_TYPES, sourceTypeLabel } from '../utils/riskDisplay';
 
@@ -51,12 +53,16 @@ export function SourcesPage() {
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
         <Typography.Title level={3} style={{ margin: 0 }}>
           {t('sourcesPage.title')}
+          <InfoTooltip text={t('tooltips.sources.antiCorruptionMonitoring')} />
         </Typography.Title>
-        {canManage && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
-            {t('sourcesPage.newButton')}
-          </Button>
-        )}
+        <Space>
+          {canManage && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
+              {t('sourcesPage.newButton')}
+            </Button>
+          )}
+          <ModuleHelpButton moduleKey="sources" />
+        </Space>
       </Space>
 
       <Space style={{ marginBottom: 16 }} wrap>
@@ -69,6 +75,7 @@ export function SourcesPage() {
           onChange={setType}
           options={typeOptions}
         />
+        <InfoTooltip text={t('tooltips.sources.typeGlossary')} />
       </Space>
 
       <Table
@@ -78,7 +85,16 @@ export function SourcesPage() {
         pagination={{ current: page, pageSize: 20, total: data?.total, onChange: setPage }}
         columns={[
           { title: t('sourcesPage.columns.title'), dataIndex: 'title' },
-          { title: t('sourcesPage.columns.type'), dataIndex: 'type', render: (v: Source['type']) => <Tag>{sourceTypeLabel(v)}</Tag> },
+          {
+            title: (
+              <span>
+                {t('sourcesPage.columns.type')}
+                <InfoTooltip text={t('tooltips.sources.dueDiligence')} />
+              </span>
+            ),
+            dataIndex: 'type',
+            render: (v: Source['type']) => <Tag>{sourceTypeLabel(v)}</Tag>,
+          },
           { title: t('sourcesPage.columns.reference'), dataIndex: 'referenceNumber' },
           { title: t('sourcesPage.columns.linkedRisks'), dataIndex: ['_count', 'risks'], width: 120 },
           {

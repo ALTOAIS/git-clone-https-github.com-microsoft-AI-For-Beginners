@@ -3,6 +3,8 @@ import { App, Button, Card, Col, Row, Space, Typography } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { reportsApi } from '../api/endpoints';
+import { InfoTooltip } from '../components/InfoTooltip';
+import { ModuleHelpButton } from '../components/ModuleHelpButton';
 import { downloadViaApi } from '../utils/download';
 
 const TABLE_REPORT_KINDS = ['risk-register', 'action-plan', 'critical-risks', 'overdue-actions'] as const;
@@ -51,10 +53,19 @@ export function ReportsPage() {
 
   return (
     <div>
-      <Typography.Title level={3}>{t('reports.title')}</Typography.Title>
+      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Typography.Title level={3}>
+          {t('reports.title')}
+          <InfoTooltip text={t('tooltips.reports.dataSource')} />
+        </Typography.Title>
+        <ModuleHelpButton moduleKey="reports" />
+      </Space>
       <Typography.Paragraph type="secondary">{t('reports.description')}</Typography.Paragraph>
 
-      <Typography.Title level={5}>{t('reports.dataExportsHeading')}</Typography.Title>
+      <Typography.Title level={5}>
+        {t('reports.dataExportsHeading')}
+        <InfoTooltip text={t('tooltips.reports.reportContent')} />
+      </Typography.Title>
       <Row gutter={16}>
         {TABLE_REPORT_KINDS.map((kind) => (
           <Col xs={24} md={12} lg={6} key={kind} style={{ marginBottom: 16 }}>
@@ -85,6 +96,7 @@ export function ReportsPage() {
 
       <Typography.Title level={5} style={{ marginTop: 16 }}>
         {t('reports.narrativeReportsHeading')}
+        <InfoTooltip text={t('tooltips.reports.period')} />
       </Typography.Title>
       <Row gutter={16}>
         {PDF_REPORT_KINDS.map((kind) => (

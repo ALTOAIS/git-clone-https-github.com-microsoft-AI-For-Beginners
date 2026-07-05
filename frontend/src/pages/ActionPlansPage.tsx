@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { actionsApi } from '../api/endpoints';
+import { ModuleHelpButton } from '../components/ModuleHelpButton';
 import type { Action, ActionStatus } from '../types';
 import { ACTION_STATUS_COLORS, ALL_ACTION_STATUSES, actionStatusLabel } from '../utils/riskDisplay';
 
@@ -23,7 +24,10 @@ export function ActionPlansPage() {
 
   return (
     <div>
-      <Typography.Title level={3}>{t('actionsPage.title')}</Typography.Title>
+      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Typography.Title level={3}>{t('actionsPage.title')}</Typography.Title>
+        <ModuleHelpButton moduleKey="actions" />
+      </Space>
       <Typography.Paragraph type="secondary">{t('actionsPage.description')}</Typography.Paragraph>
 
       <Space style={{ marginBottom: 16 }} wrap>

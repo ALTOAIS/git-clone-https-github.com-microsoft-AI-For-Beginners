@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { incidentsApi, risksApi, sourcesApi } from '../api/endpoints';
 import { useAuthStore } from '../auth/authStore';
+import { InfoTooltip } from '../components/InfoTooltip';
+import { ModuleHelpButton } from '../components/ModuleHelpButton';
 import type { Incident } from '../types';
 import { incidentStatusLabel, ALL_INCIDENT_STATUSES, sourceTypeLabel } from '../utils/riskDisplay';
 
@@ -58,12 +60,16 @@ export function IncidentsPage() {
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
         <Typography.Title level={3} style={{ margin: 0 }}>
           {t('incidentsPage.title')}
+          <InfoTooltip text={t('tooltips.incidents.grounds')} />
         </Typography.Title>
-        {canManage && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
-            {t('incidentsPage.logButton')}
-          </Button>
-        )}
+        <Space>
+          {canManage && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
+              {t('incidentsPage.logButton')}
+            </Button>
+          )}
+          <ModuleHelpButton moduleKey="incidents" />
+        </Space>
       </Space>
       <Typography.Paragraph type="secondary">{t('incidentsPage.description')}</Typography.Paragraph>
 
@@ -75,13 +81,23 @@ export function IncidentsPage() {
         columns={[
           { title: t('incidentsPage.columns.title'), dataIndex: 'title' },
           {
-            title: t('incidentsPage.columns.status'),
+            title: (
+              <span>
+                {t('incidentsPage.columns.status')}
+                <InfoTooltip text={t('tooltips.incidents.statuses')} />
+              </span>
+            ),
             dataIndex: 'status',
             width: 140,
             render: (v: Incident['status']) => <Tag>{incidentStatusLabel(v)}</Tag>,
           },
           {
-            title: t('incidentsPage.columns.action'),
+            title: (
+              <span>
+                {t('incidentsPage.columns.action')}
+                <InfoTooltip text={t('tooltips.incidents.results')} />
+              </span>
+            ),
             dataIndex: 'action',
             width: 170,
             render: (v: Incident['action']) => t(`incidentAction.${v}`),

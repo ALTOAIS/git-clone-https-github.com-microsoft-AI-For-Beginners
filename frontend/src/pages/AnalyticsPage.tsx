@@ -1,8 +1,9 @@
 import { Column, Line, Pie } from '@ant-design/charts';
 import { useQuery } from '@tanstack/react-query';
-import { Card, Col, Row, Table, Tabs, Tag, Typography } from 'antd';
+import { Card, Col, Row, Space, Table, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { analyticsApi } from '../api/endpoints';
+import { ModuleHelpButton } from '../components/ModuleHelpButton';
 import { RiskHeatMap } from '../components/RiskHeatMap';
 import type { RiskStatus } from '../types';
 import {
@@ -70,7 +71,10 @@ export function AnalyticsPage() {
 
   return (
     <div>
-      <Typography.Title level={3}>{t('analytics.title')}</Typography.Title>
+      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Typography.Title level={3}>{t('analytics.title')}</Typography.Title>
+        <ModuleHelpButton moduleKey="analytics" />
+      </Space>
 
       <Tabs
         items={[

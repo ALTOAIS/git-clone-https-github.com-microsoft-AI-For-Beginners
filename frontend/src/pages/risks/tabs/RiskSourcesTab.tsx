@@ -3,6 +3,7 @@ import { Button, List, message, Modal, Select, Space, Tag } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { sourcesApi } from '../../../api/endpoints';
+import { InfoTooltip } from '../../../components/InfoTooltip';
 import type { RiskDetail } from '../../../types';
 import { sourceTypeLabel } from '../../../utils/riskDisplay';
 
@@ -42,11 +43,13 @@ export function RiskSourcesTab({ risk, onUpdated, canEdit }: Props) {
 
   return (
     <div>
-      {canEdit && (
-        <Button style={{ marginBottom: 16 }} onClick={() => setLinking(true)}>
-          {t('riskSources.linkButton')}
-        </Button>
-      )}
+      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
+        <span style={{ color: '#8c8c8c' }}>
+          {t('riskCard.tabs.sources')}
+          <InfoTooltip text={t('tooltips.riskRegister.riskSource')} />
+        </span>
+        {canEdit && <Button onClick={() => setLinking(true)}>{t('riskSources.linkButton')}</Button>}
+      </Space>
       <List
         bordered
         dataSource={risk.sources}
