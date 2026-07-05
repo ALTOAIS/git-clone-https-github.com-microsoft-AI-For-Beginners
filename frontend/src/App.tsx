@@ -13,6 +13,8 @@ import { IncidentsPage } from './pages/IncidentsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { AdministrationPage } from './pages/administration/AdministrationPage';
+import { AnalysesListPage } from './pages/analyses/AnalysesListPage';
+import { AnalysisWizardPage } from './pages/analyses/AnalysisWizardPage';
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
         <Route element={<MainLayout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/analyses" element={<AnalysesListPage />} />
+          <Route path="/analyses/:id" element={<AnalysisWizardPage />} />
           <Route path="/risks" element={<RiskRegisterPage />} />
           <Route path="/risks/:id" element={<RiskCardPage />} />
           <Route path="/risk-library" element={<RiskLibraryPage />} />

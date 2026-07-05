@@ -1,6 +1,8 @@
 import { apiClient } from './client';
 import type {
   Action,
+  AnalysisDetail,
+  AnalysisListItem,
   AppNotification,
   BusinessProcess,
   Category,
@@ -194,4 +196,42 @@ export const notificationsApi = {
 
 export const auditApi = {
   list: (params: Record<string, unknown>) => apiClient.get('/audit-logs', { params }),
+};
+
+// ---------------------------------------------------------------------------
+// ВАКР — Внутренний анализ коррупционных рисков
+// ---------------------------------------------------------------------------
+export const analysesApi = {
+  list: (params: Record<string, unknown>) => apiClient.get<Paginated<AnalysisListItem>>('/analyses', { params }),
+  summary: () => apiClient.get('/analyses/summary'),
+  get: (id: string) => apiClient.get<AnalysisDetail>(`/analyses/${id}`),
+  create: (data: Record<string, unknown>) => apiClient.post<AnalysisDetail>('/analyses', data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.patch<AnalysisDetail>(`/analyses/${id}`, data),
+  changeStage: (id: string, stage: string) => apiClient.patch<AnalysisDetail>(`/analyses/${id}/stage`, { stage }),
+  remove: (id: string) => apiClient.delete(`/analyses/${id}`),
+
+  addPlanItem: (analysisId: string, data: Record<string, unknown>) =>
+    apiClient.post(`/analyses/${analysisId}/plan-items`, data),
+  updatePlanItem: (analysisId: string, itemId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/analyses/${analysisId}/plan-items/${itemId}`, data),
+  removePlanItem: (analysisId: string, itemId: string) =>
+    apiClient.delete(`/analyses/${analysisId}/plan-items/${itemId}`),
+
+  addWorkingGroupMember: (analysisId: string, data: Record<string, unknown>) =>
+    apiClient.post(`/analyses/${analysisId}/working-group`, data),
+  updateWorkingGroupMember: (analysisId: string, memberId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/analyses/${analysisId}/working-group/${memberId}`, data),
+  removeWorkingGroupMember: (analysisId: string, memberId: string) =>
+    apiClient.delete(`/analyses/${analysisId}/working-group/${memberId}`),
+
+  uploadDocument: (analysisId: string, file: File, category: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post(`/analyses/${analysisId}/documents`, formData, {
+      params: { category },
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  downloadDocumentPath: (analysisId: string, docId: string) => `/analyses/${analysisId}/documents/${docId}/download`,
+  removeDocument: (analysisId: string, docId: string) => apiClient.delete(`/analyses/${analysisId}/documents/${docId}`),
 };

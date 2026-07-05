@@ -1,0 +1,197 @@
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Res,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags } from '@nestjs/swagger';
+import { AnalysisStatus, Role } from '@prisma/client';
+import { Response } from 'express';
+import { join, resolve } from 'path';
+import {
+  AuthenticatedUser,
+  CurrentUser,
+} from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { analysisDocumentsMulterOptions } from './analysis-documents.multer.config';
+import { AnalysesService } from './analyses.service';
+import { ChangeStageDto } from './dto/change-stage.dto';
+import { CreateAnalysisDto } from './dto/create-analysis.dto';
+import { CreatePlanItemDto } from './dto/create-plan-item.dto';
+import { CreateWorkingGroupMemberDto } from './dto/create-working-group-member.dto';
+import { UpdateAnalysisDto } from './dto/update-analysis.dto';
+import { UpdateWorkingGroupMemberDto } from './dto/update-working-group-member.dto';
+
+const MANAGE_ROLES = [
+  Role.ADMINISTRATOR,
+  Role.COMPLIANCE_MANAGER,
+  Role.COMPLIANCE_OFFICER,
+];
+const UPLOAD_DIR = resolve(process.env.UPLOAD_DIR ?? './uploads');
+
+@ApiTags('analyses')
+@Controller('analyses')
+@UseGuards(RolesGuard)
+export class AnalysesController {
+  private readonly uploadDir = UPLOAD_DIR;
+
+  constructor(private readonly analysesService: AnalysesService) {}
+
+  @Get('summary')
+  summary() {
+    return this.analysesService.summary();
+  }
+
+  @Get()
+  findAll(
+    @Query('page') page = '1',
+    @Query('pageSize') pageSize = '20',
+    @Query('status') status?: AnalysisStatus,
+    @Query('companyId') companyId?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.analysesService.findAll({
+      page: Number(page),
+      pageSize: Number(pageSize),
+      status,
+      companyId,
+      search,
+    });
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.analysesService.findOne(id);
+  }
+
+  @Post()
+  @Roles(...MANAGE_ROLES)
+  create(
+    @Body() dto: CreateAnalysisDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.analysesService.create(dto, user.id);
+  }
+
+  @Patch(':id')
+  @Roles(...MANAGE_ROLES)
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateAnalysisDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.analysesService.update(id, dto, user.id);
+  }
+
+  @Patch(':id/stage')
+  @Roles(...MANAGE_ROLES)
+  changeStage(
+    @Param('id') id: string,
+    @Body() dto: ChangeStageDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.analysesService.changeStage(id, dto, user.id);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMINISTRATOR, Role.COMPLIANCE_MANAGER)
+  remove(@Param('id') id: string) {
+    return this.analysesService.remove(id);
+  }
+
+  @Post(':id/plan-items')
+  @Roles(...MANAGE_ROLES)
+  addPlanItem(@Param('id') id: string, @Body() dto: CreatePlanItemDto) {
+    return this.analysesService.addPlanItem(id, dto);
+  }
+
+  @Patch(':id/plan-items/:itemId')
+  @Roles(...MANAGE_ROLES)
+  updatePlanItem(
+    @Param('id') id: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: CreatePlanItemDto,
+  ) {
+    return this.analysesService.updatePlanItem(id, itemId, dto);
+  }
+
+  @Delete(':id/plan-items/:itemId')
+  @Roles(...MANAGE_ROLES)
+  removePlanItem(@Param('id') id: string, @Param('itemId') itemId: string) {
+    return this.analysesService.removePlanItem(id, itemId);
+  }
+
+  @Post(':id/working-group')
+  @Roles(...MANAGE_ROLES)
+  addWorkingGroupMember(
+    @Param('id') id: string,
+    @Body() dto: CreateWorkingGroupMemberDto,
+  ) {
+    return this.analysesService.addWorkingGroupMember(id, dto);
+  }
+
+  @Patch(':id/working-group/:memberId')
+  @Roles(...MANAGE_ROLES)
+  updateWorkingGroupMember(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+    @Body() dto: UpdateWorkingGroupMemberDto,
+  ) {
+    return this.analysesService.updateWorkingGroupMember(id, memberId, dto);
+  }
+
+  @Delete(':id/working-group/:memberId')
+  @Roles(...MANAGE_ROLES)
+  removeWorkingGroupMember(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+  ) {
+    return this.analysesService.removeWorkingGroupMember(id, memberId);
+  }
+
+  @Post(':id/documents')
+  @Roles(...MANAGE_ROLES)
+  @UseInterceptors(
+    FileInterceptor('file', analysisDocumentsMulterOptions(UPLOAD_DIR)),
+  )
+  async uploadDocument(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Query('category') category: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    if (!file) throw new BadRequestException('Файл не был загружен');
+    return this.analysesService.addDocument({
+      analysisId: id,
+      category,
+      file,
+      uploadedById: user.id,
+    });
+  }
+
+  @Get(':id/documents/:docId/download')
+  async downloadDocument(@Param('docId') docId: string, @Res() res: Response) {
+    const document = await this.analysesService.findDocument(docId);
+    return res.download(
+      join(this.uploadDir, document.storedName),
+      document.fileName,
+    );
+  }
+
+  @Delete(':id/documents/:docId')
+  @Roles(...MANAGE_ROLES)
+  removeDocument(@Param('docId') docId: string) {
+    return this.analysesService.removeDocument(docId);
+  }
+}

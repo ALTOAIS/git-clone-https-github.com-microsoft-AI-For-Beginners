@@ -1,5 +1,7 @@
 import {
   ActionStatus,
+  AnalysisStage,
+  AnalysisStatus,
   ControlEffectiveness,
   ControlType,
   IncidentAction,
@@ -606,6 +608,116 @@ async function main() {
         },
       });
     }
+  }
+
+  // ---------------------------------------------------------------
+  // Внутренний анализ коррупционных рисков (ВАКР) — демонстрационные анализы
+  // ---------------------------------------------------------------
+  const existingAnalysis1 = await prisma.corruptionAnalysis.findFirst({
+    where: { name: 'ВАКР процесса закупок ТОО «Нордвинд Холдинг» за 2026 год' },
+  });
+  if (!existingAnalysis1) {
+    await prisma.corruptionAnalysis.create({
+      data: {
+        code: 'ВАКР-2026-0001',
+        name: 'ВАКР процесса закупок ТОО «Нордвинд Холдинг» за 2026 год',
+        companyId: northwind.id,
+        subject: 'Процесс проведения закупок товаров, работ и услуг',
+        legalBasis: 'Закон Республики Казахстан «О противодействии коррупции», приказ о проведении внутреннего анализа коррупционных рисков №14 от 12.01.2026',
+        periodStart: new Date('2026-01-01'),
+        periodEnd: new Date('2026-06-30'),
+        deadline: new Date(new Date().setDate(new Date().getDate() + 30)),
+        leadId: users['manager@crh.local'],
+        stage: AnalysisStage.WORKING_GROUP,
+        status: AnalysisStatus.IN_PROGRESS,
+        createdById: users['officer@crh.local'],
+        departments: {
+          create: [{ departmentId: departments['Департамент закупок'] }],
+        },
+        workingGroup: {
+          create: [
+            {
+              userId: users['manager@crh.local'],
+              role: 'Руководитель рабочей группы',
+              functions: 'Общее руководство анализом, утверждение результатов',
+              responsibilityArea: 'Весь процесс закупок',
+              completed: false,
+            },
+            {
+              userId: users['officer@crh.local'],
+              role: 'Ответственный исполнитель',
+              functions: 'Сбор документов, выявление рисков, подготовка отчёта',
+              responsibilityArea: 'Процесс закупок Департамента закупок',
+              completed: false,
+            },
+            {
+              userId: users['owner@crh.local'],
+              role: 'Эксперт от подразделения',
+              functions: 'Консультации по особенностям процесса закупок',
+              responsibilityArea: 'Департамент закупок',
+              completed: true,
+            },
+          ],
+        },
+        planItems: {
+          create: [
+            {
+              process: 'Отбор поставщиков',
+              direction: 'Закупочная деятельность',
+              departmentId: departments['Департамент закупок'],
+              ownerId: users['officer@crh.local'],
+              deadline: new Date(new Date().setDate(new Date().getDate() + 10)),
+              checkpoint: 'Промежуточная сверка выявленных рисков',
+            },
+            {
+              process: 'Согласование и подписание договоров',
+              direction: 'Закупочная деятельность',
+              departmentId: departments['Департамент закупок'],
+              ownerId: users['officer@crh.local'],
+              deadline: new Date(new Date().setDate(new Date().getDate() + 20)),
+              checkpoint: 'Проверка карты бизнес-процесса',
+            },
+          ],
+        },
+      },
+    });
+  }
+
+  const existingAnalysis2 = await prisma.corruptionAnalysis.findFirst({
+    where: { name: 'ВАКР кадровых процедур АО «Саутбридж Индастриз» за 2025 год' },
+  });
+  if (!existingAnalysis2) {
+    await prisma.corruptionAnalysis.create({
+      data: {
+        code: 'ВАКР-2025-0001',
+        name: 'ВАКР кадровых процедур АО «Саутбридж Индастриз» за 2025 год',
+        companyId: southbridge.id,
+        subject: 'Процессы найма, перемещения и увольнения персонала',
+        legalBasis: 'Закон Республики Казахстан «О противодействии коррупции»',
+        periodStart: new Date('2025-01-01'),
+        periodEnd: new Date('2025-12-31'),
+        deadline: new Date('2025-12-15'),
+        leadId: users['deptmgr@crh.local'],
+        stage: AnalysisStage.MONITORING,
+        status: AnalysisStatus.COMPLETED,
+        completedAt: new Date('2025-12-10'),
+        createdById: users['officer@crh.local'],
+        departments: {
+          create: [{ departmentId: departments['Департамент операционной деятельности'] }],
+        },
+        workingGroup: {
+          create: [
+            {
+              userId: users['deptmgr@crh.local'],
+              role: 'Руководитель рабочей группы',
+              functions: 'Общее руководство анализом',
+              responsibilityArea: 'Кадровые процедуры',
+              completed: true,
+            },
+          ],
+        },
+      },
+    });
   }
 
   console.log(`Заполнение завершено. Создано рисков: ${created} (существующие риски не изменялись).`);

@@ -109,37 +109,83 @@ enum NotificationType {
   SYSTEM
 }
 
+/// The 14-step lifecycle of a Внутренний анализ коррупционных рисков (ВАКР)
+enum AnalysisStage {
+  CREATION
+  PLANNING
+  WORKING_GROUP
+  DOCUMENTS
+  PROCESS_MAP
+  FACTORS
+  RISKS
+  ASSESSMENT
+  RECOMMENDATIONS
+  ACTION_PLAN
+  COORDINATION
+  APPROVAL
+  MONITORING
+  REASSESSMENT
+}
+
+enum AnalysisStatus {
+  DRAFT
+  IN_PROGRESS
+  OVERDUE
+  COMPLETED
+  ARCHIVED
+}
+
+enum AnalysisDocumentCategory {
+  LAW
+  INTERNAL_DOCUMENT
+  REGULATION
+  PROCEDURE
+  POLICY
+  INSTRUCTION
+  ORG_STRUCTURE
+  JOB_DESCRIPTION
+  PROCESS_MAP
+  PREVIOUS_ANALYSIS
+  INSPECTION_MATERIALS
+  APPEAL
+  COURT_PRACTICE
+  OTHER
+}
+
 // ------------------------------------------------------------------
 // Organization structure
 // ------------------------------------------------------------------
 
 model Company {
-  id          String       @id @default(uuid())
-  name        String       @unique
+  id          String   @id @default(uuid())
+  name        String   @unique
   description String?
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   departments Department[]
   users       User[]
   risks       Risk[]
+  analyses    CorruptionAnalysis[]
 
   @@map("companies")
 }
 
 model Department {
-  id        String            @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
   companyId String
-  company   Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  isActive  Boolean           @default(true)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  processes BusinessProcess[]
-  users     User[]
-  risks     Risk[]
+  processes     BusinessProcess[]
+  users         User[]
+  risks         Risk[]
+  analysisLinks AnalysisDepartment[]
+  planItems     AnalysisPlanItem[]
 
   @@unique([companyId, name])
   @@map("departments")
@@ -154,7 +200,7 @@ model BusinessProcess {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  risks        Risk[]
+  risks Risk[]
 
   @@unique([departmentId, name])
   @@map("business_processes")
@@ -172,7 +218,7 @@ model Category {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  risks       Risk[]
+  risks Risk[]
 
   @@map("categories")
 }
@@ -182,31 +228,36 @@ model Category {
 // ------------------------------------------------------------------
 
 model User {
-  id            String       @id @default(uuid())
-  email         String       @unique
-  passwordHash  String
-  fullName      String
-  role          Role         @default(RISK_OWNER)
-  title         String?
-  isActive      Boolean      @default(true)
-  companyId     String?
-  company       Company?     @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  departmentId  String?
-  department    Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  lastLoginAt   DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String
+  fullName     String
+  role         Role        @default(RISK_OWNER)
+  title        String?
+  isActive     Boolean     @default(true)
+  companyId    String?
+  company      Company?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  lastLoginAt  DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
-  ownedRisks       Risk[]          @relation("RiskOwner")
-  createdRisks     Risk[]          @relation("RiskCreatedBy")
-  ownedControls    Control[]       @relation("ControlOwner")
-  ownedActions     Action[]        @relation("ActionOwner")
-  reportedIncidents Incident[]     @relation("IncidentReportedBy")
-  comments         Comment[]
-  attachments      Attachment[]
-  auditLogs        AuditLog[]
-  notifications    Notification[]
-  refreshTokens    RefreshToken[]
+  ownedRisks           Risk[]                       @relation("RiskOwner")
+  createdRisks         Risk[]                       @relation("RiskCreatedBy")
+  ownedControls        Control[]                    @relation("ControlOwner")
+  ownedActions         Action[]                     @relation("ActionOwner")
+  reportedIncidents    Incident[]                   @relation("IncidentReportedBy")
+  comments             Comment[]
+  attachments          Attachment[]
+  auditLogs            AuditLog[]
+  notifications        Notification[]
+  refreshTokens        RefreshToken[]
+  ledAnalyses          CorruptionAnalysis[]         @relation("AnalysisLead")
+  createdAnalyses      CorruptionAnalysis[]         @relation("AnalysisCreatedBy")
+  analysisMemberships  AnalysisWorkingGroupMember[]
+  ownedPlanItems       AnalysisPlanItem[]           @relation("AnalysisPlanItemOwner")
+  uploadedAnalysisDocs AnalysisDocument[]
 
   @@map("users")
 }
@@ -238,19 +289,19 @@ model Source {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  risks           RiskSource[]
-  incidents       Incident[]
+  risks     RiskSource[]
+  incidents Incident[]
 
   @@map("sources")
 }
 
 /// Many-to-many: a risk can have any number of sources (PRD section 6 "Sources")
 model RiskSource {
-  riskId    String
-  sourceId  String
-  risk      Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  source    Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
-  linkedAt  DateTime @default(now())
+  riskId   String
+  sourceId String
+  risk     Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  source   Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  linkedAt DateTime @default(now())
 
   @@id([riskId, sourceId])
   @@map("risk_sources")
@@ -261,68 +312,68 @@ model RiskSource {
 // ------------------------------------------------------------------
 
 model Risk {
-  id                     String      @id @default(uuid())
-  code                    String      @unique
-  title                   String
-  description             String?
-  status                  RiskStatus  @default(DRAFT)
+  id          String     @id @default(uuid())
+  code        String     @unique
+  title       String
+  description String?
+  status      RiskStatus @default(DRAFT)
 
-  categoryId              String?
-  category                Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  companyId               String?
-  company                 Company?    @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  departmentId            String?
-  department              Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  businessProcessId       String?
-  businessProcess         BusinessProcess? @relation(fields: [businessProcessId], references: [id], onDelete: SetNull)
+  companyId         String?
+  company           Company?         @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  departmentId      String?
+  department        Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  businessProcessId String?
+  businessProcess   BusinessProcess? @relation(fields: [businessProcessId], references: [id], onDelete: SetNull)
 
-  ownerId                 String?
-  owner                   User?       @relation("RiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  createdById             String?
-  createdBy               User?       @relation("RiskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  ownerId     String?
+  owner       User?   @relation("RiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy   User?   @relation("RiskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   // Inherent assessment
-  likelihood              Int?        // 1-5
-  impact                  Int?        // 1-5
-  inherentScore           Int?        // likelihood * impact
+  likelihood    Int? // 1-5
+  impact        Int? // 1-5
+  inherentScore Int? // likelihood * impact
 
   // Residual assessment (after controls / mitigation)
-  residualLikelihood      Int?
-  residualImpact          Int?
-  residualScore           Int?
+  residualLikelihood Int?
+  residualImpact     Int?
+  residualScore      Int?
 
   controlEffectivenessAvg Float?
 
-  version                 Int         @default(1)
-  approvedAt              DateTime?
-  closedAt                DateTime?
-  archivedAt              DateTime?
+  version    Int       @default(1)
+  approvedAt DateTime?
+  closedAt   DateTime?
+  archivedAt DateTime?
 
-  createdAt               DateTime    @default(now())
-  updatedAt               DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  sources                 RiskSource[]
-  controls                Control[]
-  actions                 Action[]
-  incidents               Incident[]
-  comments                Comment[]
-  attachments             Attachment[]
-  history                 RiskHistory[]
+  sources     RiskSource[]
+  controls    Control[]
+  actions     Action[]
+  incidents   Incident[]
+  comments    Comment[]
+  attachments Attachment[]
+  history     RiskHistory[]
 
   @@map("risks")
 }
 
 /// Versioned change history for a risk (PRD: "История изменений" / "Версионность")
 model RiskHistory {
-  id        String   @id @default(uuid())
-  riskId    String
-  risk      Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  version   Int
-  snapshot  Json
+  id          String   @id @default(uuid())
+  riskId      String
+  risk        Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  version     Int
+  snapshot    Json
   changedById String?
-  changeNote String?
-  createdAt DateTime @default(now())
+  changeNote  String?
+  createdAt   DateTime @default(now())
 
   @@map("risk_history")
 }
@@ -332,18 +383,18 @@ model RiskHistory {
 // ------------------------------------------------------------------
 
 model Control {
-  id                 String               @id @default(uuid())
-  riskId             String
-  risk               Risk                 @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  type               ControlType
-  title              String
-  description        String?
-  ownerId            String?
-  owner              User?                @relation("ControlOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  effectiveness      ControlEffectiveness @default(NOT_TESTED)
-  lastTestedAt       DateTime?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
+  id            String               @id @default(uuid())
+  riskId        String
+  risk          Risk                 @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  type          ControlType
+  title         String
+  description   String?
+  ownerId       String?
+  owner         User?                @relation("ControlOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  effectiveness ControlEffectiveness @default(NOT_TESTED)
+  lastTestedAt  DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
   @@map("controls")
 }
@@ -353,21 +404,21 @@ model Control {
 // ------------------------------------------------------------------
 
 model Action {
-  id                   String       @id @default(uuid())
-  riskId               String
-  risk                 Risk         @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  title                String
-  description          String?
-  ownerId              String?
-  owner                User?        @relation("ActionOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  deadline             DateTime?
-  status               ActionStatus @default(PLANNED)
-  evidence             String?
-  result               String?
-  residualRiskImpact   String?
-  completedAt          DateTime?
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
+  id                 String       @id @default(uuid())
+  riskId             String
+  risk               Risk         @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  title              String
+  description        String?
+  ownerId            String?
+  owner              User?        @relation("ActionOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  deadline           DateTime?
+  status             ActionStatus @default(PLANNED)
+  evidence           String?
+  result             String?
+  residualRiskImpact String?
+  completedAt        DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   @@map("actions")
 }
@@ -377,20 +428,20 @@ model Action {
 // ------------------------------------------------------------------
 
 model Incident {
-  id             String         @id @default(uuid())
-  title          String
-  description    String?
-  occurredAt     DateTime?
-  status         IncidentStatus @default(OPEN)
-  action         IncidentAction @default(NONE)
-  sourceId       String?
-  source         Source?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
-  riskId         String?
-  risk           Risk?          @relation(fields: [riskId], references: [id], onDelete: SetNull)
-  reportedById   String?
-  reportedBy     User?          @relation("IncidentReportedBy", fields: [reportedById], references: [id], onDelete: SetNull)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id           String         @id @default(uuid())
+  title        String
+  description  String?
+  occurredAt   DateTime?
+  status       IncidentStatus @default(OPEN)
+  action       IncidentAction @default(NONE)
+  sourceId     String?
+  source       Source?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  riskId       String?
+  risk         Risk?          @relation(fields: [riskId], references: [id], onDelete: SetNull)
+  reportedById String?
+  reportedBy   User?          @relation("IncidentReportedBy", fields: [reportedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@map("incidents")
 }
@@ -400,14 +451,14 @@ model Incident {
 // ------------------------------------------------------------------
 
 model Comment {
-  id         String     @id @default(uuid())
-  riskId     String
-  risk       Risk       @relation(fields: [riskId], references: [id], onDelete: Cascade)
-  authorId   String?
-  author     User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  text       String
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id        String   @id @default(uuid())
+  riskId    String
+  risk      Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("comments")
 }
@@ -430,15 +481,15 @@ model Attachment {
 }
 
 model AuditLog {
-  id         String     @id @default(uuid())
+  id         String   @id @default(uuid())
   entityType String
   entityId   String
   action     String
   userId     String?
-  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   changes    Json?
   ipAddress  String?
-  createdAt  DateTime   @default(now())
+  createdAt  DateTime @default(now())
 
   @@index([entityType, entityId])
   @@map("audit_logs")
@@ -456,4 +507,102 @@ model Notification {
   createdAt DateTime         @default(now())
 
   @@map("notifications")
+}
+
+// ------------------------------------------------------------------
+// Внутренний анализ коррупционных рисков (ВАКР)
+// ------------------------------------------------------------------
+
+model CorruptionAnalysis {
+  id          String         @id @default(uuid())
+  code        String         @unique
+  name        String
+  companyId   String?
+  company     Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  subject     String?
+  legalBasis  String?
+  periodStart DateTime?
+  periodEnd   DateTime?
+  deadline    DateTime?
+  leadId      String?
+  lead        User?          @relation("AnalysisLead", fields: [leadId], references: [id], onDelete: SetNull)
+  stage       AnalysisStage  @default(CREATION)
+  status      AnalysisStatus @default(DRAFT)
+  createdById String?
+  createdBy   User?          @relation("AnalysisCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  departments  AnalysisDepartment[]
+  workingGroup AnalysisWorkingGroupMember[]
+  planItems    AnalysisPlanItem[]
+  documents    AnalysisDocument[]
+
+  @@map("corruption_analyses")
+}
+
+/// Many-to-many: an analysis can cover any number of departments
+model AnalysisDepartment {
+  id           String             @id @default(uuid())
+  analysisId   String
+  analysis     CorruptionAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  departmentId String
+  department   Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@unique([analysisId, departmentId])
+  @@map("analysis_departments")
+}
+
+/// Stage 2 "Планирование" — one row per planned process/direction to review
+model AnalysisPlanItem {
+  id           String             @id @default(uuid())
+  analysisId   String
+  analysis     CorruptionAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  process      String
+  direction    String?
+  departmentId String?
+  department   Department?        @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  ownerId      String?
+  owner        User?              @relation("AnalysisPlanItemOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  deadline     DateTime?
+  checkpoint   String?
+  createdAt    DateTime           @default(now())
+
+  @@map("analysis_plan_items")
+}
+
+/// Stage 3 "Формирование рабочей группы"
+model AnalysisWorkingGroupMember {
+  id                 String             @id @default(uuid())
+  analysisId         String
+  analysis           CorruptionAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role               String
+  functions          String?
+  responsibilityArea String?
+  tasks              String?
+  completed          Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+
+  @@unique([analysisId, userId])
+  @@map("analysis_working_group_members")
+}
+
+/// Stage 4 "Сбор документов"
+model AnalysisDocument {
+  id           String                   @id @default(uuid())
+  analysisId   String
+  analysis     CorruptionAnalysis       @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  category     AnalysisDocumentCategory
+  fileName     String
+  storedName   String
+  mimeType     String
+  size         Int
+  uploadedById String?
+  uploadedBy   User?                    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime                 @default(now())
+
+  @@map("analysis_documents")
 }

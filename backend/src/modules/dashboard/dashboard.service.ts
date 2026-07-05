@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ActionStatus, RiskStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AnalysesService } from '../analyses/analyses.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 
 const ACTIVE_STATUSES: RiskStatus[] = [
@@ -17,6 +18,7 @@ export class DashboardService {
   constructor(
     private prisma: PrismaService,
     private analytics: AnalyticsService,
+    private analyses: AnalysesService,
   ) {}
 
   async summary() {
@@ -30,6 +32,7 @@ export class DashboardService {
       topCategories,
       heatMap,
       trends,
+      analysesSummary,
     ] = await Promise.all([
       this.prisma.risk.count({ where: { status: { in: ACTIVE_STATUSES } } }),
       this.prisma.risk.count({
@@ -47,6 +50,7 @@ export class DashboardService {
       this.analytics.topCategories(5),
       this.analytics.heatmap('inherent'),
       this.analytics.trends(6),
+      this.analyses.summary(),
     ]);
 
     return {
@@ -62,6 +66,7 @@ export class DashboardService {
       topCategories,
       heatMap,
       trends,
+      analyses: analysesSummary,
     };
   }
 }
