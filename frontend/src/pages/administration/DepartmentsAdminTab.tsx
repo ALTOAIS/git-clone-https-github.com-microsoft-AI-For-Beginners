@@ -4,6 +4,7 @@ import { App, Button, Form, Input, Modal, Popconfirm, Select, Table, Tag } from 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { departmentsApi } from '../../api/endpoints';
+import { InfoTooltip } from '../../components/InfoTooltip';
 import { useCompanies } from '../../hooks/useReferenceData';
 import type { Department } from '../../types';
 
@@ -65,7 +66,12 @@ export function DepartmentsAdminTab() {
           { title: t('departmentsAdmin.columns.name'), dataIndex: 'name' },
           { title: t('departmentsAdmin.columns.company'), dataIndex: ['company', 'name'] },
           {
-            title: t('departmentsAdmin.columns.active'),
+            title: (
+              <span>
+                {t('departmentsAdmin.columns.active')}
+                <InfoTooltip text={t('tooltips.administration.activeToggle')} />
+              </span>
+            ),
             dataIndex: 'isActive',
             width: 100,
             render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? t('common.active') : t('common.inactive')}</Tag>,

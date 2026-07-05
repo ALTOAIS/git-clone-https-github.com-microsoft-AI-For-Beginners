@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { controlsApi } from '../api/endpoints';
+import { InfoTooltip } from '../components/InfoTooltip';
 import { ModuleHelpButton } from '../components/ModuleHelpButton';
 import type { Control } from '../types';
 import { ALL_CONTROL_EFFECTIVENESS, CONTROL_EFFECTIVENESS_COLORS, controlEffectivenessLabel } from '../utils/riskDisplay';
@@ -67,9 +68,24 @@ export function ControlsPage() {
             ),
           },
           { title: t('controlsPage.columns.control'), dataIndex: 'title' },
-          { title: t('controlsPage.columns.type'), dataIndex: 'type', width: 120, render: (v: Control['type']) => t(`controlType.${v}`) },
           {
-            title: t('controlsPage.columns.effectiveness'),
+            title: (
+              <span>
+                {t('controlsPage.columns.type')}
+                <InfoTooltip text={t('tooltips.controls.controlType')} />
+              </span>
+            ),
+            dataIndex: 'type',
+            width: 120,
+            render: (v: Control['type']) => t(`controlType.${v}`),
+          },
+          {
+            title: (
+              <span>
+                {t('controlsPage.columns.effectiveness')}
+                <InfoTooltip text={t('tooltips.controls.controlEffectiveness')} />
+              </span>
+            ),
             dataIndex: 'effectiveness',
             width: 170,
             render: (v: Control['effectiveness']) => (

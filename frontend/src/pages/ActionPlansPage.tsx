@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { actionsApi } from '../api/endpoints';
+import { InfoTooltip } from '../components/InfoTooltip';
 import { ModuleHelpButton } from '../components/ModuleHelpButton';
 import type { Action, ActionStatus } from '../types';
 import { ACTION_STATUS_COLORS, ALL_ACTION_STATUSES, actionStatusLabel } from '../utils/riskDisplay';
@@ -41,7 +42,10 @@ export function ActionPlansPage() {
         />
         <Space>
           <Switch checked={overdueOnly} onChange={setOverdueOnly} />
-          <span>{t('actionsPage.overdueOnly')}</span>
+          <span>
+            {t('actionsPage.overdueOnly')}
+            <InfoTooltip text={t('tooltips.actions.overdueFilter')} />
+          </span>
         </Space>
       </Space>
 
@@ -63,13 +67,23 @@ export function ActionPlansPage() {
           { title: t('actionsPage.columns.action'), dataIndex: 'title' },
           { title: t('actionsPage.columns.owner'), dataIndex: ['owner', 'fullName'], width: 160 },
           {
-            title: t('actionsPage.columns.deadline'),
+            title: (
+              <span>
+                {t('actionsPage.columns.deadline')}
+                <InfoTooltip text={t('tooltips.actions.deadline')} />
+              </span>
+            ),
             dataIndex: 'deadline',
             width: 130,
             render: (v: string | null) => (v ? dayjs(v).format('YYYY-MM-DD') : '—'),
           },
           {
-            title: t('actionsPage.columns.status'),
+            title: (
+              <span>
+                {t('actionsPage.columns.status')}
+                <InfoTooltip text={t('tooltips.actions.actionStatus')} />
+              </span>
+            ),
             dataIndex: 'status',
             width: 140,
             render: (v: Action['status']) => <Tag color={ACTION_STATUS_COLORS[v]}>{actionStatusLabel(v)}</Tag>,

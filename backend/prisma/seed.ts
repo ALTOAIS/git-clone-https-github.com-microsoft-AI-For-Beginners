@@ -34,8 +34,68 @@ function score(l?: number, i?: number) {
   return l && i ? l * i : undefined;
 }
 
+// Titles/names from the original English demo dataset (pre-localization). Any
+// database seeded before the Russian rewrite has these rows sitting alongside
+// the new Russian ones (they don't share a natural key), so every seed run
+// deletes them to guarantee no English/Russian duplicates remain.
+const LEGACY_ENGLISH_RISK_TITLES = [
+  'Bribery risk in vendor selection process',
+  'Excessive gifts and hospitality to public officials',
+  'Inadequate due diligence on high-risk counterparties',
+  'Undisclosed conflicts of interest in finance leadership',
+  'Expense fraud via inflated reimbursement claims',
+  'Data privacy breach in candidate screening data',
+  'Supplier ESG non-compliance in manufacturing supply chain',
+  'Regulatory non-compliance following state inspection findings',
+  'Facilitation payments at customs clearance',
+  'Vendor concentration risk in critical raw materials',
+  'Historical bribery allegation now archived',
+  'Media allegations of anti-competitive practices',
+];
+const LEGACY_ENGLISH_INCIDENT_TITLES = ['Hotline tip on vendor kickback'];
+const LEGACY_ENGLISH_SOURCE_TITLES = [
+  'Whistleblower report #2026-014',
+  'Internal Audit Q1 2026',
+  'Vendor DD - Acme Supplies',
+  'Candidate DD - Senior Buyer role',
+  'Press coverage - industry bribery scandal',
+  'Regulator inspection notice',
+  'Gift register entry - Q2 2026',
+  'COI disclosure - Finance director',
+  'Procurement anomaly flagged by ERP',
+  'ESG supplier assessment',
+  'Investigation case #INV-2026-002',
+  'Annual corruption risk assessment 2026',
+];
+const LEGACY_ENGLISH_CATEGORY_NAMES = [
+  'Corruption & Bribery',
+  'Gifts & Hospitality',
+  'Facilitation Payments',
+  'Third-Party Risk',
+  'Counterparty Due Diligence',
+  'Vendor Risk',
+  'Conflict of Interest',
+  'Fraud',
+  'Data Privacy & ESG',
+  'ESG Compliance',
+  'Data Protection',
+  'Regulatory & Legal',
+];
+// Deleting these companies cascades to their departments and business processes.
+const LEGACY_ENGLISH_COMPANY_NAMES = ['Northwind Holdings', 'Southbridge Industries'];
+
+async function cleanupLegacyEnglishDemoData() {
+  await prisma.risk.deleteMany({ where: { title: { in: LEGACY_ENGLISH_RISK_TITLES } } });
+  await prisma.incident.deleteMany({ where: { title: { in: LEGACY_ENGLISH_INCIDENT_TITLES } } });
+  await prisma.source.deleteMany({ where: { title: { in: LEGACY_ENGLISH_SOURCE_TITLES } } });
+  await prisma.category.deleteMany({ where: { name: { in: LEGACY_ENGLISH_CATEGORY_NAMES } } });
+  await prisma.company.deleteMany({ where: { name: { in: LEGACY_ENGLISH_COMPANY_NAMES } } });
+}
+
 async function main() {
   console.log('Заполнение ЕИСУКР демонстрационными данными...');
+
+  await cleanupLegacyEnglishDemoData();
 
   // ---------------------------------------------------------------
   // Компании / Департаменты / Бизнес-процессы
@@ -173,7 +233,13 @@ async function main() {
   for (const spec of userSpecs) {
     const user = await prisma.user.upsert({
       where: { email: spec.email },
-      update: {},
+      update: {
+        fullName: spec.fullName,
+        role: spec.role,
+        title: spec.title,
+        companyId: spec.companyId ?? null,
+        departmentId: spec.departmentId ?? null,
+      },
       create: { ...spec, passwordHash },
     });
     users[spec.email] = user.id;

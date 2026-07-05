@@ -10,6 +10,16 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { toCsv, toXlsx } from './export.util';
 import { buildPdfReport } from './pdf.util';
 
+const EXPORT_SHEET_NAMES_RU: Record<
+  'risk-register' | 'action-plan' | 'critical-risks' | 'overdue-actions',
+  string
+> = {
+  'risk-register': 'Реестр рисков',
+  'action-plan': 'План мероприятий',
+  'critical-risks': 'Критические риски',
+  'overdue-actions': 'Просроченные мероприятия',
+};
+
 const ACTIVE_STATUSES: RiskStatus[] = [
   RiskStatus.NEW,
   RiskStatus.ASSESSMENT,
@@ -127,7 +137,7 @@ export class ReportsService {
       'risk-register' | 'action-plan' | 'critical-risks' | 'overdue-actions',
   ) {
     const { columns, rows } = await this.resolveTable(kind);
-    return toXlsx(kind, columns, rows);
+    return toXlsx(EXPORT_SHEET_NAMES_RU[kind], columns, rows);
   }
 
   private async resolveTable(

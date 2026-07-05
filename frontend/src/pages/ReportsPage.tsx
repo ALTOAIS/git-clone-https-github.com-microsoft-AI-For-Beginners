@@ -23,16 +23,29 @@ const PDF_REPORT_I18N_KEY: Record<(typeof PDF_REPORT_KINDS)[number], string> = {
   compliance: 'compliance',
 };
 
+const TABLE_REPORT_FILENAMES: Record<(typeof TABLE_REPORT_KINDS)[number], string> = {
+  'risk-register': 'реестр-рисков',
+  'action-plan': 'план-мероприятий',
+  'critical-risks': 'критические-риски',
+  'overdue-actions': 'просроченные-мероприятия',
+};
+
+const PDF_REPORT_FILENAMES: Record<(typeof PDF_REPORT_KINDS)[number], string> = {
+  board: 'отчёт-совет-директоров',
+  'audit-committee': 'отчёт-комитет-по-аудиту',
+  compliance: 'комплаенс-отчёт',
+};
+
 export function ReportsPage() {
   const { t } = useTranslation();
   const { message } = App.useApp();
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
 
-  const handleTableDownload = async (kind: string, format: 'csv' | 'xlsx') => {
+  const handleTableDownload = async (kind: (typeof TABLE_REPORT_KINDS)[number], format: 'csv' | 'xlsx') => {
     const key = `${kind}-${format}`;
     setLoadingKey(key);
     try {
-      await downloadViaApi(reportsApi.exportPath(kind, format), `${kind}.${format}`);
+      await downloadViaApi(reportsApi.exportPath(kind, format), `${TABLE_REPORT_FILENAMES[kind]}.${format}`);
     } catch {
       message.error(t('reports.downloadFailed'));
     } finally {
@@ -43,7 +56,7 @@ export function ReportsPage() {
   const handlePdfDownload = async (kind: 'board' | 'audit-committee' | 'compliance') => {
     setLoadingKey(kind);
     try {
-      await downloadViaApi(reportsApi.pdfPath(kind), `${kind}-report.pdf`);
+      await downloadViaApi(reportsApi.pdfPath(kind), `${PDF_REPORT_FILENAMES[kind]}.pdf`);
     } catch {
       message.error(t('reports.downloadFailed'));
     } finally {
