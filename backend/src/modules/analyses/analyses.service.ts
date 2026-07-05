@@ -7,11 +7,18 @@ import { AnalysisStage, AnalysisStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { isForwardStageTransition } from './analyses.constants';
+import { AssessAnalysisRiskDto } from './dto/assess-analysis-risk.dto';
 import { ChangeStageDto } from './dto/change-stage.dto';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
+import { CreateAnalysisRiskDto } from './dto/create-analysis-risk.dto';
+import { CreateFactorDto } from './dto/create-factor.dto';
 import { CreatePlanItemDto } from './dto/create-plan-item.dto';
+import { CreateProcessStepDto } from './dto/create-process-step.dto';
 import { CreateWorkingGroupMemberDto } from './dto/create-working-group-member.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
+import { UpdateAnalysisRiskDto } from './dto/update-analysis-risk.dto';
+import { UpdateFactorDto } from './dto/update-factor.dto';
+import { UpdateProcessStepDto } from './dto/update-process-step.dto';
 import { UpdateWorkingGroupMemberDto } from './dto/update-working-group-member.dto';
 
 const DETAIL_INCLUDE = {
@@ -35,6 +42,25 @@ const DETAIL_INCLUDE = {
   documents: {
     include: { uploadedBy: { select: { id: true, fullName: true } } },
     orderBy: { createdAt: 'desc' as const },
+  },
+  processSteps: {
+    include: {
+      department: { select: { id: true, name: true } },
+      executor: { select: { id: true, fullName: true } },
+    },
+    orderBy: { order: 'asc' as const },
+  },
+  factors: {
+    include: { processStep: { select: { id: true, name: true } } },
+    orderBy: { createdAt: 'asc' as const },
+  },
+  risks: {
+    include: {
+      factor: { select: { id: true, factorType: true } },
+      category: { select: { id: true, name: true } },
+      owner: { select: { id: true, fullName: true } },
+    },
+    orderBy: { createdAt: 'asc' as const },
   },
 } satisfies Prisma.CorruptionAnalysisInclude;
 
@@ -324,6 +350,153 @@ export class AnalysesService {
     const document = await this.findDocument(id);
     await this.prisma.analysisDocument.delete({ where: { id } });
     return document;
+  }
+
+  // ------------------------------------------------------------------
+  // Stage 5: Process map
+  // ------------------------------------------------------------------
+
+  async addProcessStep(analysisId: string, dto: CreateProcessStepDto) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisProcessStep.create({
+      data: { analysisId, ...dto },
+      include: {
+        department: { select: { id: true, name: true } },
+        executor: { select: { id: true, fullName: true } },
+      },
+    });
+  }
+
+  async updateProcessStep(
+    analysisId: string,
+    stepId: string,
+    dto: UpdateProcessStepDto,
+  ) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisProcessStep.update({
+      where: { id: stepId },
+      data: dto,
+      include: {
+        department: { select: { id: true, name: true } },
+        executor: { select: { id: true, fullName: true } },
+      },
+    });
+  }
+
+  async removeProcessStep(analysisId: string, stepId: string) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisProcessStep.delete({ where: { id: stepId } });
+  }
+
+  // ------------------------------------------------------------------
+  // Stage 6: Corruptogenic factors
+  // ------------------------------------------------------------------
+
+  async addFactor(analysisId: string, dto: CreateFactorDto) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisFactor.create({
+      data: { analysisId, ...dto },
+      include: { processStep: { select: { id: true, name: true } } },
+    });
+  }
+
+  async updateFactor(
+    analysisId: string,
+    factorId: string,
+    dto: UpdateFactorDto,
+  ) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisFactor.update({
+      where: { id: factorId },
+      data: dto,
+      include: { processStep: { select: { id: true, name: true } } },
+    });
+  }
+
+  async removeFactor(analysisId: string, factorId: string) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisFactor.delete({ where: { id: factorId } });
+  }
+
+  // ------------------------------------------------------------------
+  // Stage 7: Risk identification
+  // ------------------------------------------------------------------
+
+  private readonly riskInclude = {
+    factor: { select: { id: true, factorType: true } },
+    category: { select: { id: true, name: true } },
+    owner: { select: { id: true, fullName: true } },
+  } satisfies Prisma.AnalysisRiskInclude;
+
+  async addRisk(analysisId: string, dto: CreateAnalysisRiskDto) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisRisk.create({
+      data: { analysisId, ...dto },
+      include: this.riskInclude,
+    });
+  }
+
+  async updateRisk(
+    analysisId: string,
+    riskId: string,
+    dto: UpdateAnalysisRiskDto,
+  ) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisRisk.update({
+      where: { id: riskId },
+      data: dto,
+      include: this.riskInclude,
+    });
+  }
+
+  async removeRisk(analysisId: string, riskId: string) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisRisk.delete({ where: { id: riskId } });
+  }
+
+  // ------------------------------------------------------------------
+  // Stage 8: Risk assessment
+  // ------------------------------------------------------------------
+
+  async assessRisk(
+    analysisId: string,
+    riskId: string,
+    dto: AssessAnalysisRiskDto,
+  ) {
+    await this.findOne(analysisId);
+    const existing = await this.prisma.analysisRisk.findUnique({
+      where: { id: riskId },
+    });
+    if (!existing) throw new NotFoundException('Риск не найден');
+
+    const likelihood = dto.likelihood ?? existing.likelihood ?? undefined;
+    const impact = dto.impact ?? existing.impact ?? undefined;
+    const residualLikelihood =
+      dto.residualLikelihood ?? existing.residualLikelihood ?? undefined;
+    const residualImpact =
+      dto.residualImpact ?? existing.residualImpact ?? undefined;
+
+    return this.prisma.analysisRisk.update({
+      where: { id: riskId },
+      data: {
+        likelihood,
+        impact,
+        score: this.computeScore(likelihood, impact),
+        controlEffectiveness: dto.controlEffectiveness,
+        residualLikelihood,
+        residualImpact,
+        residualScore: this.computeScore(residualLikelihood, residualImpact),
+      },
+      include: this.riskInclude,
+    });
+  }
+
+  private computeScore(
+    likelihood?: number,
+    impact?: number,
+  ): number | undefined {
+    if (!likelihood || !impact) return undefined;
+    return likelihood * impact;
   }
 
   // ------------------------------------------------------------------

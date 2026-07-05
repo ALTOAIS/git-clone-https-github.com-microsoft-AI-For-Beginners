@@ -152,6 +152,35 @@ enum AnalysisDocumentCategory {
   OTHER
 }
 
+/// Stage 5 "Карта бизнес-процессов" — control-point tags on a process step
+enum ProcessControlPointType {
+  DECISION_MAKING
+  DISCRETIONARY_POWERS
+  EXTERNAL_CONTACTS
+  FINANCIAL_OPERATIONS
+  HR_DECISIONS
+  PROCUREMENT
+  DIGITAL_SYSTEMS
+  CONTROL_MEASURES
+}
+
+/// Stage 6 "Выявление коррупциогенных факторов"
+enum CorruptogenicFactorType {
+  DISCRETION
+  CONFLICT_OF_INTEREST
+  LACK_OF_CONTROL
+  OPACITY
+  EXCEPTIONS
+  MANUAL_OPERATIONS
+  INFORMATION_ACCESS
+  SUPPLIER_CONTACTS
+  HR_DECISIONS
+  FINANCIAL_OPERATIONS
+  PROCUREMENT
+  PERMITS
+  PROPERTY_USE
+}
+
 // ------------------------------------------------------------------
 // Organization structure
 // ------------------------------------------------------------------
@@ -186,6 +215,7 @@ model Department {
   risks         Risk[]
   analysisLinks AnalysisDepartment[]
   planItems     AnalysisPlanItem[]
+  processSteps  AnalysisProcessStep[]
 
   @@unique([companyId, name])
   @@map("departments")
@@ -218,7 +248,8 @@ model Category {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  risks Risk[]
+  risks         Risk[]
+  analysisRisks AnalysisRisk[]
 
   @@map("categories")
 }
@@ -258,6 +289,8 @@ model User {
   analysisMemberships  AnalysisWorkingGroupMember[]
   ownedPlanItems       AnalysisPlanItem[]           @relation("AnalysisPlanItemOwner")
   uploadedAnalysisDocs AnalysisDocument[]
+  executedProcessSteps AnalysisProcessStep[]        @relation("ProcessStepExecutor")
+  ownedAnalysisRisks   AnalysisRisk[]               @relation("AnalysisRiskOwner")
 
   @@map("users")
 }
@@ -538,6 +571,9 @@ model CorruptionAnalysis {
   workingGroup AnalysisWorkingGroupMember[]
   planItems    AnalysisPlanItem[]
   documents    AnalysisDocument[]
+  processSteps AnalysisProcessStep[]
+  factors      AnalysisFactor[]
+  risks        AnalysisRisk[]
 
   @@map("corruption_analyses")
 }
@@ -605,4 +641,81 @@ model AnalysisDocument {
   createdAt    DateTime                 @default(now())
 
   @@map("analysis_documents")
+}
+
+/// Stage 5 "Карта бизнес-процессов" — one row per step of the mapped process
+model AnalysisProcessStep {
+  id                String                    @id @default(uuid())
+  analysisId        String
+  analysis          CorruptionAnalysis        @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  order             Int
+  name              String
+  description       String?
+  departmentId      String?
+  department        Department?               @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  executorId        String?
+  executor          User?                     @relation("ProcessStepExecutor", fields: [executorId], references: [id], onDelete: SetNull)
+  legalBasis        String?
+  inputDescription  String?
+  outputDescription String?
+  controlPoints     ProcessControlPointType[]
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  factors AnalysisFactor[]
+
+  @@map("analysis_process_steps")
+}
+
+/// Stage 6 "Выявление коррупциогенных факторов" — per process step
+model AnalysisFactor {
+  id            String                  @id @default(uuid())
+  analysisId    String
+  analysis      CorruptionAnalysis      @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  processStepId String?
+  processStep   AnalysisProcessStep?    @relation(fields: [processStepId], references: [id], onDelete: SetNull)
+  factorType    CorruptogenicFactorType
+  description   String?
+  createdAt     DateTime                @default(now())
+
+  risks AnalysisRisk[]
+
+  @@map("analysis_factors")
+}
+
+/// Stage 7 "Выявление коррупционных рисков" (identification fields) +
+/// Stage 8 "Оценка рисков" (likelihood/impact/control effectiveness/residual fields)
+model AnalysisRisk {
+  id         String             @id @default(uuid())
+  analysisId String
+  analysis   CorruptionAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  factorId   String?
+  factor     AnalysisFactor?    @relation(fields: [factorId], references: [id], onDelete: SetNull)
+
+  title             String
+  description       String?
+  categoryId        String?
+  category          Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  source            String?
+  cause             String?
+  conditions        String?
+  corruptionScheme  String?
+  interestedParties String?
+  consequences      String?
+  existingControls  String?
+  ownerId           String?
+  owner             User?     @relation("AnalysisRiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  likelihood           Int?
+  impact               Int?
+  score                Int?
+  controlEffectiveness ControlEffectiveness @default(NOT_TESTED)
+  residualLikelihood   Int?
+  residualImpact       Int?
+  residualScore        Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("analysis_risks")
 }

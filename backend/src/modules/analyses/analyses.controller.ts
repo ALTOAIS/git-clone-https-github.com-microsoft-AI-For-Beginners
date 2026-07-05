@@ -26,11 +26,18 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { analysisDocumentsMulterOptions } from './analysis-documents.multer.config';
 import { AnalysesService } from './analyses.service';
+import { AssessAnalysisRiskDto } from './dto/assess-analysis-risk.dto';
 import { ChangeStageDto } from './dto/change-stage.dto';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
+import { CreateAnalysisRiskDto } from './dto/create-analysis-risk.dto';
+import { CreateFactorDto } from './dto/create-factor.dto';
 import { CreatePlanItemDto } from './dto/create-plan-item.dto';
+import { CreateProcessStepDto } from './dto/create-process-step.dto';
 import { CreateWorkingGroupMemberDto } from './dto/create-working-group-member.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
+import { UpdateAnalysisRiskDto } from './dto/update-analysis-risk.dto';
+import { UpdateFactorDto } from './dto/update-factor.dto';
+import { UpdateProcessStepDto } from './dto/update-process-step.dto';
 import { UpdateWorkingGroupMemberDto } from './dto/update-working-group-member.dto';
 
 const MANAGE_ROLES = [
@@ -193,5 +200,81 @@ export class AnalysesController {
   @Roles(...MANAGE_ROLES)
   removeDocument(@Param('docId') docId: string) {
     return this.analysesService.removeDocument(docId);
+  }
+
+  @Post(':id/process-steps')
+  @Roles(...MANAGE_ROLES)
+  addProcessStep(@Param('id') id: string, @Body() dto: CreateProcessStepDto) {
+    return this.analysesService.addProcessStep(id, dto);
+  }
+
+  @Patch(':id/process-steps/:stepId')
+  @Roles(...MANAGE_ROLES)
+  updateProcessStep(
+    @Param('id') id: string,
+    @Param('stepId') stepId: string,
+    @Body() dto: UpdateProcessStepDto,
+  ) {
+    return this.analysesService.updateProcessStep(id, stepId, dto);
+  }
+
+  @Delete(':id/process-steps/:stepId')
+  @Roles(...MANAGE_ROLES)
+  removeProcessStep(@Param('id') id: string, @Param('stepId') stepId: string) {
+    return this.analysesService.removeProcessStep(id, stepId);
+  }
+
+  @Post(':id/factors')
+  @Roles(...MANAGE_ROLES)
+  addFactor(@Param('id') id: string, @Body() dto: CreateFactorDto) {
+    return this.analysesService.addFactor(id, dto);
+  }
+
+  @Patch(':id/factors/:factorId')
+  @Roles(...MANAGE_ROLES)
+  updateFactor(
+    @Param('id') id: string,
+    @Param('factorId') factorId: string,
+    @Body() dto: UpdateFactorDto,
+  ) {
+    return this.analysesService.updateFactor(id, factorId, dto);
+  }
+
+  @Delete(':id/factors/:factorId')
+  @Roles(...MANAGE_ROLES)
+  removeFactor(@Param('id') id: string, @Param('factorId') factorId: string) {
+    return this.analysesService.removeFactor(id, factorId);
+  }
+
+  @Post(':id/risks')
+  @Roles(...MANAGE_ROLES)
+  addRisk(@Param('id') id: string, @Body() dto: CreateAnalysisRiskDto) {
+    return this.analysesService.addRisk(id, dto);
+  }
+
+  @Patch(':id/risks/:riskId')
+  @Roles(...MANAGE_ROLES)
+  updateRisk(
+    @Param('id') id: string,
+    @Param('riskId') riskId: string,
+    @Body() dto: UpdateAnalysisRiskDto,
+  ) {
+    return this.analysesService.updateRisk(id, riskId, dto);
+  }
+
+  @Delete(':id/risks/:riskId')
+  @Roles(...MANAGE_ROLES)
+  removeRisk(@Param('id') id: string, @Param('riskId') riskId: string) {
+    return this.analysesService.removeRisk(id, riskId);
+  }
+
+  @Patch(':id/risks/:riskId/assess')
+  @Roles(...MANAGE_ROLES)
+  assessRisk(
+    @Param('id') id: string,
+    @Param('riskId') riskId: string,
+    @Body() dto: AssessAnalysisRiskDto,
+  ) {
+    return this.analysesService.assessRisk(id, riskId, dto);
   }
 }

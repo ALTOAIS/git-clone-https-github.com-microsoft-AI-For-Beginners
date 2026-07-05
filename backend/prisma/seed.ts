@@ -4,9 +4,11 @@ import {
   AnalysisStatus,
   ControlEffectiveness,
   ControlType,
+  CorruptogenicFactorType,
   IncidentAction,
   IncidentStatus,
   PrismaClient,
+  ProcessControlPointType,
   Role,
   RiskStatus,
   SourceType,
@@ -617,7 +619,7 @@ async function main() {
     where: { name: 'ВАКР процесса закупок ТОО «Нордвинд Холдинг» за 2026 год' },
   });
   if (!existingAnalysis1) {
-    await prisma.corruptionAnalysis.create({
+    const analysis1 = await prisma.corruptionAnalysis.create({
       data: {
         code: 'ВАКР-2026-0001',
         name: 'ВАКР процесса закупок ТОО «Нордвинд Холдинг» за 2026 год',
@@ -628,7 +630,7 @@ async function main() {
         periodEnd: new Date('2026-06-30'),
         deadline: new Date(new Date().setDate(new Date().getDate() + 30)),
         leadId: users['manager@crh.local'],
-        stage: AnalysisStage.WORKING_GROUP,
+        stage: AnalysisStage.ASSESSMENT,
         status: AnalysisStatus.IN_PROGRESS,
         createdById: users['officer@crh.local'],
         departments: {
@@ -679,6 +681,171 @@ async function main() {
             },
           ],
         },
+      },
+    });
+
+    // Stage 5: Карта бизнес-процессов
+    const step1 = await prisma.analysisProcessStep.create({
+      data: {
+        analysisId: analysis1.id,
+        order: 1,
+        name: 'Инициирование закупки',
+        description: 'Подразделение подаёт заявку на закупку товаров, работ или услуг.',
+        departmentId: departments['Департамент закупок'],
+        executorId: users['officer@crh.local'],
+        legalBasis: 'Закон РК «О государственных закупках», внутренний регламент закупочной деятельности',
+        inputDescription: 'Заявка подразделения на закупку',
+        outputDescription: 'Утверждённая заявка на закупку',
+        controlPoints: [ProcessControlPointType.DECISION_MAKING],
+      },
+    });
+    const step2 = await prisma.analysisProcessStep.create({
+      data: {
+        analysisId: analysis1.id,
+        order: 2,
+        name: 'Выбор способа закупки и определение поставщика',
+        description: 'Комиссия выбирает способ закупки (конкурс, запрос ценовых предложений, из одного источника) и определяет поставщика.',
+        departmentId: departments['Департамент закупок'],
+        executorId: users['officer@crh.local'],
+        legalBasis: 'Правила осуществления закупок, утверждённые внутренним положением о закупках',
+        inputDescription: 'Утверждённая заявка на закупку',
+        outputDescription: 'Протокол выбора способа закупки и поставщика',
+        controlPoints: [
+          ProcessControlPointType.DISCRETIONARY_POWERS,
+          ProcessControlPointType.EXTERNAL_CONTACTS,
+          ProcessControlPointType.PROCUREMENT,
+        ],
+      },
+    });
+    const step3 = await prisma.analysisProcessStep.create({
+      data: {
+        analysisId: analysis1.id,
+        order: 3,
+        name: 'Согласование и подписание договора',
+        description: 'Договор с выбранным поставщиком проходит внутреннее согласование и подписывается уполномоченным лицом.',
+        departmentId: departments['Департамент закупок'],
+        executorId: users['manager@crh.local'],
+        legalBasis: 'Положение о договорной работе',
+        inputDescription: 'Протокол выбора поставщика, проект договора',
+        outputDescription: 'Подписанный договор',
+        controlPoints: [
+          ProcessControlPointType.DECISION_MAKING,
+          ProcessControlPointType.FINANCIAL_OPERATIONS,
+        ],
+      },
+    });
+    await prisma.analysisProcessStep.create({
+      data: {
+        analysisId: analysis1.id,
+        order: 4,
+        name: 'Исполнение договора и приёмка',
+        description: 'Приёмка поставленных товаров, работ или услуг и оплата по договору.',
+        departmentId: departments['Департамент закупок'],
+        executorId: users['officer@crh.local'],
+        legalBasis: 'Положение о приёмке товаров, работ и услуг',
+        inputDescription: 'Подписанный договор',
+        outputDescription: 'Акт приёмки, оплата по договору',
+        controlPoints: [ProcessControlPointType.CONTROL_MEASURES],
+      },
+    });
+
+    // Stage 6: Выявление коррупциогенных факторов
+    const factor1 = await prisma.analysisFactor.create({
+      data: {
+        analysisId: analysis1.id,
+        processStepId: step2.id,
+        factorType: CorruptogenicFactorType.DISCRETION,
+        description: 'Широкие дискреционные полномочия при выборе способа закупки без чётко закреплённых критериев принятия решения.',
+      },
+    });
+    const factor2 = await prisma.analysisFactor.create({
+      data: {
+        analysisId: analysis1.id,
+        processStepId: step2.id,
+        factorType: CorruptogenicFactorType.SUPPLIER_CONTACTS,
+        description: 'Прямые контакты сотрудников с потенциальными поставщиками до объявления закупки.',
+      },
+    });
+    const factor3 = await prisma.analysisFactor.create({
+      data: {
+        analysisId: analysis1.id,
+        processStepId: step3.id,
+        factorType: CorruptogenicFactorType.CONFLICT_OF_INTEREST,
+        description: 'Отсутствие обязательной проверки на конфликт интересов при согласовании договора с поставщиком.',
+      },
+    });
+
+    // Stage 7-8: Выявление и оценка коррупционных рисков
+    await prisma.analysisRisk.create({
+      data: {
+        analysisId: analysis1.id,
+        factorId: factor1.id,
+        title: 'Риск необоснованного выбора неконкурентного способа закупки',
+        description: 'Выбор закупки из одного источника без достаточных оснований в целях создания преимущества конкретному поставщику.',
+        categoryId: vendorRisk.id,
+        source: 'Внутренний анализ бизнес-процесса закупок',
+        cause: 'Отсутствие чётких критериев выбора способа закупки во внутреннем положении',
+        conditions: 'Единоличное принятие решения без коллегиального рассмотрения',
+        corruptionScheme: 'Сотрудник закупочного подразделения обосновывает закупку из одного источника в интересах аффилированного поставщика, получая от него вознаграждение.',
+        interestedParties: 'Сотрудник Департамента закупок, аффилированный поставщик',
+        consequences: 'Завышение цены закупки, снижение качества товаров/услуг, репутационный ущерб',
+        existingControls: 'Визирование заявки руководителем подразделения',
+        ownerId: users['manager@crh.local'],
+        likelihood: 4,
+        impact: 4,
+        score: 16,
+        controlEffectiveness: ControlEffectiveness.PARTIALLY_EFFECTIVE,
+        residualLikelihood: 3,
+        residualImpact: 3,
+        residualScore: 9,
+      },
+    });
+    await prisma.analysisRisk.create({
+      data: {
+        analysisId: analysis1.id,
+        factorId: factor2.id,
+        title: 'Риск сговора с поставщиком до объявления закупки',
+        description: 'Заблаговременная передача сведений об условиях будущей закупки конкретному поставщику для обеспечения его победы.',
+        categoryId: corruption.id,
+        source: 'Внутренний анализ бизнес-процесса закупок',
+        cause: 'Отсутствие ограничений на предварительное общение с потенциальными поставщиками',
+        conditions: 'Неформальные контакты вне регламентированных каналов взаимодействия',
+        corruptionScheme: 'Сотрудник передаёт поставщику проект технического задания заранее, поставщик готовит наиболее выгодное для себя предложение и получает контракт.',
+        interestedParties: 'Сотрудник Департамента закупок, потенциальный поставщик',
+        consequences: 'Ограничение конкуренции, завышение стоимости закупки',
+        existingControls: 'Не определены',
+        ownerId: users['officer@crh.local'],
+        likelihood: 3,
+        impact: 4,
+        score: 12,
+        controlEffectiveness: ControlEffectiveness.NOT_TESTED,
+        residualLikelihood: 3,
+        residualImpact: 4,
+        residualScore: 12,
+      },
+    });
+    await prisma.analysisRisk.create({
+      data: {
+        analysisId: analysis1.id,
+        factorId: factor3.id,
+        title: 'Риск подписания договора при наличии конфликта интересов',
+        description: 'Подписание договора с поставщиком, аффилированным с лицом, принимающим решение, без раскрытия конфликта интересов.',
+        categoryId: coi.id,
+        source: 'Внутренний анализ бизнес-процесса закупок',
+        cause: 'Отсутствие обязательной декларации конфликта интересов перед согласованием договора',
+        conditions: 'Согласование договора без проверки аффилированности сторон',
+        corruptionScheme: 'Руководитель согласовывает договор с организацией, учредителем которой является его родственник, не раскрывая эту связь.',
+        interestedParties: 'Руководитель, подписывающий договор, аффилированная организация',
+        consequences: 'Заключение невыгодных для компании условий договора, репутационный ущерб',
+        existingControls: 'Декларация конфликта интересов при приёме на работу (не актуализируется)',
+        ownerId: users['manager@crh.local'],
+        likelihood: 2,
+        impact: 5,
+        score: 10,
+        controlEffectiveness: ControlEffectiveness.INEFFECTIVE,
+        residualLikelihood: 2,
+        residualImpact: 4,
+        residualScore: 8,
       },
     });
   }

@@ -234,4 +234,25 @@ export const analysesApi = {
   },
   downloadDocumentPath: (analysisId: string, docId: string) => `/analyses/${analysisId}/documents/${docId}/download`,
   removeDocument: (analysisId: string, docId: string) => apiClient.delete(`/analyses/${analysisId}/documents/${docId}`),
+
+  addProcessStep: (analysisId: string, data: Record<string, unknown>) =>
+    apiClient.post(`/analyses/${analysisId}/process-steps`, data),
+  updateProcessStep: (analysisId: string, stepId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/analyses/${analysisId}/process-steps/${stepId}`, data),
+  removeProcessStep: (analysisId: string, stepId: string) =>
+    apiClient.delete(`/analyses/${analysisId}/process-steps/${stepId}`),
+
+  addFactor: (analysisId: string, data: Record<string, unknown>) =>
+    apiClient.post(`/analyses/${analysisId}/factors`, data),
+  updateFactor: (analysisId: string, factorId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/analyses/${analysisId}/factors/${factorId}`, data),
+  removeFactor: (analysisId: string, factorId: string) =>
+    apiClient.delete(`/analyses/${analysisId}/factors/${factorId}`),
+
+  addRisk: (analysisId: string, data: Record<string, unknown>) => apiClient.post(`/analyses/${analysisId}/risks`, data),
+  updateRisk: (analysisId: string, riskId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/analyses/${analysisId}/risks/${riskId}`, data),
+  removeRisk: (analysisId: string, riskId: string) => apiClient.delete(`/analyses/${analysisId}/risks/${riskId}`),
+  assessRisk: (analysisId: string, riskId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/analyses/${analysisId}/risks/${riskId}/assess`, data),
 };

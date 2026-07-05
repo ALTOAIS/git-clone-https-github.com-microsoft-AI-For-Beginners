@@ -1,5 +1,11 @@
 import i18n from '../i18n';
-import type { AnalysisDocumentCategory, AnalysisStage, AnalysisStatus } from '../types';
+import type {
+  AnalysisDocumentCategory,
+  AnalysisStage,
+  AnalysisStatus,
+  CorruptogenicFactorType,
+  ProcessControlPointType,
+} from '../types';
 
 export const ANALYSIS_STAGE_ORDER: AnalysisStage[] = [
   'CREATION',
@@ -18,7 +24,16 @@ export const ANALYSIS_STAGE_ORDER: AnalysisStage[] = [
   'REASSESSMENT',
 ];
 
-export const IMPLEMENTED_ANALYSIS_STAGES: AnalysisStage[] = ['CREATION', 'PLANNING', 'WORKING_GROUP', 'DOCUMENTS'];
+export const IMPLEMENTED_ANALYSIS_STAGES: AnalysisStage[] = [
+  'CREATION',
+  'PLANNING',
+  'WORKING_GROUP',
+  'DOCUMENTS',
+  'PROCESS_MAP',
+  'FACTORS',
+  'RISKS',
+  'ASSESSMENT',
+];
 
 export function analysisStageLabel(stage: AnalysisStage): string {
   return i18n.t(`analysisStage.${stage}`);
@@ -57,4 +72,39 @@ export const ALL_ANALYSIS_DOCUMENT_CATEGORIES: AnalysisDocumentCategory[] = [
 
 export function analysisDocumentCategoryLabel(category: AnalysisDocumentCategory): string {
   return i18n.t(`analysisDocumentCategory.${category}`);
+}
+
+export const ALL_PROCESS_CONTROL_POINT_TYPES: ProcessControlPointType[] = [
+  'DECISION_MAKING',
+  'DISCRETIONARY_POWERS',
+  'EXTERNAL_CONTACTS',
+  'FINANCIAL_OPERATIONS',
+  'HR_DECISIONS',
+  'PROCUREMENT',
+  'DIGITAL_SYSTEMS',
+  'CONTROL_MEASURES',
+];
+
+export function processControlPointTypeLabel(value: ProcessControlPointType): string {
+  return i18n.t(`processControlPointType.${value}`);
+}
+
+export const ALL_CORRUPTOGENIC_FACTOR_TYPES: CorruptogenicFactorType[] = [
+  'DISCRETION',
+  'CONFLICT_OF_INTEREST',
+  'LACK_OF_CONTROL',
+  'OPACITY',
+  'EXCEPTIONS',
+  'MANUAL_OPERATIONS',
+  'INFORMATION_ACCESS',
+  'SUPPLIER_CONTACTS',
+  'HR_DECISIONS',
+  'FINANCIAL_OPERATIONS',
+  'PROCUREMENT',
+  'PERMITS',
+  'PROPERTY_USE',
+];
+
+export function corruptogenicFactorTypeLabel(value: CorruptogenicFactorType): string {
+  return i18n.t(`corruptogenicFactorType.${value}`);
 }
