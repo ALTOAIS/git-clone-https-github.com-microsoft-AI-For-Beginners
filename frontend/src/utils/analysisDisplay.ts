@@ -37,6 +37,10 @@ export const IMPLEMENTED_ANALYSIS_STAGES: AnalysisStage[] = [
   'ASSESSMENT',
   'RECOMMENDATIONS',
   'ACTION_PLAN',
+  'COORDINATION',
+  'APPROVAL',
+  'MONITORING',
+  'REASSESSMENT',
 ];
 
 export function analysisStageLabel(stage: AnalysisStage): string {

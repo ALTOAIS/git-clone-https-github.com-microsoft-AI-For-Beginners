@@ -315,6 +315,7 @@ model User {
   ownedAnalysisRisks            AnalysisRisk[]               @relation("AnalysisRiskOwner")
   responsibleForRecommendations AnalysisRecommendation[]     @relation("RecommendationResponsible")
   responsibleForActionItems     AnalysisActionItem[]         @relation("ActionItemResponsible")
+  analysisComments              AnalysisComment[]
 
   @@map("users")
 }
@@ -418,6 +419,8 @@ model Risk {
   attachments Attachment[]
   history     RiskHistory[]
 
+  sourceAnalysisRisk AnalysisRisk?
+
   @@map("risks")
 }
 
@@ -476,6 +479,8 @@ model Action {
   completedAt        DateTime?
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
+
+  sourceActionItem AnalysisActionItem?
 
   @@map("actions")
 }
@@ -571,25 +576,27 @@ model Notification {
 // ------------------------------------------------------------------
 
 model CorruptionAnalysis {
-  id          String         @id @default(uuid())
-  code        String         @unique
-  name        String
-  companyId   String?
-  company     Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  subject     String?
-  legalBasis  String?
-  periodStart DateTime?
-  periodEnd   DateTime?
-  deadline    DateTime?
-  leadId      String?
-  lead        User?          @relation("AnalysisLead", fields: [leadId], references: [id], onDelete: SetNull)
-  stage       AnalysisStage  @default(CREATION)
-  status      AnalysisStatus @default(DRAFT)
-  createdById String?
-  createdBy   User?          @relation("AnalysisCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  completedAt DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                String         @id @default(uuid())
+  code              String         @unique
+  name              String
+  companyId         String?
+  company           Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  subject           String?
+  legalBasis        String?
+  periodStart       DateTime?
+  periodEnd         DateTime?
+  deadline          DateTime?
+  leadId            String?
+  lead              User?          @relation("AnalysisLead", fields: [leadId], references: [id], onDelete: SetNull)
+  stage             AnalysisStage  @default(CREATION)
+  status            AnalysisStatus @default(DRAFT)
+  createdById       String?
+  createdBy         User?          @relation("AnalysisCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  completedAt       DateTime?
+  reassessmentNotes String?
+  reassessedAt      DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
   departments     AnalysisDepartment[]
   workingGroup    AnalysisWorkingGroupMember[]
@@ -600,6 +607,7 @@ model CorruptionAnalysis {
   risks           AnalysisRisk[]
   recommendations AnalysisRecommendation[]
   actionItems     AnalysisActionItem[]
+  comments        AnalysisComment[]
 
   @@map("corruption_analyses")
 }
@@ -745,6 +753,10 @@ model AnalysisRisk {
 
   recommendations AnalysisRecommendation[]
 
+  /// Set when this analysis risk is migrated into the main Risk Register on approval (stage 12)
+  linkedRiskId String? @unique
+  linkedRisk   Risk?   @relation(fields: [linkedRiskId], references: [id], onDelete: SetNull)
+
   @@map("analysis_risks")
 }
 
@@ -787,5 +799,22 @@ model AnalysisActionItem {
   createdAt        DateTime                @default(now())
   updatedAt        DateTime                @updatedAt
 
+  /// Set when this action item is migrated into the main Action Plans module on approval (stage 12)
+  linkedActionId String? @unique
+  linkedAction   Action? @relation(fields: [linkedActionId], references: [id], onDelete: SetNull)
+
   @@map("analysis_action_items")
+}
+
+/// Stage 11 "Согласование" — discussion thread on the analysis as a whole
+model AnalysisComment {
+  id         String             @id @default(uuid())
+  analysisId String
+  analysis   CorruptionAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  authorId   String?
+  author     User?              @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  text       String
+  createdAt  DateTime           @default(now())
+
+  @@map("analysis_comments")
 }
