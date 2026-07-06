@@ -33,4 +33,10 @@ export class CreateCourseDto {
   @IsArray()
   @IsEnum(Role, { each: true })
   applicableRoles?: Role[];
+
+  @ApiProperty({ type: [String], required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  applicableDepartmentIds?: string[];
 }

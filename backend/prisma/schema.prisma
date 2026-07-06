@@ -277,13 +277,14 @@ model Department {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  processes     BusinessProcess[]
-  users         User[]
-  risks         Risk[]
-  analysisLinks AnalysisDepartment[]
-  planItems     AnalysisPlanItem[]
-  processSteps  AnalysisProcessStep[]
-  actionItems   AnalysisActionItem[]
+  processes         BusinessProcess[]
+  users             User[]
+  risks             Risk[]
+  analysisLinks     AnalysisDepartment[]
+  planItems         AnalysisPlanItem[]
+  processSteps      AnalysisProcessStep[]
+  actionItems       AnalysisActionItem[]
+  applicableCourses Course[]              @relation("CourseApplicableDepartments")
 
   @@unique([companyId, name])
   @@map("departments")
@@ -369,6 +370,8 @@ model User {
   createdSurveys                Survey[]                     @relation("SurveyCreatedBy")
   surveyResponses               SurveyResponse[]             @relation("SurveyRespondent")
   createdCampaigns              Campaign[]                   @relation("CampaignCreatedBy")
+  createdTrainingPlans          TrainingPlan[]               @relation("TrainingPlanCreatedBy")
+  responsibleTrainingPlanItems  TrainingPlanItem[]           @relation("TrainingPlanItemResponsible")
 
   @@map("users")
 }
@@ -891,10 +894,14 @@ model Course {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
-  modules     CourseModule[]
-  assignments CourseAssignment[]
-  test        Test?
-  campaigns   CampaignCourse[]
+  modules               CourseModule[]
+  assignments           CourseAssignment[]
+  test                  Test?
+  campaigns             CampaignCourse[]
+  /// Подразделения, для которых курс обязателен — второй разрез Матрицы обучения.
+  /// Пустой список означает «без ограничения по подразделению».
+  applicableDepartments Department[]       @relation("CourseApplicableDepartments")
+  planItems             TrainingPlanItem[]
 
   @@map("courses")
 }
@@ -1145,4 +1152,58 @@ model CampaignSurvey {
 
   @@unique([campaignId, surveyId])
   @@map("campaign_surveys")
+}
+
+// ------------------------------------------------------------------
+// Годовой план обучения
+// ------------------------------------------------------------------
+
+enum TrainingPlanStatus {
+  DRAFT
+  APPROVED
+  COMPLETED
+}
+
+enum TrainingPlanItemStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+}
+
+/// Годовой план обучения — один план на календарный год
+model TrainingPlan {
+  id          String             @id @default(uuid())
+  year        Int
+  title       String
+  status      TrainingPlanStatus @default(DRAFT)
+  createdById String?
+  createdBy   User?              @relation("TrainingPlanCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  items TrainingPlanItem[]
+
+  @@unique([year])
+  @@map("training_plans")
+}
+
+/// Строка плана — курс, запланированный на конкретный квартал для целевой аудитории.
+/// Статус отслеживается вручную ответственным (по аналогии с планом мероприятий ВАКР);
+/// автоматический расчёт прогресса из фактического прохождения отложен на следующую фазу.
+model TrainingPlanItem {
+  id            String                 @id @default(uuid())
+  planId        String
+  plan          TrainingPlan           @relation(fields: [planId], references: [id], onDelete: Cascade)
+  courseId      String
+  course        Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  quarter       Int
+  targetRoles   Role[]                 @default([])
+  responsibleId String?
+  responsible   User?                  @relation("TrainingPlanItemResponsible", fields: [responsibleId], references: [id], onDelete: SetNull)
+  status        TrainingPlanItemStatus @default(PLANNED)
+  notes         String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  @@map("training_plan_items")
 }

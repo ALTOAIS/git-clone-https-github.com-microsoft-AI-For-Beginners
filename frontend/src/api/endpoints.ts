@@ -31,6 +31,8 @@ import type {
   TestAttempt,
   TestDetail,
   TrainingMatrix,
+  TrainingPlanDetail,
+  TrainingPlanListItem,
   User,
 } from '../types';
 
@@ -383,4 +385,21 @@ export const campaignsApi = {
   unlinkSurvey: (campaignId: string, surveyId: string) => apiClient.delete(`/campaigns/${campaignId}/surveys/${surveyId}`),
 
   getProgress: (campaignId: string) => apiClient.get<CampaignProgress>(`/campaigns/${campaignId}/progress`),
+};
+
+// ---------------------------------------------------------------------------
+// Годовой план обучения
+// ---------------------------------------------------------------------------
+export const trainingPlansApi = {
+  list: (params: Record<string, unknown>) =>
+    apiClient.get<Paginated<TrainingPlanListItem>>('/training-plans', { params }),
+  get: (id: string) => apiClient.get<TrainingPlanDetail>(`/training-plans/${id}`),
+  create: (data: Record<string, unknown>) => apiClient.post<TrainingPlanDetail>('/training-plans', data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.patch<TrainingPlanDetail>(`/training-plans/${id}`, data),
+  remove: (id: string) => apiClient.delete(`/training-plans/${id}`),
+
+  addItem: (planId: string, data: Record<string, unknown>) => apiClient.post(`/training-plans/${planId}/items`, data),
+  updateItem: (planId: string, itemId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/training-plans/${planId}/items/${itemId}`, data),
+  removeItem: (planId: string, itemId: string) => apiClient.delete(`/training-plans/${planId}/items/${itemId}`),
 };
