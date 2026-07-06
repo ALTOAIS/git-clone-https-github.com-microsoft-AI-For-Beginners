@@ -18,8 +18,7 @@ export const ANALYSIS_STAGE_ORDER: AnalysisStage[] = [
   AnalysisStage.REASSESSMENT,
 ];
 
-/// Stages 1-10 have a working UI in this phase; the rest are shown in the
-/// wizard's progress bar as upcoming so users can see the full roadmap.
+/// All 14 stages now have a working UI.
 export const IMPLEMENTED_STAGES: AnalysisStage[] = [
   AnalysisStage.CREATION,
   AnalysisStage.PLANNING,
@@ -31,6 +30,10 @@ export const IMPLEMENTED_STAGES: AnalysisStage[] = [
   AnalysisStage.ASSESSMENT,
   AnalysisStage.RECOMMENDATIONS,
   AnalysisStage.ACTION_PLAN,
+  AnalysisStage.COORDINATION,
+  AnalysisStage.APPROVAL,
+  AnalysisStage.MONITORING,
+  AnalysisStage.REASSESSMENT,
 ];
 
 export function isForwardStageTransition(

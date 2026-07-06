@@ -269,4 +269,12 @@ export const analysesApi = {
     apiClient.patch(`/analyses/${analysisId}/action-items/${itemId}`, data),
   removeActionItem: (analysisId: string, itemId: string) =>
     apiClient.delete(`/analyses/${analysisId}/action-items/${itemId}`),
+
+  addComment: (analysisId: string, text: string) => apiClient.post(`/analyses/${analysisId}/comments`, { text }),
+  removeComment: (analysisId: string, commentId: string) =>
+    apiClient.delete(`/analyses/${analysisId}/comments/${commentId}`),
+  getHistory: (analysisId: string) => apiClient.get(`/analyses/${analysisId}/history`),
+  approve: (analysisId: string) => apiClient.post<AnalysisDetail>(`/analyses/${analysisId}/approve`),
+  updateReassessment: (analysisId: string, reassessmentNotes: string) =>
+    apiClient.patch<AnalysisDetail>(`/analyses/${analysisId}/reassessment`, { reassessmentNotes }),
 };

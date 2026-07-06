@@ -632,7 +632,7 @@ async function main() {
         periodEnd: new Date('2026-06-30'),
         deadline: new Date(new Date().setDate(new Date().getDate() + 30)),
         leadId: users['manager@crh.local'],
-        stage: AnalysisStage.ACTION_PLAN,
+        stage: AnalysisStage.COORDINATION,
         status: AnalysisStatus.IN_PROGRESS,
         createdById: users['officer@crh.local'],
         departments: {
@@ -920,6 +920,22 @@ async function main() {
         deadline: new Date(new Date().setDate(new Date().getDate() + 20)),
         priority: ActionPriority.MEDIUM,
         status: ActionStatus.PLANNED,
+      },
+    });
+
+    // Stage 11: Согласование
+    await prisma.analysisComment.create({
+      data: {
+        analysisId: analysis1.id,
+        authorId: users['officer@crh.local'],
+        text: 'Проект анализа готов к согласованию. Просьба руководителей рабочей группы проверить план мероприятий перед утверждением.',
+      },
+    });
+    await prisma.analysisComment.create({
+      data: {
+        analysisId: analysis1.id,
+        authorId: users['manager@crh.local'],
+        text: 'Согласовано. Рекомендую утвердить анализ и передать риски в реестр комплаенс-рисков.',
       },
     });
   }

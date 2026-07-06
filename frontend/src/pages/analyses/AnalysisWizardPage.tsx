@@ -24,6 +24,10 @@ import { Stage7RisksTab } from './stages/Stage7RisksTab';
 import { Stage8AssessmentTab } from './stages/Stage8AssessmentTab';
 import { Stage9RecommendationsTab } from './stages/Stage9RecommendationsTab';
 import { Stage10ActionPlanTab } from './stages/Stage10ActionPlanTab';
+import { Stage11CoordinationTab } from './stages/Stage11CoordinationTab';
+import { Stage12ApprovalTab } from './stages/Stage12ApprovalTab';
+import { Stage13MonitoringTab } from './stages/Stage13MonitoringTab';
+import { Stage14ReassessmentTab } from './stages/Stage14ReassessmentTab';
 
 export function AnalysisWizardPage() {
   const { t } = useTranslation();
@@ -79,6 +83,14 @@ export function AnalysisWizardPage() {
         return <Stage9RecommendationsTab analysis={analysis} onUpdated={refetch} />;
       case 'ACTION_PLAN':
         return <Stage10ActionPlanTab analysis={analysis} onUpdated={refetch} />;
+      case 'COORDINATION':
+        return <Stage11CoordinationTab analysis={analysis} onUpdated={refetch} />;
+      case 'APPROVAL':
+        return <Stage12ApprovalTab analysis={analysis} onUpdated={refetch} />;
+      case 'MONITORING':
+        return <Stage13MonitoringTab analysis={analysis} onUpdated={refetch} />;
+      case 'REASSESSMENT':
+        return <Stage14ReassessmentTab analysis={analysis} onUpdated={refetch} />;
       default:
         return (
           <Empty

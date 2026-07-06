@@ -31,6 +31,7 @@ import { ChangeStageDto } from './dto/change-stage.dto';
 import { CreateActionItemDto } from './dto/create-action-item.dto';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { CreateAnalysisRiskDto } from './dto/create-analysis-risk.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
 import { CreateFactorDto } from './dto/create-factor.dto';
 import { CreatePlanItemDto } from './dto/create-plan-item.dto';
 import { CreateProcessStepDto } from './dto/create-process-step.dto';
@@ -41,6 +42,7 @@ import { UpdateAnalysisDto } from './dto/update-analysis.dto';
 import { UpdateAnalysisRiskDto } from './dto/update-analysis-risk.dto';
 import { UpdateFactorDto } from './dto/update-factor.dto';
 import { UpdateProcessStepDto } from './dto/update-process-step.dto';
+import { UpdateReassessmentDto } from './dto/update-reassessment.dto';
 import { UpdateRecommendationDto } from './dto/update-recommendation.dto';
 import { UpdateWorkingGroupMemberDto } from './dto/update-working-group-member.dto';
 
@@ -330,5 +332,42 @@ export class AnalysesController {
   @Roles(...MANAGE_ROLES)
   removeActionItem(@Param('id') id: string, @Param('itemId') itemId: string) {
     return this.analysesService.removeActionItem(id, itemId);
+  }
+
+  @Post(':id/comments')
+  addComment(
+    @Param('id') id: string,
+    @Body() dto: CreateCommentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.analysesService.addComment(id, dto, user.id);
+  }
+
+  @Delete(':id/comments/:commentId')
+  removeComment(
+    @Param('id') id: string,
+    @Param('commentId') commentId: string,
+  ) {
+    return this.analysesService.removeComment(id, commentId);
+  }
+
+  @Get(':id/history')
+  getHistory(@Param('id') id: string) {
+    return this.analysesService.getHistory(id);
+  }
+
+  @Post(':id/approve')
+  @Roles(...MANAGE_ROLES)
+  approve(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.analysesService.approve(id, user.id);
+  }
+
+  @Patch(':id/reassessment')
+  @Roles(...MANAGE_ROLES)
+  updateReassessment(
+    @Param('id') id: string,
+    @Body() dto: UpdateReassessmentDto,
+  ) {
+    return this.analysesService.updateReassessment(id, dto);
   }
 }

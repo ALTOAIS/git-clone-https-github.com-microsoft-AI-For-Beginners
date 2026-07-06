@@ -5,13 +5,19 @@ import {
 } from '@nestjs/common';
 import { AnalysisStage, AnalysisStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ActionsService } from '../actions/actions.service';
 import { AuditService } from '../audit/audit.service';
-import { isForwardStageTransition } from './analyses.constants';
+import { RisksService } from '../risks/risks.service';
+import {
+  ANALYSIS_STAGE_ORDER,
+  isForwardStageTransition,
+} from './analyses.constants';
 import { AssessAnalysisRiskDto } from './dto/assess-analysis-risk.dto';
 import { ChangeStageDto } from './dto/change-stage.dto';
 import { CreateActionItemDto } from './dto/create-action-item.dto';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { CreateAnalysisRiskDto } from './dto/create-analysis-risk.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
 import { CreateFactorDto } from './dto/create-factor.dto';
 import { CreatePlanItemDto } from './dto/create-plan-item.dto';
 import { CreateProcessStepDto } from './dto/create-process-step.dto';
@@ -22,6 +28,7 @@ import { UpdateAnalysisDto } from './dto/update-analysis.dto';
 import { UpdateAnalysisRiskDto } from './dto/update-analysis-risk.dto';
 import { UpdateFactorDto } from './dto/update-factor.dto';
 import { UpdateProcessStepDto } from './dto/update-process-step.dto';
+import { UpdateReassessmentDto } from './dto/update-reassessment.dto';
 import { UpdateRecommendationDto } from './dto/update-recommendation.dto';
 import { UpdateWorkingGroupMemberDto } from './dto/update-working-group-member.dto';
 
@@ -81,6 +88,10 @@ const DETAIL_INCLUDE = {
     },
     orderBy: { createdAt: 'asc' as const },
   },
+  comments: {
+    include: { author: { select: { id: true, fullName: true } } },
+    orderBy: { createdAt: 'asc' as const },
+  },
 } satisfies Prisma.CorruptionAnalysisInclude;
 
 const LIST_INCLUDE = {
@@ -94,6 +105,8 @@ export class AnalysesService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    private risksService: RisksService,
+    private actionsService: ActionsService,
   ) {}
 
   async findAll(query: {
@@ -612,6 +625,127 @@ export class AnalysesService {
   async removeActionItem(analysisId: string, itemId: string) {
     await this.findOne(analysisId);
     return this.prisma.analysisActionItem.delete({ where: { id: itemId } });
+  }
+
+  // ------------------------------------------------------------------
+  // Stage 11: Coordination — comments and change history
+  // ------------------------------------------------------------------
+
+  async addComment(analysisId: string, dto: CreateCommentDto, userId?: string) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisComment.create({
+      data: { analysisId, text: dto.text, authorId: userId },
+      include: { author: { select: { id: true, fullName: true } } },
+    });
+  }
+
+  async removeComment(analysisId: string, commentId: string) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisComment.delete({ where: { id: commentId } });
+  }
+
+  async getHistory(analysisId: string) {
+    await this.findOne(analysisId);
+    return this.audit.findForEntity('ANALYSIS', analysisId);
+  }
+
+  // ------------------------------------------------------------------
+  // Stage 12: Approval — migrates risks/action items into the Risk
+  // Register and Action Plans modules, once per analysis (idempotent).
+  // ------------------------------------------------------------------
+
+  async approve(analysisId: string, userId?: string) {
+    const analysis = await this.findOne(analysisId);
+    const approvalIndex = ANALYSIS_STAGE_ORDER.indexOf(AnalysisStage.APPROVAL);
+    if (ANALYSIS_STAGE_ORDER.indexOf(analysis.stage) < approvalIndex) {
+      throw new BadRequestException(
+        'Анализ можно утвердить только по достижении этапа «Утверждение».',
+      );
+    }
+
+    const linkedRiskIds = new Map<string, string>();
+    for (const risk of analysis.risks) {
+      if (risk.linkedRiskId) {
+        linkedRiskIds.set(risk.id, risk.linkedRiskId);
+        continue;
+      }
+      const createdRisk = await this.risksService.create(
+        {
+          title: risk.title,
+          description: risk.description ?? undefined,
+          categoryId: risk.categoryId ?? undefined,
+          companyId: analysis.companyId ?? undefined,
+          ownerId: risk.ownerId ?? undefined,
+          likelihood: risk.likelihood ?? undefined,
+          impact: risk.impact ?? undefined,
+        },
+        userId,
+      );
+      await this.prisma.analysisRisk.update({
+        where: { id: risk.id },
+        data: { linkedRiskId: createdRisk.id },
+      });
+      linkedRiskIds.set(risk.id, createdRisk.id);
+    }
+
+    for (const item of analysis.actionItems) {
+      if (item.linkedActionId) continue;
+      const recommendation = item.recommendationId
+        ? analysis.recommendations.find((r) => r.id === item.recommendationId)
+        : undefined;
+      const linkedRiskId = recommendation?.risk
+        ? linkedRiskIds.get(recommendation.risk.id)
+        : undefined;
+      if (!linkedRiskId) continue;
+
+      const createdAction = await this.actionsService.create(
+        {
+          riskId: linkedRiskId,
+          title: item.task,
+          description: item.expectedResult ?? undefined,
+          ownerId: item.responsibleId ?? undefined,
+          deadline: item.deadline ? item.deadline.toISOString() : undefined,
+          status: item.status,
+          evidence: item.supportingDocs ?? undefined,
+          result: item.comments ?? undefined,
+        },
+        userId,
+      );
+      await this.prisma.analysisActionItem.update({
+        where: { id: item.id },
+        data: { linkedActionId: createdAction.id },
+      });
+    }
+
+    const updated = await this.prisma.corruptionAnalysis.update({
+      where: { id: analysisId },
+      data: { status: AnalysisStatus.COMPLETED, completedAt: new Date() },
+      include: DETAIL_INCLUDE,
+    });
+
+    await this.audit.record({
+      entityType: 'ANALYSIS',
+      entityId: analysisId,
+      action: 'APPROVE',
+      userId,
+    });
+    return updated;
+  }
+
+  // ------------------------------------------------------------------
+  // Stage 14: Reassessment
+  // ------------------------------------------------------------------
+
+  async updateReassessment(analysisId: string, dto: UpdateReassessmentDto) {
+    await this.findOne(analysisId);
+    return this.prisma.corruptionAnalysis.update({
+      where: { id: analysisId },
+      data: {
+        reassessmentNotes: dto.reassessmentNotes,
+        reassessedAt: new Date(),
+      },
+      include: DETAIL_INCLUDE,
+    });
   }
 
   // ------------------------------------------------------------------

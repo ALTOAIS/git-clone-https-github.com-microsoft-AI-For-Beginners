@@ -326,6 +326,10 @@ export const IMPLEMENTED_ANALYSIS_STAGES: AnalysisStage[] = [
   'ASSESSMENT',
   'RECOMMENDATIONS',
   'ACTION_PLAN',
+  'COORDINATION',
+  'APPROVAL',
+  'MONITORING',
+  'REASSESSMENT',
 ];
 
 export type AnalysisStatus = 'DRAFT' | 'IN_PROGRESS' | 'OVERDUE' | 'COMPLETED' | 'ARCHIVED';
@@ -406,6 +410,8 @@ export interface AnalysisDetail extends AnalysisListItem {
   periodStart?: string | null;
   periodEnd?: string | null;
   completedAt?: string | null;
+  reassessmentNotes?: string | null;
+  reassessedAt?: string | null;
   createdById?: string | null;
   createdBy?: NamedRef | null;
   departments: AnalysisDepartmentLink[];
@@ -417,6 +423,22 @@ export interface AnalysisDetail extends AnalysisListItem {
   risks: AnalysisRisk[];
   recommendations: AnalysisRecommendation[];
   actionItems: AnalysisActionItem[];
+  comments: AnalysisComment[];
+}
+
+export interface AnalysisComment {
+  id: string;
+  text: string;
+  author?: NamedRef | null;
+  createdAt: string;
+}
+
+export interface AnalysisHistoryEntry {
+  id: string;
+  action: string;
+  user?: NamedRef | null;
+  changes?: unknown;
+  createdAt: string;
 }
 
 export interface AnalysesSummary {
@@ -502,6 +524,7 @@ export interface AnalysisRisk {
   residualLikelihood?: number | null;
   residualImpact?: number | null;
   residualScore?: number | null;
+  linkedRiskId?: string | null;
 }
 
 // ------------------------------------------------------------------
@@ -547,4 +570,5 @@ export interface AnalysisActionItem {
   status: ActionStatus;
   supportingDocs?: string | null;
   comments?: string | null;
+  linkedActionId?: string | null;
 }
