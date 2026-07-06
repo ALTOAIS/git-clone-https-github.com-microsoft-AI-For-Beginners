@@ -15,6 +15,10 @@ import { ReportsPage } from './pages/ReportsPage';
 import { AdministrationPage } from './pages/administration/AdministrationPage';
 import { AnalysesListPage } from './pages/analyses/AnalysesListPage';
 import { AnalysisWizardPage } from './pages/analyses/AnalysisWizardPage';
+import { AcademyDashboardPage } from './pages/academy/AcademyDashboardPage';
+import { MyAcademyPage } from './pages/academy/MyAcademyPage';
+import { CoursesListPage } from './pages/academy/CoursesListPage';
+import { CourseEditorPage } from './pages/academy/CourseEditorPage';
 
 function App() {
   return (
@@ -26,6 +30,10 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/analyses" element={<AnalysesListPage />} />
           <Route path="/analyses/:id" element={<AnalysisWizardPage />} />
+          <Route path="/academy" element={<AcademyDashboardPage />} />
+          <Route path="/academy/my" element={<MyAcademyPage />} />
+          <Route path="/academy/courses" element={<CoursesListPage />} />
+          <Route path="/academy/courses/:id" element={<CourseEditorPage />} />
           <Route path="/risks" element={<RiskRegisterPage />} />
           <Route path="/risks/:id" element={<RiskCardPage />} />
           <Route path="/risk-library" element={<RiskLibraryPage />} />

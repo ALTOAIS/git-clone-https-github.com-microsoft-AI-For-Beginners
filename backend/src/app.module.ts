@@ -27,6 +27,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AnalysesModule } from './modules/analyses/analyses.module';
+import { AcademyModule } from './modules/academy/academy.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { AnalysesModule } from './modules/analyses/analyses.module';
     ReportsModule,
     NotificationsModule,
     AnalysesModule,
+    AcademyModule,
   ],
   controllers: [AppController],
   providers: [

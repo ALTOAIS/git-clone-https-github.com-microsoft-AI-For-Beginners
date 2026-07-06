@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import type {
   Action,
+  AcademySummary,
   AnalysisDetail,
   AnalysisListItem,
   AppNotification,
@@ -9,9 +10,12 @@ import type {
   Comment,
   Company,
   Control,
+  CourseDetail,
+  CourseListItem,
   DashboardSummary,
   Department,
   Incident,
+  MyCourseAssignment,
   Paginated,
   RiskDetail,
   RiskListItem,
@@ -277,4 +281,34 @@ export const analysesApi = {
   approve: (analysisId: string) => apiClient.post<AnalysisDetail>(`/analyses/${analysisId}/approve`),
   updateReassessment: (analysisId: string, reassessmentNotes: string) =>
     apiClient.patch<AnalysisDetail>(`/analyses/${analysisId}/reassessment`, { reassessmentNotes }),
+};
+
+// ---------------------------------------------------------------------------
+// Академия комплаенса
+// ---------------------------------------------------------------------------
+export const academyApi = {
+  list: (params: Record<string, unknown>) => apiClient.get<Paginated<CourseListItem>>('/courses', { params }),
+  summary: () => apiClient.get<AcademySummary>('/courses/summary'),
+  myAssignments: () => apiClient.get<MyCourseAssignment[]>('/courses/my'),
+  get: (id: string) => apiClient.get<CourseDetail>(`/courses/${id}`),
+  create: (data: Record<string, unknown>) => apiClient.post<CourseDetail>('/courses', data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.patch<CourseDetail>(`/courses/${id}`, data),
+  remove: (id: string) => apiClient.delete(`/courses/${id}`),
+
+  addModule: (courseId: string, data: Record<string, unknown>) => apiClient.post(`/courses/${courseId}/modules`, data),
+  updateModule: (courseId: string, moduleId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/courses/${courseId}/modules/${moduleId}`, data),
+  removeModule: (courseId: string, moduleId: string) => apiClient.delete(`/courses/${courseId}/modules/${moduleId}`),
+
+  addLesson: (courseId: string, moduleId: string, data: Record<string, unknown>) =>
+    apiClient.post(`/courses/${courseId}/modules/${moduleId}/lessons`, data),
+  updateLesson: (courseId: string, lessonId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/courses/${courseId}/lessons/${lessonId}`, data),
+  removeLesson: (courseId: string, lessonId: string) => apiClient.delete(`/courses/${courseId}/lessons/${lessonId}`),
+
+  assign: (courseId: string, data: Record<string, unknown>) => apiClient.post(`/courses/${courseId}/assignments`, data),
+  updateAssignment: (courseId: string, assignmentId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/courses/${courseId}/assignments/${assignmentId}`, data),
+  removeAssignment: (courseId: string, assignmentId: string) =>
+    apiClient.delete(`/courses/${courseId}/assignments/${assignmentId}`),
 };

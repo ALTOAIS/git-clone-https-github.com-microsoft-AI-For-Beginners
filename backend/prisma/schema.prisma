@@ -202,6 +202,35 @@ enum ActionPriority {
   HIGH
 }
 
+/// Академия комплаенса — Конструктор курсов
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LessonContentType {
+  PRESENTATION
+  ARTICLE
+  INSTRUCTION
+  MEMO
+  CHECKLIST
+  VIDEO
+  WEBINAR
+  IN_PERSON_EVENT
+  EBOOK
+  PDF_COURSE
+  INTERACTIVE
+  PRACTICAL_TASK
+  CASE_STUDY
+}
+
+enum CourseAssignmentStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
 // ------------------------------------------------------------------
 // Organization structure
 // ------------------------------------------------------------------
@@ -316,6 +345,9 @@ model User {
   responsibleForRecommendations AnalysisRecommendation[]     @relation("RecommendationResponsible")
   responsibleForActionItems     AnalysisActionItem[]         @relation("ActionItemResponsible")
   analysisComments              AnalysisComment[]
+  createdCourses                Course[]                     @relation("CourseCreatedBy")
+  courseAssignments             CourseAssignment[]           @relation("CourseAssignee")
+  assignedCourseAssignments     CourseAssignment[]           @relation("CourseAssignedBy")
 
   @@map("users")
 }
@@ -817,4 +849,76 @@ model AnalysisComment {
   createdAt  DateTime           @default(now())
 
   @@map("analysis_comments")
+}
+
+// ------------------------------------------------------------------
+// Академия комплаенса
+// ------------------------------------------------------------------
+
+/// Курс — верхнеуровневая единица обучения, создаваемая в Конструкторе курсов
+model Course {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  status      CourseStatus @default(DRAFT)
+  isMandatory Boolean      @default(false)
+  createdById String?
+  createdBy   User?        @relation("CourseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  modules     CourseModule[]
+  assignments CourseAssignment[]
+
+  @@map("courses")
+}
+
+/// Модуль курса — группа уроков
+model CourseModule {
+  id       String @id @default(uuid())
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  order    Int
+  title    String
+
+  lessons CourseLesson[]
+
+  @@map("course_modules")
+}
+
+/// Урок — единица содержания внутри модуля курса
+model CourseLesson {
+  id              String            @id @default(uuid())
+  moduleId        String
+  module          CourseModule      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  order           Int
+  title           String
+  contentType     LessonContentType
+  content         String?
+  durationMinutes Int?
+
+  @@map("course_lessons")
+}
+
+/// Назначение курса работнику и его прогресс — минимальная модель для
+/// Dashboard Академии и личного кабинета «Моя академия» в этой фазе.
+/// Автоматическое назначение по событиям в других модулях, календарь
+/// и матрица обучения по категориям должностей отложены на следующие фазы.
+model CourseAssignment {
+  id              String                 @id @default(uuid())
+  courseId        String
+  course          Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User                   @relation("CourseAssignee", fields: [userId], references: [id], onDelete: Cascade)
+  status          CourseAssignmentStatus @default(NOT_STARTED)
+  assignedById    String?
+  assignedBy      User?                  @relation("CourseAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+  dueDate         DateTime?
+  progressPercent Int                    @default(0)
+  completedAt     DateTime?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  @@unique([courseId, userId])
+  @@map("course_assignments")
 }
