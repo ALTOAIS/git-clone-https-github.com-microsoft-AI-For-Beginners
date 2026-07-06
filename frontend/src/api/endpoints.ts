@@ -7,6 +7,9 @@ import type {
   AnalysisListItem,
   AppNotification,
   BusinessProcess,
+  CampaignDetail,
+  CampaignListItem,
+  CampaignProgress,
   Category,
   Comment,
   Company,
@@ -21,6 +24,10 @@ import type {
   RiskDetail,
   RiskListItem,
   Source,
+  SurveyDetail,
+  SurveyListItem,
+  SurveyResponse,
+  SurveyResults,
   TestAttempt,
   TestDetail,
   TrainingMatrix,
@@ -337,4 +344,43 @@ export const academyApi = {
     apiClient.post<TestAttempt>(`/courses/${courseId}/test/attempts`, data),
   myAttempts: (courseId: string) => apiClient.get<TestAttempt[]>(`/courses/${courseId}/test/attempts/my`),
   allAttempts: (courseId: string) => apiClient.get<TestAttempt[]>(`/courses/${courseId}/test/attempts`),
+};
+
+// ---------------------------------------------------------------------------
+// Опросы
+// ---------------------------------------------------------------------------
+export const surveysApi = {
+  list: (params: Record<string, unknown>) => apiClient.get<Paginated<SurveyListItem>>('/surveys', { params }),
+  get: (id: string) => apiClient.get<SurveyDetail>(`/surveys/${id}`),
+  create: (data: Record<string, unknown>) => apiClient.post<SurveyDetail>('/surveys', data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.patch<SurveyDetail>(`/surveys/${id}`, data),
+  remove: (id: string) => apiClient.delete(`/surveys/${id}`),
+
+  addQuestion: (surveyId: string, data: Record<string, unknown>) => apiClient.post(`/surveys/${surveyId}/questions`, data),
+  updateQuestion: (surveyId: string, questionId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/surveys/${surveyId}/questions/${questionId}`, data),
+  removeQuestion: (surveyId: string, questionId: string) => apiClient.delete(`/surveys/${surveyId}/questions/${questionId}`),
+
+  submitResponse: (surveyId: string, data: Record<string, unknown>) =>
+    apiClient.post<SurveyResponse>(`/surveys/${surveyId}/responses`, data),
+  myResponse: (surveyId: string) => apiClient.get<SurveyResponse | null>(`/surveys/${surveyId}/responses/my`),
+  getResults: (surveyId: string) => apiClient.get<SurveyResults>(`/surveys/${surveyId}/results`),
+};
+
+// ---------------------------------------------------------------------------
+// Комплаенс-кампании
+// ---------------------------------------------------------------------------
+export const campaignsApi = {
+  list: (params: Record<string, unknown>) => apiClient.get<Paginated<CampaignListItem>>('/campaigns', { params }),
+  get: (id: string) => apiClient.get<CampaignDetail>(`/campaigns/${id}`),
+  create: (data: Record<string, unknown>) => apiClient.post<CampaignDetail>('/campaigns', data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.patch<CampaignDetail>(`/campaigns/${id}`, data),
+  remove: (id: string) => apiClient.delete(`/campaigns/${id}`),
+
+  linkCourse: (campaignId: string, courseId: string) => apiClient.post(`/campaigns/${campaignId}/courses`, { courseId }),
+  unlinkCourse: (campaignId: string, courseId: string) => apiClient.delete(`/campaigns/${campaignId}/courses/${courseId}`),
+  linkSurvey: (campaignId: string, surveyId: string) => apiClient.post(`/campaigns/${campaignId}/surveys`, { surveyId }),
+  unlinkSurvey: (campaignId: string, surveyId: string) => apiClient.delete(`/campaigns/${campaignId}/surveys/${surveyId}`),
+
+  getProgress: (campaignId: string) => apiClient.get<CampaignProgress>(`/campaigns/${campaignId}/progress`),
 };

@@ -746,3 +746,111 @@ export interface TestAttempt {
   answers: Record<string, unknown>;
   submittedAt: string;
 }
+
+// ------------------------------------------------------------------
+// Опросы
+// ------------------------------------------------------------------
+
+export type SurveyStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED';
+
+export type SurveyQuestionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TEXT' | 'RATING';
+
+export interface SurveyQuestionOption {
+  id: string;
+  order: number;
+  text: string;
+}
+
+export interface SurveyQuestion {
+  id: string;
+  order: number;
+  type: SurveyQuestionType;
+  text: string;
+  options: SurveyQuestionOption[];
+}
+
+export interface SurveyListItem {
+  id: string;
+  title: string;
+  description?: string | null;
+  isAnonymous: boolean;
+  status: SurveyStatus;
+  createdBy?: NamedRef | null;
+  createdAt: string;
+  _count?: { questions: number; responses: number };
+}
+
+export interface SurveyDetail extends SurveyListItem {
+  questions: SurveyQuestion[];
+}
+
+export interface SurveyResponse {
+  id: string;
+  surveyId: string;
+  userId: string;
+  answers: Record<string, unknown>;
+  submittedAt: string;
+}
+
+export interface SurveyResultsQuestion {
+  id: string;
+  type: SurveyQuestionType;
+  text: string;
+  optionCounts?: { optionId: string; text: string; count: number }[];
+  average?: number;
+  distribution?: Record<number, number>;
+  textAnswers?: { answer: string; respondentName?: string }[];
+}
+
+export interface SurveyResults {
+  survey: { id: string; title: string; isAnonymous: boolean; responseCount: number };
+  questions: SurveyResultsQuestion[];
+}
+
+// ------------------------------------------------------------------
+// Комплаенс-кампании
+// ------------------------------------------------------------------
+
+export type CampaignStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED';
+
+export interface CampaignCourseLink {
+  id: string;
+  courseId: string;
+  course: { id: string; title: string; status: CourseStatus };
+}
+
+export interface CampaignSurveyLink {
+  id: string;
+  surveyId: string;
+  survey: { id: string; title: string; status: SurveyStatus };
+}
+
+export interface CampaignListItem {
+  id: string;
+  title: string;
+  description?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  status: CampaignStatus;
+  targetRoles: Role[];
+  createdBy?: NamedRef | null;
+  createdAt: string;
+  _count?: { courses: number; surveys: number };
+}
+
+export interface CampaignDetail extends CampaignListItem {
+  courses: CampaignCourseLink[];
+  surveys: CampaignSurveyLink[];
+}
+
+export interface CampaignParticipant {
+  user: { id: string; fullName: string; email: string; role: Role };
+  completedItems: number;
+  totalItems: number;
+  percent: number;
+}
+
+export interface CampaignProgress {
+  totalItems: number;
+  participants: CampaignParticipant[];
+}
