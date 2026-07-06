@@ -28,6 +28,8 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AnalysesModule } from './modules/analyses/analyses.module';
 import { AcademyModule } from './modules/academy/academy.module';
+import { SurveysModule } from './modules/surveys/surveys.module';
+import { CampaignsModule } from './modules/campaigns/campaigns.module';
 
 @Module({
   imports: [
@@ -55,6 +57,8 @@ import { AcademyModule } from './modules/academy/academy.module';
     NotificationsModule,
     AnalysesModule,
     AcademyModule,
+    SurveysModule,
+    CampaignsModule,
   ],
   controllers: [AppController],
   providers: [

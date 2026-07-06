@@ -22,6 +22,12 @@ import { CourseEditorPage } from './pages/academy/CourseEditorPage';
 import { AcademyCalendarPage } from './pages/academy/AcademyCalendarPage';
 import { TrainingMatrixPage } from './pages/academy/TrainingMatrixPage';
 import { TakeTestPage } from './pages/academy/TakeTestPage';
+import { SurveysListPage } from './pages/academy/SurveysListPage';
+import { SurveyEditorPage } from './pages/academy/SurveyEditorPage';
+import { RespondSurveyPage } from './pages/academy/RespondSurveyPage';
+import { SurveyResultsPage } from './pages/academy/SurveyResultsPage';
+import { CampaignsListPage } from './pages/academy/CampaignsListPage';
+import { CampaignDetailPage } from './pages/academy/CampaignDetailPage';
 
 function App() {
   return (
@@ -40,6 +46,12 @@ function App() {
           <Route path="/academy/calendar" element={<AcademyCalendarPage />} />
           <Route path="/academy/matrix" element={<TrainingMatrixPage />} />
           <Route path="/academy/take-test/:courseId" element={<TakeTestPage />} />
+          <Route path="/academy/surveys" element={<SurveysListPage />} />
+          <Route path="/academy/surveys/:id" element={<SurveyEditorPage />} />
+          <Route path="/academy/surveys/:id/respond" element={<RespondSurveyPage />} />
+          <Route path="/academy/surveys/:id/results" element={<SurveyResultsPage />} />
+          <Route path="/academy/campaigns" element={<CampaignsListPage />} />
+          <Route path="/academy/campaigns/:id" element={<CampaignDetailPage />} />
           <Route path="/risks" element={<RiskRegisterPage />} />
           <Route path="/risks/:id" element={<RiskCardPage />} />
           <Route path="/risk-library" element={<RiskLibraryPage />} />

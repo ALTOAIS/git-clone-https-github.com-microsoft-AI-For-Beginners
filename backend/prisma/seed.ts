@@ -3,6 +3,7 @@ import {
   ActionStatus,
   AnalysisStage,
   AnalysisStatus,
+  CampaignStatus,
   ControlEffectiveness,
   ControlType,
   CorruptogenicFactorType,
@@ -18,6 +19,8 @@ import {
   Role,
   RiskStatus,
   SourceType,
+  SurveyQuestionType,
+  SurveyStatus,
   TestAttemptStage,
   TestQuestionType,
 } from '@prisma/client';
@@ -1438,6 +1441,177 @@ async function main() {
       [q[2].id]: correctOptionId(q[2]),
       [q[3].id]: 'не помню',
     },
+  });
+
+  // ------------------------------------------------------------------
+  // Академия комплаенса — Опросы
+  // ------------------------------------------------------------------
+
+  async function ensureSurvey(spec: {
+    title: string;
+    description: string;
+    isAnonymous: boolean;
+    status: SurveyStatus;
+    createdById: string;
+    questions: {
+      order: number;
+      type: SurveyQuestionType;
+      text: string;
+      options?: { order: number; text: string }[];
+    }[];
+  }) {
+    const existing = await prisma.survey.findFirst({
+      where: { title: spec.title },
+      include: { questions: { include: { options: true }, orderBy: { order: 'asc' } } },
+    });
+    if (existing) return existing;
+    return prisma.survey.create({
+      data: {
+        title: spec.title,
+        description: spec.description,
+        isAnonymous: spec.isAnonymous,
+        status: spec.status,
+        createdById: spec.createdById,
+        questions: {
+          create: spec.questions.map((q) => ({
+            order: q.order,
+            type: q.type,
+            text: q.text,
+            options: q.options ? { create: q.options } : undefined,
+          })),
+        },
+      },
+      include: { questions: { include: { options: true }, orderBy: { order: 'asc' } } },
+    });
+  }
+
+  const survey1 = await ensureSurvey({
+    title: 'Опрос об этической культуре компании',
+    description: 'Ежегодный анонимный опрос для оценки восприятия работниками этической культуры и каналов сообщения о нарушениях.',
+    isAnonymous: true,
+    status: SurveyStatus.PUBLISHED,
+    createdById: users['officer@crh.local'],
+    questions: [
+      {
+        order: 1,
+        type: SurveyQuestionType.RATING,
+        text: 'Насколько вы удовлетворены уровнем прозрачности решений в компании? (1 — совсем не удовлетворён, 5 — полностью удовлетворён)',
+      },
+      {
+        order: 2,
+        type: SurveyQuestionType.SINGLE_CHOICE,
+        text: 'Как часто вы сталкиваетесь с ситуациями, вызывающими сомнения с этической точки зрения?',
+        options: [
+          { order: 1, text: 'Никогда' },
+          { order: 2, text: 'Редко' },
+          { order: 3, text: 'Иногда' },
+          { order: 4, text: 'Часто' },
+        ],
+      },
+      {
+        order: 3,
+        type: SurveyQuestionType.MULTIPLE_CHOICE,
+        text: 'Какие каналы сообщения о нарушениях вам известны?',
+        options: [
+          { order: 1, text: 'Горячая линия' },
+          { order: 2, text: 'Электронная почта комплаенс-службы' },
+          { order: 3, text: 'Непосредственный руководитель' },
+          { order: 4, text: 'Анонимная форма на портале' },
+        ],
+      },
+      {
+        order: 4,
+        type: SurveyQuestionType.TEXT,
+        text: 'Есть ли у вас предложения по улучшению этической культуры компании?',
+      },
+    ],
+  });
+
+  const sq = [...survey1.questions].sort((a, b) => a.order - b.order);
+  const opt = (question: (typeof sq)[number], index: number) => question.options[index]?.id;
+
+  async function ensureSurveyResponse(spec: { userEmail: string; answers: Record<string, unknown> }) {
+    const userId = users[spec.userEmail];
+    const existing = await prisma.surveyResponse.findUnique({
+      where: { surveyId_userId: { surveyId: survey1.id, userId } },
+    });
+    if (existing) return existing;
+    return prisma.surveyResponse.create({
+      data: { surveyId: survey1.id, userId, answers: spec.answers as Prisma.InputJsonValue },
+    });
+  }
+
+  await ensureSurveyResponse({
+    userEmail: 'officer@crh.local',
+    answers: {
+      [sq[0].id]: 4,
+      [sq[1].id]: opt(sq[1], 1),
+      [sq[2].id]: [opt(sq[2], 0), opt(sq[2], 1)],
+      [sq[3].id]: 'Больше открытых обсуждений на уровне подразделений.',
+    },
+  });
+  await ensureSurveyResponse({
+    userEmail: 'manager@crh.local',
+    answers: {
+      [sq[0].id]: 5,
+      [sq[1].id]: opt(sq[1], 0),
+      [sq[2].id]: [opt(sq[2], 0), opt(sq[2], 1), opt(sq[2], 3)],
+      [sq[3].id]: '',
+    },
+  });
+  await ensureSurveyResponse({
+    userEmail: 'deptmgr@crh.local',
+    answers: {
+      [sq[0].id]: 3,
+      [sq[1].id]: opt(sq[1], 2),
+      [sq[2].id]: [opt(sq[2], 2)],
+      [sq[3].id]: 'Регулярные встречи с комплаенс-службой по итогам года.',
+    },
+  });
+
+  // ------------------------------------------------------------------
+  // Комплаенс-кампании
+  // ------------------------------------------------------------------
+
+  async function ensureCampaign(spec: {
+    title: string;
+    description: string;
+    startDate: Date;
+    endDate: Date;
+    status: CampaignStatus;
+    targetRoles: Role[];
+    createdById: string;
+    courseIds: string[];
+    surveyIds: string[];
+  }) {
+    const existing = await prisma.campaign.findFirst({ where: { title: spec.title } });
+    if (existing) return existing;
+    return prisma.campaign.create({
+      data: {
+        title: spec.title,
+        description: spec.description,
+        startDate: spec.startDate,
+        endDate: spec.endDate,
+        status: spec.status,
+        targetRoles: spec.targetRoles,
+        createdById: spec.createdById,
+        courses: { create: spec.courseIds.map((courseId) => ({ courseId })) },
+        surveys: { create: spec.surveyIds.map((surveyId) => ({ surveyId })) },
+      },
+    });
+  }
+
+  await ensureCampaign({
+    title: 'Ежегодная декларация конфликта интересов и обучение 2026',
+    description:
+      'Кампания объединяет прохождение курса по конфликту интересов и опрос об этической культуре для руководителей подразделений, владельцев рисков и совета директоров.',
+    startDate: new Date('2026-01-15'),
+    endDate: new Date('2026-12-31'),
+    status: CampaignStatus.ACTIVE,
+    targetRoles: [Role.DEPARTMENT_MANAGER, Role.RISK_OWNER, Role.BOARD],
+    createdById: users['manager@crh.local'],
+    courseIds: [course2.id],
+    surveyIds: [survey1.id],
   });
 
   console.log(`Заполнение завершено. Создано рисков: ${created} (существующие риски не изменялись).`);

@@ -8,6 +8,8 @@ const ITEMS = [
   { key: '/academy/courses', labelKey: 'academySubNav.courses' },
   { key: '/academy/calendar', labelKey: 'academySubNav.calendar' },
   { key: '/academy/matrix', labelKey: 'academySubNav.matrix' },
+  { key: '/academy/surveys', labelKey: 'academySubNav.surveys' },
+  { key: '/academy/campaigns', labelKey: 'academySubNav.campaigns' },
 ];
 
 export function AcademySubNav() {

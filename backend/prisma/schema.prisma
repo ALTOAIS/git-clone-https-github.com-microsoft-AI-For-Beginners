@@ -366,6 +366,9 @@ model User {
   courseAssignments             CourseAssignment[]           @relation("CourseAssignee")
   assignedCourseAssignments     CourseAssignment[]           @relation("CourseAssignedBy")
   testAttempts                  TestAttempt[]                @relation("TestAttemptUser")
+  createdSurveys                Survey[]                     @relation("SurveyCreatedBy")
+  surveyResponses               SurveyResponse[]             @relation("SurveyRespondent")
+  createdCampaigns              Campaign[]                   @relation("CampaignCreatedBy")
 
   @@map("users")
 }
@@ -891,6 +894,7 @@ model Course {
   modules     CourseModule[]
   assignments CourseAssignment[]
   test        Test?
+  campaigns   CampaignCourse[]
 
   @@map("courses")
 }
@@ -1011,4 +1015,134 @@ model TestAttempt {
 
   @@unique([testId, userId, stage])
   @@map("test_attempts")
+}
+
+// ------------------------------------------------------------------
+// Опросы
+// ------------------------------------------------------------------
+
+enum SurveyStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum SurveyQuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TEXT
+  RATING
+}
+
+/// Опрос — сбор мнений без правильных/неправильных ответов (в отличие от Теста)
+model Survey {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  /// Скрывает автора ответа в агрегированных результатах (ответ всё равно связан с пользователем в БД)
+  isAnonymous Boolean      @default(false)
+  status      SurveyStatus @default(DRAFT)
+  createdById String?
+  createdBy   User?        @relation("SurveyCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  questions SurveyQuestion[]
+  responses SurveyResponse[]
+  campaigns CampaignSurvey[]
+
+  @@map("surveys")
+}
+
+model SurveyQuestion {
+  id       String             @id @default(uuid())
+  surveyId String
+  survey   Survey             @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  order    Int
+  type     SurveyQuestionType
+  text     String
+
+  options SurveyQuestionOption[]
+
+  @@map("survey_questions")
+}
+
+/// Вариант ответа — для SINGLE_CHOICE / MULTIPLE_CHOICE
+model SurveyQuestionOption {
+  id         String         @id @default(uuid())
+  questionId String
+  question   SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  order      Int
+  text       String
+
+  @@map("survey_question_options")
+}
+
+model SurveyResponse {
+  id          String   @id @default(uuid())
+  surveyId    String
+  survey      Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("SurveyRespondent", fields: [userId], references: [id], onDelete: Cascade)
+  /// Ответы { [questionId]: string | string[] | number }
+  answers     Json
+  submittedAt DateTime @default(now())
+
+  @@unique([surveyId, userId])
+  @@map("survey_responses")
+}
+
+// ------------------------------------------------------------------
+// Комплаенс-кампании
+// ------------------------------------------------------------------
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+}
+
+/// Кампания объединяет уже существующие курсы и опросы в одну инициативу с
+/// целевой аудиторией (по ролям). Прогресс участников считается на лету из
+/// CourseAssignment/SurveyResponse, отдельная таблица прогресса не заводится.
+model Campaign {
+  id          String         @id @default(uuid())
+  title       String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      CampaignStatus @default(DRAFT)
+  /// Целевые роли участников. Пустой список означает «все работники».
+  targetRoles Role[]         @default([])
+  createdById String?
+  createdBy   User?          @relation("CampaignCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  courses CampaignCourse[]
+  surveys CampaignSurvey[]
+
+  @@map("campaigns")
+}
+
+model CampaignCourse {
+  id         String   @id @default(uuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, courseId])
+  @@map("campaign_courses")
+}
+
+model CampaignSurvey {
+  id         String   @id @default(uuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  surveyId   String
+  survey     Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, surveyId])
+  @@map("campaign_surveys")
 }
