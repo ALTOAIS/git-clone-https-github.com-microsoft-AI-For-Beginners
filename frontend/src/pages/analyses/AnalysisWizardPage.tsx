@@ -28,6 +28,7 @@ import { Stage11CoordinationTab } from './stages/Stage11CoordinationTab';
 import { Stage12ApprovalTab } from './stages/Stage12ApprovalTab';
 import { Stage13MonitoringTab } from './stages/Stage13MonitoringTab';
 import { Stage14ReassessmentTab } from './stages/Stage14ReassessmentTab';
+import { VakrAiPanel } from './VakrAiPanel';
 
 export function AnalysisWizardPage() {
   const { t } = useTranslation();
@@ -154,6 +155,8 @@ export function AnalysisWizardPage() {
       </div>
 
       <div style={{ background: '#fff', padding: 24, borderRadius: 8 }}>{stageContent}</div>
+
+      <VakrAiPanel analysis={analysis} onUpdated={refetch} />
 
       {activeStage === analysis.stage && currentIndex < ANALYSIS_STAGE_ORDER.length - 1 && IMPLEMENTED_ANALYSIS_STAGES.includes(analysis.stage) && (
         <Space style={{ marginTop: 24 }}>

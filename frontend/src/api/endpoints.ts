@@ -3,6 +3,12 @@ import type {
   Action,
   AcademyCalendar,
   AcademySummary,
+  AiAnalyzeRiskResult,
+  AiChatResult,
+  AiReportResult,
+  AiReviewResult,
+  AiRiskRegisterEntryResult,
+  AiSuggestControlsResult,
   AnalysisDetail,
   AnalysisListItem,
   AppNotification,
@@ -412,4 +418,23 @@ export const certificatesApi = {
   my: () => apiClient.get<Certificate[]>('/certificates/my'),
   list: (params: Record<string, unknown>) => apiClient.get<Paginated<Certificate>>('/certificates', { params }),
   pdfPath: (id: string) => `/certificates/${id}/pdf`,
+};
+
+// ---------------------------------------------------------------------------
+// Compliance AI Platform
+// ---------------------------------------------------------------------------
+export const aiApi = {
+  analyzeRisk: (analysisId: string, processStepId: string) =>
+    apiClient.post<AiAnalyzeRiskResult>('/ai/analyze-risk', { analysisId, processStepId }),
+  suggestControls: (analysisId: string, riskId: string) =>
+    apiClient.post<AiSuggestControlsResult>('/ai/suggest-controls', { analysisId, riskId }),
+  reviewVakrAnalysis: (analysisId: string) =>
+    apiClient.post<AiReviewResult>('/ai/review-vakr-analysis', { analysisId }),
+  generateVakrReport: (analysisId: string) =>
+    apiClient.post<AiReportResult>('/ai/generate-vakr-report', { analysisId }),
+  vakrReportPdfPath: (analysisId: string) => `/ai/generate-vakr-report/${analysisId}/pdf`,
+  generateRiskRegisterEntry: (analysisId: string, analysisRiskId: string) =>
+    apiClient.post<AiRiskRegisterEntryResult>('/ai/generate-risk-register-entry', { analysisId, analysisRiskId }),
+  chat: (data: { message: string; module?: string; contextEntityType?: string; contextEntityId?: string }) =>
+    apiClient.post<AiChatResult>('/ai/chat', data),
 };

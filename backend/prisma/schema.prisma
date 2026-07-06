@@ -373,6 +373,7 @@ model User {
   createdTrainingPlans          TrainingPlan[]               @relation("TrainingPlanCreatedBy")
   responsibleTrainingPlanItems  TrainingPlanItem[]           @relation("TrainingPlanItemResponsible")
   certificates                  Certificate[]                @relation("CertificateRecipient")
+  aiInteractions                AiInteractionLog[]
 
   @@map("users")
 }
@@ -1230,4 +1231,29 @@ model Certificate {
 
   @@unique([courseId, userId])
   @@map("certificates")
+}
+
+// ------------------------------------------------------------------
+// Compliance AI Platform
+// ------------------------------------------------------------------
+
+/// Журнал обращений к платформе Compliance AI — фиксирует каждый запрос
+/// и ответ ИИ-провайдера для целей контроля и аудита (governance).
+/// Не хранит секреты/токены — только сжатую сводку входных данных и результата.
+model AiInteractionLog {
+  id            String   @id @default(uuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  role          String?
+  module        String
+  useCase       String
+  provider      String
+  entityType    String?
+  entityId      String?
+  inputSummary  String
+  outputSummary String
+  createdAt     DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@map("ai_interaction_logs")
 }

@@ -32,6 +32,7 @@ import { SurveysModule } from './modules/surveys/surveys.module';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { TrainingPlansModule } from './modules/training-plans/training-plans.module';
 import { CertificatesModule } from './modules/certificates/certificates.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { CertificatesModule } from './modules/certificates/certificates.module';
     CampaignsModule,
     TrainingPlansModule,
     CertificatesModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [

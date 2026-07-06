@@ -906,3 +906,81 @@ export interface Certificate {
   scorePercent?: number | null;
   issuedAt: string;
 }
+
+// ------------------------------------------------------------------
+// Compliance AI Platform
+// ------------------------------------------------------------------
+
+export type AiConfidence = 'high' | 'medium' | 'low';
+
+export interface AiMitigationMeasure {
+  measure: string;
+  responsibleUnit: string;
+  deadline: string;
+  expectedResult: string;
+}
+
+export interface AiRiskSuggestion {
+  riskTitle: string;
+  riskDescription: string;
+  processStage: string;
+  riskFactors: string[];
+  possibleSchemes: string[];
+  rootCauses: string[];
+  recommendedControls: string[];
+  mitigationMeasures: AiMitigationMeasure[];
+  confidence: AiConfidence;
+}
+
+export interface AiControlSuggestion {
+  controlType: 'PREVENTIVE' | 'DETECTIVE' | 'CORRECTIVE';
+  description: string;
+  implementationNotes: string;
+  confidence: AiConfidence;
+}
+
+export interface AiAnalyzeRiskResult {
+  risks: AiRiskSuggestion[];
+  disclaimer: string;
+}
+
+export interface AiSuggestControlsResult {
+  controls: AiControlSuggestion[];
+  disclaimer: string;
+}
+
+export interface AiReviewResult {
+  completenessScore: number;
+  coveredStages: string[];
+  missingConsiderations: string[];
+  qualityIssues: string[];
+  summary: string;
+  disclaimer: string;
+}
+
+export interface AiReportSection {
+  heading: string;
+  content: string;
+}
+
+export interface AiReportResult {
+  title: string;
+  generatedAt: string;
+  sections: AiReportSection[];
+  disclaimer: string;
+}
+
+export interface AiRiskRegisterEntryResult {
+  title: string;
+  description: string;
+  categoryHint: string;
+  likelihood?: number;
+  impact?: number;
+  justification: string;
+  disclaimer: string;
+}
+
+export interface AiChatResult {
+  reply: string;
+  disclaimer: string;
+}

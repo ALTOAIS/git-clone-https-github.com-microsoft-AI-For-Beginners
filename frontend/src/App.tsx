@@ -30,6 +30,7 @@ import { CampaignsListPage } from './pages/academy/CampaignsListPage';
 import { CampaignDetailPage } from './pages/academy/CampaignDetailPage';
 import { TrainingPlanPage } from './pages/academy/TrainingPlanPage';
 import { CertificatesPage } from './pages/academy/CertificatesPage';
+import { AiAssistantPage } from './pages/ai/AiAssistantPage';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/analyses" element={<AnalysesListPage />} />
           <Route path="/analyses/:id" element={<AnalysisWizardPage />} />
+          <Route path="/ai-assistant" element={<AiAssistantPage />} />
           <Route path="/academy" element={<AcademyDashboardPage />} />
           <Route path="/academy/my" element={<MyAcademyPage />} />
           <Route path="/academy/courses" element={<CoursesListPage />} />
