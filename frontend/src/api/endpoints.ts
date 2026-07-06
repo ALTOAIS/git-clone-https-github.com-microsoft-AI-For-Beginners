@@ -11,6 +11,7 @@ import type {
   CampaignListItem,
   CampaignProgress,
   Category,
+  Certificate,
   Comment,
   Company,
   Control,
@@ -402,4 +403,13 @@ export const trainingPlansApi = {
   updateItem: (planId: string, itemId: string, data: Record<string, unknown>) =>
     apiClient.patch(`/training-plans/${planId}/items/${itemId}`, data),
   removeItem: (planId: string, itemId: string) => apiClient.delete(`/training-plans/${planId}/items/${itemId}`),
+};
+
+// ---------------------------------------------------------------------------
+// Сертификаты
+// ---------------------------------------------------------------------------
+export const certificatesApi = {
+  my: () => apiClient.get<Certificate[]>('/certificates/my'),
+  list: (params: Record<string, unknown>) => apiClient.get<Paginated<Certificate>>('/certificates', { params }),
+  pdfPath: (id: string) => `/certificates/${id}/pdf`,
 };

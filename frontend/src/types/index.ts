@@ -895,3 +895,14 @@ export interface CampaignProgress {
   totalItems: number;
   participants: CampaignParticipant[];
 }
+
+export interface Certificate {
+  id: string;
+  certificateNumber: string;
+  courseId: string;
+  course: { id: string; title: string };
+  userId: string;
+  user: { id: string; fullName: string; email: string };
+  scorePercent?: number | null;
+  issuedAt: string;
+}

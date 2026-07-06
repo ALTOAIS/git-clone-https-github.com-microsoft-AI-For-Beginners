@@ -11,6 +11,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { CertificatesService } from '../certificates/certificates.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { CreateLessonDto } from './dto/create-lesson.dto';
@@ -59,6 +60,7 @@ export class AcademyService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    private certificates: CertificatesService,
   ) {}
 
   async findAll(query: {
@@ -249,7 +251,7 @@ export class AcademyService {
     await this.findOne(courseId);
     const completedAt =
       dto.status === CourseAssignmentStatus.COMPLETED ? new Date() : undefined;
-    return this.prisma.courseAssignment.update({
+    const updated = await this.prisma.courseAssignment.update({
       where: { id: assignmentId },
       data: {
         ...dto,
@@ -260,6 +262,10 @@ export class AcademyService {
         assignedBy: { select: { id: true, fullName: true } },
       },
     });
+    if (dto.status === CourseAssignmentStatus.COMPLETED) {
+      await this.certificates.issueIfEligible(courseId, updated.userId);
+    }
+    return updated;
   }
 
   async removeAssignment(courseId: string, assignmentId: string) {
@@ -576,7 +582,7 @@ export class AcademyService {
     const scorePercent = total > 0 ? Math.round((earned / total) * 100) : 0;
     const passed = scorePercent >= test.passScorePercent;
 
-    return this.prisma.testAttempt.create({
+    const attempt = await this.prisma.testAttempt.create({
       data: {
         testId: test.id,
         userId,
@@ -586,6 +592,17 @@ export class AcademyService {
         answers: dto.answers as Prisma.InputJsonValue,
       },
     });
+
+    if (passed) {
+      const assignment = await this.prisma.courseAssignment.findUnique({
+        where: { courseId_userId: { courseId, userId } },
+      });
+      if (assignment?.status === CourseAssignmentStatus.COMPLETED) {
+        await this.certificates.issueIfEligible(courseId, userId);
+      }
+    }
+
+    return attempt;
   }
 
   async myAttempts(courseId: string, userId: string) {
