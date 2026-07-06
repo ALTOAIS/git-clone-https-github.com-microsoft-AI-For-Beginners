@@ -181,6 +181,27 @@ enum CorruptogenicFactorType {
   PROPERTY_USE
 }
 
+/// Stage 9 "Формирование рекомендаций"
+enum RecommendationType {
+  ORGANIZATIONAL
+  REGULATORY
+  HR
+  DIGITALIZATION
+  AUTOMATION
+  STRONGER_CONTROLS
+  SEPARATION_OF_DUTIES
+  PROCESS_CHANGE
+  TRAINING
+  MONITORING
+}
+
+/// Stage 10 "План мероприятий"
+enum ActionPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 // ------------------------------------------------------------------
 // Organization structure
 // ------------------------------------------------------------------
@@ -216,6 +237,7 @@ model Department {
   analysisLinks AnalysisDepartment[]
   planItems     AnalysisPlanItem[]
   processSteps  AnalysisProcessStep[]
+  actionItems   AnalysisActionItem[]
 
   @@unique([companyId, name])
   @@map("departments")
@@ -274,23 +296,25 @@ model User {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
-  ownedRisks           Risk[]                       @relation("RiskOwner")
-  createdRisks         Risk[]                       @relation("RiskCreatedBy")
-  ownedControls        Control[]                    @relation("ControlOwner")
-  ownedActions         Action[]                     @relation("ActionOwner")
-  reportedIncidents    Incident[]                   @relation("IncidentReportedBy")
-  comments             Comment[]
-  attachments          Attachment[]
-  auditLogs            AuditLog[]
-  notifications        Notification[]
-  refreshTokens        RefreshToken[]
-  ledAnalyses          CorruptionAnalysis[]         @relation("AnalysisLead")
-  createdAnalyses      CorruptionAnalysis[]         @relation("AnalysisCreatedBy")
-  analysisMemberships  AnalysisWorkingGroupMember[]
-  ownedPlanItems       AnalysisPlanItem[]           @relation("AnalysisPlanItemOwner")
-  uploadedAnalysisDocs AnalysisDocument[]
-  executedProcessSteps AnalysisProcessStep[]        @relation("ProcessStepExecutor")
-  ownedAnalysisRisks   AnalysisRisk[]               @relation("AnalysisRiskOwner")
+  ownedRisks                    Risk[]                       @relation("RiskOwner")
+  createdRisks                  Risk[]                       @relation("RiskCreatedBy")
+  ownedControls                 Control[]                    @relation("ControlOwner")
+  ownedActions                  Action[]                     @relation("ActionOwner")
+  reportedIncidents             Incident[]                   @relation("IncidentReportedBy")
+  comments                      Comment[]
+  attachments                   Attachment[]
+  auditLogs                     AuditLog[]
+  notifications                 Notification[]
+  refreshTokens                 RefreshToken[]
+  ledAnalyses                   CorruptionAnalysis[]         @relation("AnalysisLead")
+  createdAnalyses               CorruptionAnalysis[]         @relation("AnalysisCreatedBy")
+  analysisMemberships           AnalysisWorkingGroupMember[]
+  ownedPlanItems                AnalysisPlanItem[]           @relation("AnalysisPlanItemOwner")
+  uploadedAnalysisDocs          AnalysisDocument[]
+  executedProcessSteps          AnalysisProcessStep[]        @relation("ProcessStepExecutor")
+  ownedAnalysisRisks            AnalysisRisk[]               @relation("AnalysisRiskOwner")
+  responsibleForRecommendations AnalysisRecommendation[]     @relation("RecommendationResponsible")
+  responsibleForActionItems     AnalysisActionItem[]         @relation("ActionItemResponsible")
 
   @@map("users")
 }
@@ -567,13 +591,15 @@ model CorruptionAnalysis {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  departments  AnalysisDepartment[]
-  workingGroup AnalysisWorkingGroupMember[]
-  planItems    AnalysisPlanItem[]
-  documents    AnalysisDocument[]
-  processSteps AnalysisProcessStep[]
-  factors      AnalysisFactor[]
-  risks        AnalysisRisk[]
+  departments     AnalysisDepartment[]
+  workingGroup    AnalysisWorkingGroupMember[]
+  planItems       AnalysisPlanItem[]
+  documents       AnalysisDocument[]
+  processSteps    AnalysisProcessStep[]
+  factors         AnalysisFactor[]
+  risks           AnalysisRisk[]
+  recommendations AnalysisRecommendation[]
+  actionItems     AnalysisActionItem[]
 
   @@map("corruption_analyses")
 }
@@ -717,5 +743,49 @@ model AnalysisRisk {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  recommendations AnalysisRecommendation[]
+
   @@map("analysis_risks")
+}
+
+/// Stage 9 "Формирование рекомендаций" — per identified risk
+model AnalysisRecommendation {
+  id            String             @id @default(uuid())
+  analysisId    String
+  analysis      CorruptionAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  riskId        String?
+  risk          AnalysisRisk?      @relation(fields: [riskId], references: [id], onDelete: SetNull)
+  type          RecommendationType
+  description   String
+  responsibleId String?
+  responsible   User?              @relation("RecommendationResponsible", fields: [responsibleId], references: [id], onDelete: SetNull)
+  createdAt     DateTime           @default(now())
+
+  actionItems AnalysisActionItem[]
+
+  @@map("analysis_recommendations")
+}
+
+/// Stage 10 "План мероприятий" — concrete action items, optionally tied to a recommendation
+model AnalysisActionItem {
+  id               String                  @id @default(uuid())
+  analysisId       String
+  analysis         CorruptionAnalysis      @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  recommendationId String?
+  recommendation   AnalysisRecommendation? @relation(fields: [recommendationId], references: [id], onDelete: SetNull)
+  task             String
+  expectedResult   String?
+  responsibleId    String?
+  responsible      User?                   @relation("ActionItemResponsible", fields: [responsibleId], references: [id], onDelete: SetNull)
+  departmentId     String?
+  department       Department?             @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  deadline         DateTime?
+  priority         ActionPriority          @default(MEDIUM)
+  status           ActionStatus            @default(PLANNED)
+  supportingDocs   String?
+  comments         String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  @@map("analysis_action_items")
 }

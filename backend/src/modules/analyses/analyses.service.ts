@@ -9,16 +9,20 @@ import { AuditService } from '../audit/audit.service';
 import { isForwardStageTransition } from './analyses.constants';
 import { AssessAnalysisRiskDto } from './dto/assess-analysis-risk.dto';
 import { ChangeStageDto } from './dto/change-stage.dto';
+import { CreateActionItemDto } from './dto/create-action-item.dto';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { CreateAnalysisRiskDto } from './dto/create-analysis-risk.dto';
 import { CreateFactorDto } from './dto/create-factor.dto';
 import { CreatePlanItemDto } from './dto/create-plan-item.dto';
 import { CreateProcessStepDto } from './dto/create-process-step.dto';
+import { CreateRecommendationDto } from './dto/create-recommendation.dto';
 import { CreateWorkingGroupMemberDto } from './dto/create-working-group-member.dto';
+import { UpdateActionItemDto } from './dto/update-action-item.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
 import { UpdateAnalysisRiskDto } from './dto/update-analysis-risk.dto';
 import { UpdateFactorDto } from './dto/update-factor.dto';
 import { UpdateProcessStepDto } from './dto/update-process-step.dto';
+import { UpdateRecommendationDto } from './dto/update-recommendation.dto';
 import { UpdateWorkingGroupMemberDto } from './dto/update-working-group-member.dto';
 
 const DETAIL_INCLUDE = {
@@ -59,6 +63,21 @@ const DETAIL_INCLUDE = {
       factor: { select: { id: true, factorType: true } },
       category: { select: { id: true, name: true } },
       owner: { select: { id: true, fullName: true } },
+    },
+    orderBy: { createdAt: 'asc' as const },
+  },
+  recommendations: {
+    include: {
+      risk: { select: { id: true, title: true } },
+      responsible: { select: { id: true, fullName: true } },
+    },
+    orderBy: { createdAt: 'asc' as const },
+  },
+  actionItems: {
+    include: {
+      recommendation: { select: { id: true, type: true } },
+      responsible: { select: { id: true, fullName: true } },
+      department: { select: { id: true, name: true } },
     },
     orderBy: { createdAt: 'asc' as const },
   },
@@ -497,6 +516,102 @@ export class AnalysesService {
   ): number | undefined {
     if (!likelihood || !impact) return undefined;
     return likelihood * impact;
+  }
+
+  // ------------------------------------------------------------------
+  // Stage 9: Recommendations
+  // ------------------------------------------------------------------
+
+  private readonly recommendationInclude = {
+    risk: { select: { id: true, title: true } },
+    responsible: { select: { id: true, fullName: true } },
+  } satisfies Prisma.AnalysisRecommendationInclude;
+
+  async addRecommendation(analysisId: string, dto: CreateRecommendationDto) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisRecommendation.create({
+      data: { analysisId, ...dto },
+      include: this.recommendationInclude,
+    });
+  }
+
+  async updateRecommendation(
+    analysisId: string,
+    recommendationId: string,
+    dto: UpdateRecommendationDto,
+  ) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisRecommendation.update({
+      where: { id: recommendationId },
+      data: dto,
+      include: this.recommendationInclude,
+    });
+  }
+
+  async removeRecommendation(analysisId: string, recommendationId: string) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisRecommendation.delete({
+      where: { id: recommendationId },
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // Stage 10: Action plan
+  // ------------------------------------------------------------------
+
+  private readonly actionItemInclude = {
+    recommendation: { select: { id: true, type: true } },
+    responsible: { select: { id: true, fullName: true } },
+    department: { select: { id: true, name: true } },
+  } satisfies Prisma.AnalysisActionItemInclude;
+
+  async addActionItem(analysisId: string, dto: CreateActionItemDto) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisActionItem.create({
+      data: {
+        analysisId,
+        recommendationId: dto.recommendationId,
+        task: dto.task,
+        expectedResult: dto.expectedResult,
+        responsibleId: dto.responsibleId,
+        departmentId: dto.departmentId,
+        deadline: dto.deadline ? new Date(dto.deadline) : undefined,
+        priority: dto.priority,
+        status: dto.status,
+        supportingDocs: dto.supportingDocs,
+        comments: dto.comments,
+      },
+      include: this.actionItemInclude,
+    });
+  }
+
+  async updateActionItem(
+    analysisId: string,
+    itemId: string,
+    dto: UpdateActionItemDto,
+  ) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisActionItem.update({
+      where: { id: itemId },
+      data: {
+        recommendationId: dto.recommendationId,
+        task: dto.task,
+        expectedResult: dto.expectedResult,
+        responsibleId: dto.responsibleId,
+        departmentId: dto.departmentId,
+        deadline: dto.deadline ? new Date(dto.deadline) : undefined,
+        priority: dto.priority,
+        status: dto.status,
+        supportingDocs: dto.supportingDocs,
+        comments: dto.comments,
+      },
+      include: this.actionItemInclude,
+    });
+  }
+
+  async removeActionItem(analysisId: string, itemId: string) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisActionItem.delete({ where: { id: itemId } });
   }
 
   // ------------------------------------------------------------------

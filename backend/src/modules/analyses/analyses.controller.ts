@@ -28,16 +28,20 @@ import { analysisDocumentsMulterOptions } from './analysis-documents.multer.conf
 import { AnalysesService } from './analyses.service';
 import { AssessAnalysisRiskDto } from './dto/assess-analysis-risk.dto';
 import { ChangeStageDto } from './dto/change-stage.dto';
+import { CreateActionItemDto } from './dto/create-action-item.dto';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { CreateAnalysisRiskDto } from './dto/create-analysis-risk.dto';
 import { CreateFactorDto } from './dto/create-factor.dto';
 import { CreatePlanItemDto } from './dto/create-plan-item.dto';
 import { CreateProcessStepDto } from './dto/create-process-step.dto';
+import { CreateRecommendationDto } from './dto/create-recommendation.dto';
 import { CreateWorkingGroupMemberDto } from './dto/create-working-group-member.dto';
+import { UpdateActionItemDto } from './dto/update-action-item.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
 import { UpdateAnalysisRiskDto } from './dto/update-analysis-risk.dto';
 import { UpdateFactorDto } from './dto/update-factor.dto';
 import { UpdateProcessStepDto } from './dto/update-process-step.dto';
+import { UpdateRecommendationDto } from './dto/update-recommendation.dto';
 import { UpdateWorkingGroupMemberDto } from './dto/update-working-group-member.dto';
 
 const MANAGE_ROLES = [
@@ -276,5 +280,55 @@ export class AnalysesController {
     @Body() dto: AssessAnalysisRiskDto,
   ) {
     return this.analysesService.assessRisk(id, riskId, dto);
+  }
+
+  @Post(':id/recommendations')
+  @Roles(...MANAGE_ROLES)
+  addRecommendation(
+    @Param('id') id: string,
+    @Body() dto: CreateRecommendationDto,
+  ) {
+    return this.analysesService.addRecommendation(id, dto);
+  }
+
+  @Patch(':id/recommendations/:recommendationId')
+  @Roles(...MANAGE_ROLES)
+  updateRecommendation(
+    @Param('id') id: string,
+    @Param('recommendationId') recommendationId: string,
+    @Body() dto: UpdateRecommendationDto,
+  ) {
+    return this.analysesService.updateRecommendation(id, recommendationId, dto);
+  }
+
+  @Delete(':id/recommendations/:recommendationId')
+  @Roles(...MANAGE_ROLES)
+  removeRecommendation(
+    @Param('id') id: string,
+    @Param('recommendationId') recommendationId: string,
+  ) {
+    return this.analysesService.removeRecommendation(id, recommendationId);
+  }
+
+  @Post(':id/action-items')
+  @Roles(...MANAGE_ROLES)
+  addActionItem(@Param('id') id: string, @Body() dto: CreateActionItemDto) {
+    return this.analysesService.addActionItem(id, dto);
+  }
+
+  @Patch(':id/action-items/:itemId')
+  @Roles(...MANAGE_ROLES)
+  updateActionItem(
+    @Param('id') id: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateActionItemDto,
+  ) {
+    return this.analysesService.updateActionItem(id, itemId, dto);
+  }
+
+  @Delete(':id/action-items/:itemId')
+  @Roles(...MANAGE_ROLES)
+  removeActionItem(@Param('id') id: string, @Param('itemId') itemId: string) {
+    return this.analysesService.removeActionItem(id, itemId);
   }
 }

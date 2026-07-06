@@ -22,6 +22,8 @@ import { Stage5ProcessMapTab } from './stages/Stage5ProcessMapTab';
 import { Stage6FactorsTab } from './stages/Stage6FactorsTab';
 import { Stage7RisksTab } from './stages/Stage7RisksTab';
 import { Stage8AssessmentTab } from './stages/Stage8AssessmentTab';
+import { Stage9RecommendationsTab } from './stages/Stage9RecommendationsTab';
+import { Stage10ActionPlanTab } from './stages/Stage10ActionPlanTab';
 
 export function AnalysisWizardPage() {
   const { t } = useTranslation();
@@ -73,6 +75,10 @@ export function AnalysisWizardPage() {
         return <Stage7RisksTab analysis={analysis} onUpdated={refetch} />;
       case 'ASSESSMENT':
         return <Stage8AssessmentTab analysis={analysis} onUpdated={refetch} />;
+      case 'RECOMMENDATIONS':
+        return <Stage9RecommendationsTab analysis={analysis} onUpdated={refetch} />;
+      case 'ACTION_PLAN':
+        return <Stage10ActionPlanTab analysis={analysis} onUpdated={refetch} />;
       default:
         return (
           <Empty

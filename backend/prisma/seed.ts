@@ -1,4 +1,5 @@
 import {
+  ActionPriority,
   ActionStatus,
   AnalysisStage,
   AnalysisStatus,
@@ -9,6 +10,7 @@ import {
   IncidentStatus,
   PrismaClient,
   ProcessControlPointType,
+  RecommendationType,
   Role,
   RiskStatus,
   SourceType,
@@ -630,7 +632,7 @@ async function main() {
         periodEnd: new Date('2026-06-30'),
         deadline: new Date(new Date().setDate(new Date().getDate() + 30)),
         leadId: users['manager@crh.local'],
-        stage: AnalysisStage.ASSESSMENT,
+        stage: AnalysisStage.ACTION_PLAN,
         status: AnalysisStatus.IN_PROGRESS,
         createdById: users['officer@crh.local'],
         departments: {
@@ -776,7 +778,7 @@ async function main() {
     });
 
     // Stage 7-8: Выявление и оценка коррупционных рисков
-    await prisma.analysisRisk.create({
+    const risk1 = await prisma.analysisRisk.create({
       data: {
         analysisId: analysis1.id,
         factorId: factor1.id,
@@ -800,7 +802,7 @@ async function main() {
         residualScore: 9,
       },
     });
-    await prisma.analysisRisk.create({
+    const risk2 = await prisma.analysisRisk.create({
       data: {
         analysisId: analysis1.id,
         factorId: factor2.id,
@@ -824,7 +826,7 @@ async function main() {
         residualScore: 12,
       },
     });
-    await prisma.analysisRisk.create({
+    const risk3 = await prisma.analysisRisk.create({
       data: {
         analysisId: analysis1.id,
         factorId: factor3.id,
@@ -846,6 +848,78 @@ async function main() {
         residualLikelihood: 2,
         residualImpact: 4,
         residualScore: 8,
+      },
+    });
+
+    // Stage 9: Формирование рекомендаций
+    const rec1 = await prisma.analysisRecommendation.create({
+      data: {
+        analysisId: analysis1.id,
+        riskId: risk1.id,
+        type: RecommendationType.STRONGER_CONTROLS,
+        description: 'Ввести обязательное коллегиальное рассмотрение решений о выборе способа закупки свыше установленного порога.',
+        responsibleId: users['manager@crh.local'],
+      },
+    });
+    const rec2 = await prisma.analysisRecommendation.create({
+      data: {
+        analysisId: analysis1.id,
+        riskId: risk2.id,
+        type: RecommendationType.REGULATORY,
+        description: 'Утвердить регламент, запрещающий предварительные контакты сотрудников с потенциальными поставщиками до объявления закупки.',
+        responsibleId: users['officer@crh.local'],
+      },
+    });
+    const rec3 = await prisma.analysisRecommendation.create({
+      data: {
+        analysisId: analysis1.id,
+        riskId: risk3.id,
+        type: RecommendationType.ORGANIZATIONAL,
+        description: 'Внедрить обязательную процедуру декларирования конфликта интересов перед согласованием каждого договора.',
+        responsibleId: users['manager@crh.local'],
+      },
+    });
+
+    // Stage 10: План мероприятий
+    await prisma.analysisActionItem.create({
+      data: {
+        analysisId: analysis1.id,
+        recommendationId: rec1.id,
+        task: 'Разработать и утвердить регламент коллегиального рассмотрения закупок',
+        expectedResult: 'Утверждённый регламент, снижение риска необоснованного выбора поставщика',
+        responsibleId: users['manager@crh.local'],
+        departmentId: departments['Департамент закупок'],
+        deadline: new Date(new Date().setDate(new Date().getDate() + 30)),
+        priority: ActionPriority.HIGH,
+        status: ActionStatus.IN_PROGRESS,
+        supportingDocs: 'Проект регламента',
+        comments: 'Согласовывается с юридическим департаментом',
+      },
+    });
+    await prisma.analysisActionItem.create({
+      data: {
+        analysisId: analysis1.id,
+        recommendationId: rec2.id,
+        task: 'Утвердить порядок взаимодействия с потенциальными поставщиками до объявления закупки',
+        expectedResult: 'Утверждённый порядок, исключение неформальных контактов',
+        responsibleId: users['officer@crh.local'],
+        departmentId: departments['Департамент закупок'],
+        deadline: new Date(new Date().setDate(new Date().getDate() + 45)),
+        priority: ActionPriority.HIGH,
+        status: ActionStatus.PLANNED,
+      },
+    });
+    await prisma.analysisActionItem.create({
+      data: {
+        analysisId: analysis1.id,
+        recommendationId: rec3.id,
+        task: 'Внедрить форму декларации конфликта интересов при согласовании договоров',
+        expectedResult: 'Форма декларации внедрена в процесс согласования договоров',
+        responsibleId: users['manager@crh.local'],
+        departmentId: departments['Департамент закупок'],
+        deadline: new Date(new Date().setDate(new Date().getDate() + 20)),
+        priority: ActionPriority.MEDIUM,
+        status: ActionStatus.PLANNED,
       },
     });
   }

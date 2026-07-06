@@ -1,10 +1,12 @@
 import i18n from '../i18n';
 import type {
+  ActionPriority,
   AnalysisDocumentCategory,
   AnalysisStage,
   AnalysisStatus,
   CorruptogenicFactorType,
   ProcessControlPointType,
+  RecommendationType,
 } from '../types';
 
 export const ANALYSIS_STAGE_ORDER: AnalysisStage[] = [
@@ -33,6 +35,8 @@ export const IMPLEMENTED_ANALYSIS_STAGES: AnalysisStage[] = [
   'FACTORS',
   'RISKS',
   'ASSESSMENT',
+  'RECOMMENDATIONS',
+  'ACTION_PLAN',
 ];
 
 export function analysisStageLabel(stage: AnalysisStage): string {
@@ -108,3 +112,32 @@ export const ALL_CORRUPTOGENIC_FACTOR_TYPES: CorruptogenicFactorType[] = [
 export function corruptogenicFactorTypeLabel(value: CorruptogenicFactorType): string {
   return i18n.t(`corruptogenicFactorType.${value}`);
 }
+
+export const ALL_RECOMMENDATION_TYPES: RecommendationType[] = [
+  'ORGANIZATIONAL',
+  'REGULATORY',
+  'HR',
+  'DIGITALIZATION',
+  'AUTOMATION',
+  'STRONGER_CONTROLS',
+  'SEPARATION_OF_DUTIES',
+  'PROCESS_CHANGE',
+  'TRAINING',
+  'MONITORING',
+];
+
+export function recommendationTypeLabel(value: RecommendationType): string {
+  return i18n.t(`recommendationType.${value}`);
+}
+
+export const ALL_ACTION_PRIORITIES: ActionPriority[] = ['LOW', 'MEDIUM', 'HIGH'];
+
+export function actionPriorityLabel(value: ActionPriority): string {
+  return i18n.t(`actionPriority.${value}`);
+}
+
+export const ACTION_PRIORITY_COLORS: Record<ActionPriority, string> = {
+  LOW: 'default',
+  MEDIUM: 'gold',
+  HIGH: 'red',
+};

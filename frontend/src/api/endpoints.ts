@@ -255,4 +255,18 @@ export const analysesApi = {
   removeRisk: (analysisId: string, riskId: string) => apiClient.delete(`/analyses/${analysisId}/risks/${riskId}`),
   assessRisk: (analysisId: string, riskId: string, data: Record<string, unknown>) =>
     apiClient.patch(`/analyses/${analysisId}/risks/${riskId}/assess`, data),
+
+  addRecommendation: (analysisId: string, data: Record<string, unknown>) =>
+    apiClient.post(`/analyses/${analysisId}/recommendations`, data),
+  updateRecommendation: (analysisId: string, recommendationId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/analyses/${analysisId}/recommendations/${recommendationId}`, data),
+  removeRecommendation: (analysisId: string, recommendationId: string) =>
+    apiClient.delete(`/analyses/${analysisId}/recommendations/${recommendationId}`),
+
+  addActionItem: (analysisId: string, data: Record<string, unknown>) =>
+    apiClient.post(`/analyses/${analysisId}/action-items`, data),
+  updateActionItem: (analysisId: string, itemId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/analyses/${analysisId}/action-items/${itemId}`, data),
+  removeActionItem: (analysisId: string, itemId: string) =>
+    apiClient.delete(`/analyses/${analysisId}/action-items/${itemId}`),
 };

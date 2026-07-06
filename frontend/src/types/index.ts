@@ -324,6 +324,8 @@ export const IMPLEMENTED_ANALYSIS_STAGES: AnalysisStage[] = [
   'FACTORS',
   'RISKS',
   'ASSESSMENT',
+  'RECOMMENDATIONS',
+  'ACTION_PLAN',
 ];
 
 export type AnalysisStatus = 'DRAFT' | 'IN_PROGRESS' | 'OVERDUE' | 'COMPLETED' | 'ARCHIVED';
@@ -413,6 +415,8 @@ export interface AnalysisDetail extends AnalysisListItem {
   processSteps: AnalysisProcessStep[];
   factors: AnalysisFactor[];
   risks: AnalysisRisk[];
+  recommendations: AnalysisRecommendation[];
+  actionItems: AnalysisActionItem[];
 }
 
 export interface AnalysesSummary {
@@ -498,4 +502,49 @@ export interface AnalysisRisk {
   residualLikelihood?: number | null;
   residualImpact?: number | null;
   residualScore?: number | null;
+}
+
+// ------------------------------------------------------------------
+// ВАКР — Stages 9-10: recommendations, action plan
+// ------------------------------------------------------------------
+
+export type RecommendationType =
+  | 'ORGANIZATIONAL'
+  | 'REGULATORY'
+  | 'HR'
+  | 'DIGITALIZATION'
+  | 'AUTOMATION'
+  | 'STRONGER_CONTROLS'
+  | 'SEPARATION_OF_DUTIES'
+  | 'PROCESS_CHANGE'
+  | 'TRAINING'
+  | 'MONITORING';
+
+export type ActionPriority = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface AnalysisRecommendation {
+  id: string;
+  riskId?: string | null;
+  risk?: { id: string; title: string } | null;
+  type: RecommendationType;
+  description: string;
+  responsibleId?: string | null;
+  responsible?: NamedRef | null;
+}
+
+export interface AnalysisActionItem {
+  id: string;
+  recommendationId?: string | null;
+  recommendation?: { id: string; type: RecommendationType } | null;
+  task: string;
+  expectedResult?: string | null;
+  responsibleId?: string | null;
+  responsible?: NamedRef | null;
+  departmentId?: string | null;
+  department?: NamedRef | null;
+  deadline?: string | null;
+  priority: ActionPriority;
+  status: ActionStatus;
+  supportingDocs?: string | null;
+  comments?: string | null;
 }
