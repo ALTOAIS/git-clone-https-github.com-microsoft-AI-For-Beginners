@@ -6,6 +6,8 @@ const ITEMS = [
   { key: '/academy', labelKey: 'academySubNav.dashboard' },
   { key: '/academy/my', labelKey: 'academySubNav.myAcademy' },
   { key: '/academy/courses', labelKey: 'academySubNav.courses' },
+  { key: '/academy/calendar', labelKey: 'academySubNav.calendar' },
+  { key: '/academy/matrix', labelKey: 'academySubNav.matrix' },
 ];
 
 export function AcademySubNav() {

@@ -19,6 +19,9 @@ import { AcademyDashboardPage } from './pages/academy/AcademyDashboardPage';
 import { MyAcademyPage } from './pages/academy/MyAcademyPage';
 import { CoursesListPage } from './pages/academy/CoursesListPage';
 import { CourseEditorPage } from './pages/academy/CourseEditorPage';
+import { AcademyCalendarPage } from './pages/academy/AcademyCalendarPage';
+import { TrainingMatrixPage } from './pages/academy/TrainingMatrixPage';
+import { TakeTestPage } from './pages/academy/TakeTestPage';
 
 function App() {
   return (
@@ -34,6 +37,9 @@ function App() {
           <Route path="/academy/my" element={<MyAcademyPage />} />
           <Route path="/academy/courses" element={<CoursesListPage />} />
           <Route path="/academy/courses/:id" element={<CourseEditorPage />} />
+          <Route path="/academy/calendar" element={<AcademyCalendarPage />} />
+          <Route path="/academy/matrix" element={<TrainingMatrixPage />} />
+          <Route path="/academy/take-test/:courseId" element={<TakeTestPage />} />
           <Route path="/risks" element={<RiskRegisterPage />} />
           <Route path="/risks/:id" element={<RiskCardPage />} />
           <Route path="/risk-library" element={<RiskLibraryPage />} />

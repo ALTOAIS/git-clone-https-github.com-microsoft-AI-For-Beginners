@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   Collapse,
+  DatePicker,
   Form,
   Input,
   InputNumber,
@@ -18,14 +19,17 @@ import {
   Tag,
   Typography,
 } from 'antd';
+import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { academyApi } from '../../api/endpoints';
+import { ALL_ROLES, roleLabel } from '../../auth/roles';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import type { CourseLesson, CourseModule } from '../../types';
 import { ALL_COURSE_STATUSES, ALL_LESSON_CONTENT_TYPES, courseStatusLabel, lessonContentTypeLabel } from '../../utils/academyDisplay';
+import { TestEditorSection } from './TestEditorSection';
 
 export function CourseEditorPage() {
   const { t } = useTranslation();
@@ -53,6 +57,7 @@ export function CourseEditorPage() {
         description: course.description,
         status: course.status,
         isMandatory: course.isMandatory,
+        applicableRoles: course.applicableRoles,
       });
     }
   }, [course, metaForm]);
@@ -103,18 +108,25 @@ export function CourseEditorPage() {
   };
 
   const openEditLesson = (moduleId: string, lesson: CourseLesson) => {
-    lessonForm.setFieldsValue(lesson);
+    lessonForm.setFieldsValue({
+      ...lesson,
+      scheduledAt: lesson.scheduledAt ? dayjs(lesson.scheduledAt) : undefined,
+    });
     setLessonModal({ moduleId, editing: lesson });
   };
 
   const handleSaveLesson = async () => {
     if (!lessonModal) return;
     const values = await lessonForm.validateFields();
+    const payload = {
+      ...values,
+      scheduledAt: values.scheduledAt ? values.scheduledAt.toISOString() : undefined,
+    };
     if (lessonModal.editing) {
-      await academyApi.updateLesson(id!, lessonModal.editing.id, values);
+      await academyApi.updateLesson(id!, lessonModal.editing.id, payload);
       message.success(t('courseEditor.lessonUpdated'));
     } else {
-      await academyApi.addLesson(id!, lessonModal.moduleId, values);
+      await academyApi.addLesson(id!, lessonModal.moduleId, payload);
       message.success(t('courseEditor.lessonAdded'));
     }
     setLessonModal(null);
@@ -161,6 +173,22 @@ export function CourseEditorPage() {
           </Form.Item>
           <Form.Item name="isMandatory" label={t('courseEditor.form.mandatoryLabel')} valuePropName="checked">
             <Switch />
+          </Form.Item>
+          <Form.Item
+            name="applicableRoles"
+            label={
+              <span>
+                {t('courseEditor.form.applicableRolesLabel')}
+                <InfoTooltip text={t('tooltips.academy.applicableRoles')} />
+              </span>
+            }
+          >
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder={t('courseEditor.form.applicableRolesPlaceholder')}
+              options={ALL_ROLES.map((role) => ({ value: role, label: roleLabel(role) }))}
+            />
           </Form.Item>
           <Button type="primary" onClick={handleSaveMeta}>
             {t('courseEditor.saveButton')}
@@ -292,8 +320,21 @@ export function CourseEditorPage() {
           <Form.Item name="durationMinutes" label={t('courseEditor.form.durationLabel')}>
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
+          <Form.Item
+            name="scheduledAt"
+            label={
+              <span>
+                {t('courseEditor.form.scheduledAtLabel')}
+                <InfoTooltip text={t('tooltips.academy.scheduledAt')} />
+              </span>
+            }
+          >
+            <DatePicker showTime format="DD.MM.YYYY HH:mm" style={{ width: '100%' }} />
+          </Form.Item>
         </Form>
       </Modal>
+
+      <TestEditorSection courseId={id!} />
     </div>
   );
 }

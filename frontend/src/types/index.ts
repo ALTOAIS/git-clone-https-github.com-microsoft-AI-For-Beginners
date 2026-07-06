@@ -603,6 +603,7 @@ export interface CourseLesson {
   contentType: LessonContentType;
   content?: string | null;
   durationMinutes?: number | null;
+  scheduledAt?: string | null;
 }
 
 export interface CourseModule {
@@ -632,6 +633,7 @@ export interface CourseListItem {
   description?: string | null;
   status: CourseStatus;
   isMandatory: boolean;
+  applicableRoles: Role[];
   createdBy?: NamedRef | null;
   createdAt: string;
   _count?: { modules: number; assignments: number };
@@ -659,4 +661,88 @@ export interface AcademySummary {
   overdue: number;
   completionPercent: number;
   averageProgress: number;
+}
+
+export interface CalendarDeadline {
+  id: string;
+  dueDate: string;
+  status: CourseAssignmentStatus;
+  course: { id: string; title: string };
+  user: NamedRef;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  contentType: LessonContentType;
+  scheduledAt: string;
+  module: { title: string; course: { id: string; title: string } };
+}
+
+export interface AcademyCalendar {
+  deadlines: CalendarDeadline[];
+  events: CalendarEvent[];
+}
+
+export interface TrainingMatrixCourse {
+  id: string;
+  title: string;
+  status: CourseStatus;
+  isMandatory: boolean;
+  applicableRoles: Role[];
+}
+
+export interface TrainingMatrixRoleStats {
+  assigned: number;
+  completed: number;
+}
+
+export interface TrainingMatrix {
+  courses: TrainingMatrixCourse[];
+  stats: Record<string, Partial<Record<Role, TrainingMatrixRoleStats>>>;
+}
+
+// ------------------------------------------------------------------
+// Тестирование и Проверка знаний
+// ------------------------------------------------------------------
+
+export type TestQuestionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+
+export type TestAttemptStage = 'BEFORE' | 'AFTER' | 'CHECK_3M' | 'CHECK_6M' | 'ANNUAL';
+
+export interface TestQuestionOption {
+  id: string;
+  order: number;
+  text: string;
+  isCorrect?: boolean;
+}
+
+export interface TestQuestion {
+  id: string;
+  order: number;
+  type: TestQuestionType;
+  text: string;
+  points: number;
+  correctAnswerText?: string | null;
+  options: TestQuestionOption[];
+}
+
+export interface TestDetail {
+  id: string;
+  courseId: string;
+  title: string;
+  passScorePercent: number;
+  questions: TestQuestion[];
+}
+
+export interface TestAttempt {
+  id: string;
+  testId: string;
+  userId: string;
+  user?: NamedRef & { email: string };
+  stage: TestAttemptStage;
+  scorePercent: number;
+  passed: boolean;
+  answers: Record<string, unknown>;
+  submittedAt: string;
 }

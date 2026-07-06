@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App, Form, InputNumber, Modal, Progress, Select, Space, Table, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { academyApi } from '../../api/endpoints';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
@@ -17,6 +18,7 @@ import { AcademySubNav } from './AcademySubNav';
 export function MyAcademyPage() {
   const { t } = useTranslation();
   const { message } = App.useApp();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<MyCourseAssignment | null>(null);
   const [form] = Form.useForm();
@@ -94,8 +96,13 @@ export function MyAcademyPage() {
           },
           {
             title: t('myAcademy.columns.actions'),
-            width: 120,
-            render: (_: unknown, record: MyCourseAssignment) => <a onClick={() => openEdit(record)}>{t('myAcademy.updateLink')}</a>,
+            width: 220,
+            render: (_: unknown, record: MyCourseAssignment) => (
+              <Space>
+                <a onClick={() => openEdit(record)}>{t('myAcademy.updateLink')}</a>
+                <a onClick={() => navigate(`/academy/take-test/${record.course.id}`)}>{t('myAcademy.takeTestLink')}</a>
+              </Space>
+            ),
           },
         ]}
       />

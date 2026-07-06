@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { LessonContentType } from '@prisma/client';
-import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class UpdateLessonDto {
   @ApiProperty({ required: false })
@@ -27,4 +33,12 @@ export class UpdateLessonDto {
   @IsOptional()
   @IsInt()
   durationMinutes?: number;
+
+  @ApiProperty({
+    required: false,
+    description: 'Дата и время проведения — для вебинаров и очных мероприятий',
+  })
+  @IsOptional()
+  @IsDateString()
+  scheduledAt?: string;
 }

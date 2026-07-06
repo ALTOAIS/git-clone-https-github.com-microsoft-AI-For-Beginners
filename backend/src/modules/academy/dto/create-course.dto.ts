@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CourseStatus } from '@prisma/client';
-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
+import { CourseStatus, Role } from '@prisma/client';
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateCourseDto {
   @ApiProperty()
@@ -21,4 +27,10 @@ export class CreateCourseDto {
   @IsOptional()
   @IsBoolean()
   isMandatory?: boolean;
+
+  @ApiProperty({ enum: Role, isArray: true, required: false })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(Role, { each: true })
+  applicableRoles?: Role[];
 }

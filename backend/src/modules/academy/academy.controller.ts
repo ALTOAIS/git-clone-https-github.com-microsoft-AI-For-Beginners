@@ -23,10 +23,15 @@ import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { CreateModuleDto } from './dto/create-module.dto';
+import { CreateQuestionDto } from './dto/create-question.dto';
+import { CreateTestDto } from './dto/create-test.dto';
+import { SubmitAttemptDto } from './dto/submit-attempt.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { UpdateModuleDto } from './dto/update-module.dto';
+import { UpdateQuestionDto } from './dto/update-question.dto';
+import { UpdateTestDto } from './dto/update-test.dto';
 
 const MANAGE_ROLES = [
   Role.ADMINISTRATOR,
@@ -48,6 +53,16 @@ export class AcademyController {
   @Get('my')
   myAssignments(@CurrentUser() user: AuthenticatedUser) {
     return this.academyService.myAssignments(user.id);
+  }
+
+  @Get('calendar')
+  calendar() {
+    return this.academyService.calendar();
+  }
+
+  @Get('matrix')
+  matrix() {
+    return this.academyService.matrix();
   }
 
   @Get()
@@ -176,5 +191,83 @@ export class AcademyController {
     @Param('assignmentId') assignmentId: string,
   ) {
     return this.academyService.removeAssignment(id, assignmentId);
+  }
+
+  // ------------------------------------------------------------------
+  // Тестирование и Проверка знаний
+  // ------------------------------------------------------------------
+
+  @Get(':id/test')
+  @Roles(...MANAGE_ROLES)
+  getTest(@Param('id') id: string) {
+    return this.academyService.getTest(id);
+  }
+
+  @Get(':id/test/for-attempt')
+  getTestForAttempt(@Param('id') id: string) {
+    return this.academyService.getTestForAttempt(id);
+  }
+
+  @Post(':id/test')
+  @Roles(...MANAGE_ROLES)
+  createTest(@Param('id') id: string, @Body() dto: CreateTestDto) {
+    return this.academyService.createTest(id, dto);
+  }
+
+  @Patch(':id/test')
+  @Roles(...MANAGE_ROLES)
+  updateTest(@Param('id') id: string, @Body() dto: UpdateTestDto) {
+    return this.academyService.updateTest(id, dto);
+  }
+
+  @Delete(':id/test')
+  @Roles(...MANAGE_ROLES)
+  removeTest(@Param('id') id: string) {
+    return this.academyService.removeTest(id);
+  }
+
+  @Post(':id/test/questions')
+  @Roles(...MANAGE_ROLES)
+  addQuestion(@Param('id') id: string, @Body() dto: CreateQuestionDto) {
+    return this.academyService.addQuestion(id, dto);
+  }
+
+  @Patch(':id/test/questions/:questionId')
+  @Roles(...MANAGE_ROLES)
+  updateQuestion(
+    @Param('id') id: string,
+    @Param('questionId') questionId: string,
+    @Body() dto: UpdateQuestionDto,
+  ) {
+    return this.academyService.updateQuestion(id, questionId, dto);
+  }
+
+  @Delete(':id/test/questions/:questionId')
+  @Roles(...MANAGE_ROLES)
+  removeQuestion(
+    @Param('id') id: string,
+    @Param('questionId') questionId: string,
+  ) {
+    return this.academyService.removeQuestion(id, questionId);
+  }
+
+  @Post(':id/test/attempts')
+  submitAttempt(
+    @Param('id') id: string,
+    @Body() dto: SubmitAttemptDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.academyService.submitAttempt(id, user.id, dto);
+  }
+
+  @Get(':id/test/attempts/my')
+  myAttempts(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.academyService.myAttempts(id, user.id);
+  }
+
+  @Get(':id/test/attempts')
+  @Roles(...MANAGE_ROLES)
+  allAttempts(@Param('id') id: string) {
+    return this.academyService.allAttempts(id);
   }
 }
