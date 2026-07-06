@@ -21,6 +21,8 @@ import type {
   RiskDetail,
   RiskListItem,
   Source,
+  TestAttempt,
+  TestDetail,
   TrainingMatrix,
   User,
 } from '../types';
@@ -315,4 +317,24 @@ export const academyApi = {
     apiClient.patch(`/courses/${courseId}/assignments/${assignmentId}`, data),
   removeAssignment: (courseId: string, assignmentId: string) =>
     apiClient.delete(`/courses/${courseId}/assignments/${assignmentId}`),
+
+  getTest: (courseId: string) => apiClient.get<TestDetail>(`/courses/${courseId}/test`),
+  getTestForAttempt: (courseId: string) => apiClient.get<TestDetail>(`/courses/${courseId}/test/for-attempt`),
+  createTest: (courseId: string, data: Record<string, unknown>) =>
+    apiClient.post<TestDetail>(`/courses/${courseId}/test`, data),
+  updateTest: (courseId: string, data: Record<string, unknown>) =>
+    apiClient.patch<TestDetail>(`/courses/${courseId}/test`, data),
+  removeTest: (courseId: string) => apiClient.delete(`/courses/${courseId}/test`),
+
+  addQuestion: (courseId: string, data: Record<string, unknown>) =>
+    apiClient.post(`/courses/${courseId}/test/questions`, data),
+  updateQuestion: (courseId: string, questionId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/courses/${courseId}/test/questions/${questionId}`, data),
+  removeQuestion: (courseId: string, questionId: string) =>
+    apiClient.delete(`/courses/${courseId}/test/questions/${questionId}`),
+
+  submitAttempt: (courseId: string, data: Record<string, unknown>) =>
+    apiClient.post<TestAttempt>(`/courses/${courseId}/test/attempts`, data),
+  myAttempts: (courseId: string) => apiClient.get<TestAttempt[]>(`/courses/${courseId}/test/attempts/my`),
+  allAttempts: (courseId: string) => apiClient.get<TestAttempt[]>(`/courses/${courseId}/test/attempts`),
 };

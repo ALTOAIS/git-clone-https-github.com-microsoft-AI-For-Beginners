@@ -29,6 +29,7 @@ import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import type { CourseLesson, CourseModule } from '../../types';
 import { ALL_COURSE_STATUSES, ALL_LESSON_CONTENT_TYPES, courseStatusLabel, lessonContentTypeLabel } from '../../utils/academyDisplay';
+import { TestEditorSection } from './TestEditorSection';
 
 export function CourseEditorPage() {
   const { t } = useTranslation();
@@ -332,6 +333,8 @@ export function CourseEditorPage() {
           </Form.Item>
         </Form>
       </Modal>
+
+      <TestEditorSection courseId={id!} />
     </div>
   );
 }

@@ -701,3 +701,48 @@ export interface TrainingMatrix {
   courses: TrainingMatrixCourse[];
   stats: Record<string, Partial<Record<Role, TrainingMatrixRoleStats>>>;
 }
+
+// ------------------------------------------------------------------
+// Тестирование и Проверка знаний
+// ------------------------------------------------------------------
+
+export type TestQuestionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+
+export type TestAttemptStage = 'BEFORE' | 'AFTER' | 'CHECK_3M' | 'CHECK_6M' | 'ANNUAL';
+
+export interface TestQuestionOption {
+  id: string;
+  order: number;
+  text: string;
+  isCorrect?: boolean;
+}
+
+export interface TestQuestion {
+  id: string;
+  order: number;
+  type: TestQuestionType;
+  text: string;
+  points: number;
+  correctAnswerText?: string | null;
+  options: TestQuestionOption[];
+}
+
+export interface TestDetail {
+  id: string;
+  courseId: string;
+  title: string;
+  passScorePercent: number;
+  questions: TestQuestion[];
+}
+
+export interface TestAttempt {
+  id: string;
+  testId: string;
+  userId: string;
+  user?: NamedRef & { email: string };
+  stage: TestAttemptStage;
+  scorePercent: number;
+  passed: boolean;
+  answers: Record<string, unknown>;
+  submittedAt: string;
+}

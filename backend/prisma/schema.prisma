@@ -231,6 +231,23 @@ enum CourseAssignmentStatus {
   COMPLETED
 }
 
+/// Академия комплаенса — Тестирование
+enum TestQuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+/// Академия комплаенса — Проверка знаний (поэтапные проверки)
+enum TestAttemptStage {
+  BEFORE
+  AFTER
+  CHECK_3M
+  CHECK_6M
+  ANNUAL
+}
+
 // ------------------------------------------------------------------
 // Organization structure
 // ------------------------------------------------------------------
@@ -348,6 +365,7 @@ model User {
   createdCourses                Course[]                     @relation("CourseCreatedBy")
   courseAssignments             CourseAssignment[]           @relation("CourseAssignee")
   assignedCourseAssignments     CourseAssignment[]           @relation("CourseAssignedBy")
+  testAttempts                  TestAttempt[]                @relation("TestAttemptUser")
 
   @@map("users")
 }
@@ -872,6 +890,7 @@ model Course {
 
   modules     CourseModule[]
   assignments CourseAssignment[]
+  test        Test?
 
   @@map("courses")
 }
@@ -925,4 +944,71 @@ model CourseAssignment {
 
   @@unique([courseId, userId])
   @@map("course_assignments")
+}
+
+/// Итоговый тест курса (один тест на курс — «итоговый экзамен» из ТЗ)
+model Test {
+  id               String   @id @default(uuid())
+  courseId         String   @unique
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title            String
+  passScorePercent Int      @default(70)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  questions TestQuestion[]
+  attempts  TestAttempt[]
+
+  @@map("tests")
+}
+
+/// Вопрос теста. Поддерживаются 4 типа с автоматической проверкой; сопоставление,
+/// установление последовательности, заполнение пропусков и открытые кейс-задания
+/// с ручной проверкой отложены на следующую фазу.
+model TestQuestion {
+  id                String           @id @default(uuid())
+  testId            String
+  test              Test             @relation(fields: [testId], references: [id], onDelete: Cascade)
+  order             Int
+  type              TestQuestionType
+  text              String
+  points            Int              @default(1)
+  /// Эталонный ответ для SHORT_ANSWER (проверяется без учёта регистра/пробелов)
+  correctAnswerText String?
+
+  options TestQuestionOption[]
+
+  @@map("test_questions")
+}
+
+/// Вариант ответа — для SINGLE_CHOICE / MULTIPLE_CHOICE / TRUE_FALSE
+model TestQuestionOption {
+  id         String       @id @default(uuid())
+  questionId String
+  question   TestQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  order      Int
+  text       String
+  isCorrect  Boolean      @default(false)
+
+  @@map("test_question_options")
+}
+
+/// Попытка прохождения теста — стадия (BEFORE/AFTER/CHECK_3M/CHECK_6M/ANNUAL)
+/// реализует «Проверку знаний» как поэтапные прохождения одного и того же теста.
+/// Автоматическое планирование стадий по расписанию отложено на следующую фазу.
+model TestAttempt {
+  id           String           @id @default(uuid())
+  testId       String
+  test         Test             @relation(fields: [testId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User             @relation("TestAttemptUser", fields: [userId], references: [id], onDelete: Cascade)
+  stage        TestAttemptStage
+  scorePercent Int
+  passed       Boolean
+  /// Присланные ответы { [questionId]: string | string[] } — хранится для истории/аудита
+  answers      Json
+  submittedAt  DateTime         @default(now())
+
+  @@unique([testId, userId, stage])
+  @@map("test_attempts")
 }

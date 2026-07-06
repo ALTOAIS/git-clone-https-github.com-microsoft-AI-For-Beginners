@@ -11,12 +11,15 @@ import {
   IncidentAction,
   IncidentStatus,
   LessonContentType,
+  Prisma,
   PrismaClient,
   ProcessControlPointType,
   RecommendationType,
   Role,
   RiskStatus,
   SourceType,
+  TestAttemptStage,
+  TestQuestionType,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -1279,6 +1282,162 @@ async function main() {
     status: CourseAssignmentStatus.NOT_STARTED,
     progressPercent: 0,
     dueDateOffsetDays: 20,
+  });
+
+  // ------------------------------------------------------------------
+  // Академия комплаенса — Тестирование и Проверка знаний
+  // ------------------------------------------------------------------
+
+  async function ensureTest(
+    courseId: string,
+    spec: {
+      title: string;
+      passScorePercent?: number;
+      questions: {
+        order: number;
+        type: TestQuestionType;
+        text: string;
+        points?: number;
+        correctAnswerText?: string;
+        options?: { order: number; text: string; isCorrect?: boolean }[];
+      }[];
+    },
+  ) {
+    const existing = await prisma.test.findUnique({
+      where: { courseId },
+      include: { questions: { include: { options: true }, orderBy: { order: 'asc' } } },
+    });
+    if (existing) return existing;
+    return prisma.test.create({
+      data: {
+        courseId,
+        title: spec.title,
+        passScorePercent: spec.passScorePercent ?? 70,
+        questions: {
+          create: spec.questions.map((q) => ({
+            order: q.order,
+            type: q.type,
+            text: q.text,
+            points: q.points ?? 1,
+            correctAnswerText: q.correctAnswerText,
+            options: q.options ? { create: q.options } : undefined,
+          })),
+        },
+      },
+      include: { questions: { include: { options: true }, orderBy: { order: 'asc' } } },
+    });
+  }
+
+  const test1 = await ensureTest(course1.id, {
+    title: 'Итоговый тест: Противодействие коррупции',
+    passScorePercent: 70,
+    questions: [
+      {
+        order: 1,
+        type: TestQuestionType.SINGLE_CHOICE,
+        text: 'Что из перечисленного является коррупционным правонарушением согласно законодательству РК?',
+        options: [
+          { order: 1, text: 'Получение взятки', isCorrect: true },
+          { order: 2, text: 'Оформление ежегодного отпуска' },
+          { order: 3, text: 'Подписание трудового договора' },
+          { order: 4, text: 'Прохождение обязательного медосмотра' },
+        ],
+      },
+      {
+        order: 2,
+        type: TestQuestionType.MULTIPLE_CHOICE,
+        text: 'Какие из перечисленных действий относятся к мерам противодействия коррупции в компании?',
+        points: 2,
+        options: [
+          { order: 1, text: 'Декларирование конфликта интересов', isCorrect: true },
+          { order: 2, text: 'Раскрытие подарков сверх установленного лимита', isCorrect: true },
+          { order: 3, text: 'Увеличение премии руководителю по своему усмотрению' },
+          { order: 4, text: 'Обучение работников антикоррупционной политике компании', isCorrect: true },
+        ],
+      },
+      {
+        order: 3,
+        type: TestQuestionType.TRUE_FALSE,
+        text: 'Дарить подарки государственным служащим при исполнении ими служебных обязанностей запрещено.',
+        options: [
+          { order: 1, text: 'Верно', isCorrect: true },
+          { order: 2, text: 'Неверно' },
+        ],
+      },
+      {
+        order: 4,
+        type: TestQuestionType.SHORT_ANSWER,
+        text: 'Назовите профильный закон Республики Казахстан, регулирующий противодействие коррупции.',
+        correctAnswerText: 'О противодействии коррупции',
+      },
+    ],
+  });
+
+  const q = [...test1.questions].sort((a, b) => a.order - b.order);
+  const correctOptionId = (question: (typeof q)[number]) => question.options.find((o) => o.isCorrect)?.id;
+  const wrongOptionId = (question: (typeof q)[number]) => question.options.find((o) => !o.isCorrect)?.id;
+  const correctOptionIds = (question: (typeof q)[number]) =>
+    question.options.filter((o) => o.isCorrect).map((o) => o.id);
+
+  async function ensureAttempt(spec: {
+    userEmail: string;
+    stage: TestAttemptStage;
+    scorePercent: number;
+    passed: boolean;
+    answers: Record<string, unknown>;
+  }) {
+    const userId = users[spec.userEmail];
+    const existing = await prisma.testAttempt.findUnique({
+      where: { testId_userId_stage: { testId: test1.id, userId, stage: spec.stage } },
+    });
+    if (existing) return existing;
+    return prisma.testAttempt.create({
+      data: {
+        testId: test1.id,
+        userId,
+        stage: spec.stage,
+        scorePercent: spec.scorePercent,
+        passed: spec.passed,
+        answers: spec.answers as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  await ensureAttempt({
+    userEmail: 'officer@crh.local',
+    stage: TestAttemptStage.BEFORE,
+    scorePercent: 25,
+    passed: false,
+    answers: {
+      [q[0].id]: wrongOptionId(q[0]),
+      [q[1].id]: [wrongOptionId(q[1])],
+      [q[2].id]: wrongOptionId(q[2]),
+      [q[3].id]: 'не знаю',
+    },
+  });
+  await ensureAttempt({
+    userEmail: 'officer@crh.local',
+    stage: TestAttemptStage.AFTER,
+    scorePercent: 100,
+    passed: true,
+    answers: {
+      [q[0].id]: correctOptionId(q[0]),
+      [q[1].id]: correctOptionIds(q[1]),
+      [q[2].id]: correctOptionId(q[2]),
+      [q[3].id]: 'О противодействии коррупции',
+    },
+  });
+  await ensureAttempt({
+    userEmail: 'manager@crh.local',
+    stage: TestAttemptStage.BEFORE,
+    scorePercent: 50,
+    passed: false,
+    answers: {
+      [q[0].id]: correctOptionId(q[0]),
+      [q[1].id]: [wrongOptionId(q[1])],
+      [q[2].id]: correctOptionId(q[2]),
+      [q[3].id]: 'не помню',
+    },
   });
 
   console.log(`Заполнение завершено. Создано рисков: ${created} (существующие риски не изменялись).`);
