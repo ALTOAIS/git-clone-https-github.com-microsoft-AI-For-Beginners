@@ -315,7 +315,18 @@ export const ANALYSIS_STAGE_ORDER: AnalysisStage[] = [
   'REASSESSMENT',
 ];
 
-export const IMPLEMENTED_ANALYSIS_STAGES: AnalysisStage[] = ['CREATION', 'PLANNING', 'WORKING_GROUP', 'DOCUMENTS'];
+export const IMPLEMENTED_ANALYSIS_STAGES: AnalysisStage[] = [
+  'CREATION',
+  'PLANNING',
+  'WORKING_GROUP',
+  'DOCUMENTS',
+  'PROCESS_MAP',
+  'FACTORS',
+  'RISKS',
+  'ASSESSMENT',
+  'RECOMMENDATIONS',
+  'ACTION_PLAN',
+];
 
 export type AnalysisStatus = 'DRAFT' | 'IN_PROGRESS' | 'OVERDUE' | 'COMPLETED' | 'ARCHIVED';
 
@@ -401,6 +412,11 @@ export interface AnalysisDetail extends AnalysisListItem {
   workingGroup: AnalysisWorkingGroupMember[];
   planItems: AnalysisPlanItem[];
   documents: AnalysisDocument[];
+  processSteps: AnalysisProcessStep[];
+  factors: AnalysisFactor[];
+  risks: AnalysisRisk[];
+  recommendations: AnalysisRecommendation[];
+  actionItems: AnalysisActionItem[];
 }
 
 export interface AnalysesSummary {
@@ -408,4 +424,127 @@ export interface AnalysesSummary {
   completed: number;
   inProgress: number;
   overdue: number;
+}
+
+// ------------------------------------------------------------------
+// ВАКР — Stages 5-8: process map, factors, risks, assessment
+// ------------------------------------------------------------------
+
+export type ProcessControlPointType =
+  | 'DECISION_MAKING'
+  | 'DISCRETIONARY_POWERS'
+  | 'EXTERNAL_CONTACTS'
+  | 'FINANCIAL_OPERATIONS'
+  | 'HR_DECISIONS'
+  | 'PROCUREMENT'
+  | 'DIGITAL_SYSTEMS'
+  | 'CONTROL_MEASURES';
+
+export type CorruptogenicFactorType =
+  | 'DISCRETION'
+  | 'CONFLICT_OF_INTEREST'
+  | 'LACK_OF_CONTROL'
+  | 'OPACITY'
+  | 'EXCEPTIONS'
+  | 'MANUAL_OPERATIONS'
+  | 'INFORMATION_ACCESS'
+  | 'SUPPLIER_CONTACTS'
+  | 'HR_DECISIONS'
+  | 'FINANCIAL_OPERATIONS'
+  | 'PROCUREMENT'
+  | 'PERMITS'
+  | 'PROPERTY_USE';
+
+export interface AnalysisProcessStep {
+  id: string;
+  order: number;
+  name: string;
+  description?: string | null;
+  departmentId?: string | null;
+  department?: NamedRef | null;
+  executorId?: string | null;
+  executor?: NamedRef | null;
+  legalBasis?: string | null;
+  inputDescription?: string | null;
+  outputDescription?: string | null;
+  controlPoints: ProcessControlPointType[];
+}
+
+export interface AnalysisFactor {
+  id: string;
+  processStepId?: string | null;
+  processStep?: NamedRef | null;
+  factorType: CorruptogenicFactorType;
+  description?: string | null;
+}
+
+export interface AnalysisRisk {
+  id: string;
+  factorId?: string | null;
+  factor?: { id: string; factorType: CorruptogenicFactorType } | null;
+  title: string;
+  description?: string | null;
+  categoryId?: string | null;
+  category?: NamedRef | null;
+  source?: string | null;
+  cause?: string | null;
+  conditions?: string | null;
+  corruptionScheme?: string | null;
+  interestedParties?: string | null;
+  consequences?: string | null;
+  existingControls?: string | null;
+  ownerId?: string | null;
+  owner?: NamedRef | null;
+  likelihood?: number | null;
+  impact?: number | null;
+  score?: number | null;
+  controlEffectiveness: ControlEffectiveness;
+  residualLikelihood?: number | null;
+  residualImpact?: number | null;
+  residualScore?: number | null;
+}
+
+// ------------------------------------------------------------------
+// ВАКР — Stages 9-10: recommendations, action plan
+// ------------------------------------------------------------------
+
+export type RecommendationType =
+  | 'ORGANIZATIONAL'
+  | 'REGULATORY'
+  | 'HR'
+  | 'DIGITALIZATION'
+  | 'AUTOMATION'
+  | 'STRONGER_CONTROLS'
+  | 'SEPARATION_OF_DUTIES'
+  | 'PROCESS_CHANGE'
+  | 'TRAINING'
+  | 'MONITORING';
+
+export type ActionPriority = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface AnalysisRecommendation {
+  id: string;
+  riskId?: string | null;
+  risk?: { id: string; title: string } | null;
+  type: RecommendationType;
+  description: string;
+  responsibleId?: string | null;
+  responsible?: NamedRef | null;
+}
+
+export interface AnalysisActionItem {
+  id: string;
+  recommendationId?: string | null;
+  recommendation?: { id: string; type: RecommendationType } | null;
+  task: string;
+  expectedResult?: string | null;
+  responsibleId?: string | null;
+  responsible?: NamedRef | null;
+  departmentId?: string | null;
+  department?: NamedRef | null;
+  deadline?: string | null;
+  priority: ActionPriority;
+  status: ActionStatus;
+  supportingDocs?: string | null;
+  comments?: string | null;
 }
