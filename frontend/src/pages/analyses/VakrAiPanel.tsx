@@ -1,4 +1,4 @@
-import { CopyOutlined, DownloadOutlined, RobotOutlined } from '@ant-design/icons';
+import { CopyOutlined, DownloadOutlined, FilePdfOutlined, RobotOutlined } from '@ant-design/icons';
 import {
   App,
   Button,
@@ -17,6 +17,7 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { aiApi, analysesApi, risksApi } from '../../api/endpoints';
+import { downloadViaApi } from '../../utils/download';
 import type {
   AiControlSuggestion,
   AiReportResult,
@@ -336,6 +337,12 @@ export function VakrAiPanel({ analysis, onUpdated }: Props) {
                 onClick={() => downloadText(`vakr-report-${Date.now()}.txt`, reportAsText(drawer.data))}
               >
                 {t('aiAssistant.exportButton')}
+              </Button>
+              <Button
+                icon={<FilePdfOutlined />}
+                onClick={() => downloadViaApi(aiApi.vakrReportPdfPath(analysis.id), `vakr-report-${Date.now()}.pdf`)}
+              >
+                {t('aiAssistant.pdfButton')}
               </Button>
             </Space>
             {drawer.data.sections.map((section) => (

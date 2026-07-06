@@ -908,7 +908,8 @@
     "missingConsiderations": "Что не учтено",
     "qualityIssues": "Замечания к качеству",
     "copyButton": "Копировать",
-    "exportButton": "Экспортировать"
+    "exportButton": "Экспортировать",
+    "pdfButton": "Скачать PDF"
   },
   "vakrAi": {
     "panelTitle": "ИИ-ассистент ВАКР",

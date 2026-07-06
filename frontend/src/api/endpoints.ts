@@ -432,6 +432,7 @@ export const aiApi = {
     apiClient.post<AiReviewResult>('/ai/review-vakr-analysis', { analysisId }),
   generateVakrReport: (analysisId: string) =>
     apiClient.post<AiReportResult>('/ai/generate-vakr-report', { analysisId }),
+  vakrReportPdfPath: (analysisId: string) => `/ai/generate-vakr-report/${analysisId}/pdf`,
   generateRiskRegisterEntry: (analysisId: string, analysisRiskId: string) =>
     apiClient.post<AiRiskRegisterEntryResult>('/ai/generate-risk-register-entry', { analysisId, analysisRiskId }),
   chat: (data: { message: string; module?: string; contextEntityType?: string; contextEntityId?: string }) =>

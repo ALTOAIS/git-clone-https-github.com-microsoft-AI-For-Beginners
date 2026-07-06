@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { buildPdfReport } from '../reports/pdf.util';
 import { AnalyzeRiskDto } from './dto/analyze-risk.dto';
 import { ChatDto } from './dto/chat.dto';
 import { GenerateRiskRegisterEntryDto } from './dto/generate-risk-register-entry.dto';
@@ -326,6 +327,33 @@ export class AiService {
       sections,
       disclaimer: AI_ADVISORY_DISCLAIMER,
     };
+  }
+
+  async generateVakrReportPdf(
+    dto: GenerateVakrReportDto,
+    user: RequestUser,
+  ): Promise<Buffer> {
+    const report = await this.generateVakrReport(dto, user);
+    const generatedAt = new Date(report.generatedAt).toLocaleDateString(
+      'ru-RU',
+      {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      },
+    );
+    const sections = [
+      ...report.sections.map((section) => ({
+        heading: section.heading,
+        lines: section.content.split('\n'),
+      })),
+      { heading: 'Примечание', lines: [report.disclaimer] },
+    ];
+    return buildPdfReport(
+      report.title,
+      `Сформировано ИИ-ассистентом: ${generatedAt}`,
+      sections,
+    );
   }
 
   async generateRiskRegisterEntry(

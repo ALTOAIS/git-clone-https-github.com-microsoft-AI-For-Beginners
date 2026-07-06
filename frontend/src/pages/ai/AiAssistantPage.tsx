@@ -1,4 +1,4 @@
-import { CopyOutlined, DownloadOutlined, SendOutlined } from '@ant-design/icons';
+import { CopyOutlined, DownloadOutlined, FilePdfOutlined, SendOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import {
   Alert,
@@ -18,6 +18,7 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { aiApi, analysesApi } from '../../api/endpoints';
+import { downloadViaApi } from '../../utils/download';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import type { AiReportResult, AiReviewResult } from '../../types';
@@ -251,6 +252,12 @@ export function AiAssistantPage() {
                     onClick={() => downloadText(`vakr-report-${Date.now()}.txt`, reportAsText(reportResult))}
                   >
                     {t('aiAssistant.exportButton')}
+                  </Button>
+                  <Button
+                    icon={<FilePdfOutlined />}
+                    onClick={() => analysisId && downloadViaApi(aiApi.vakrReportPdfPath(analysisId), `vakr-report-${Date.now()}.pdf`)}
+                  >
+                    {t('aiAssistant.pdfButton')}
                   </Button>
                 </Space>
               }

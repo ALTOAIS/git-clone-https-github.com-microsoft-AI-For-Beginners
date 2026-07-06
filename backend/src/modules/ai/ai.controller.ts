@@ -2,11 +2,15 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  Get,
+  Param,
   Post,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
+import { Response } from 'express';
 import {
   AuthenticatedUser,
   CurrentUser,
@@ -68,6 +72,24 @@ export class AiController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.aiService.generateVakrReport(dto, user);
+  }
+
+  @Get('generate-vakr-report/:analysisId/pdf')
+  @Roles(...SENSITIVE_AI_ROLES)
+  async generateVakrReportPdf(
+    @Param('analysisId') analysisId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.aiService.generateVakrReportPdf(
+      { analysisId },
+      user,
+    );
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="vakr-report-${analysisId}.pdf"`,
+    });
+    return res.send(buffer);
   }
 
   @Post('generate-risk-register-entry')
