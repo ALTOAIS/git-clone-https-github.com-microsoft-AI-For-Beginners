@@ -27,6 +27,7 @@ import {
   TrainingPlanStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 
 const prisma = new PrismaClient();
 const DEMO_PASSWORD = 'ChangeMe123!';
@@ -1457,6 +1458,39 @@ async function main() {
       [q[3].id]: 'не помню',
     },
   });
+
+  // ------------------------------------------------------------------
+  // Академия комплаенса — Сертификаты
+  // ------------------------------------------------------------------
+
+  async function ensureCertificate(spec: { courseId: string; userEmail: string; scorePercent?: number }) {
+    const userId = users[spec.userEmail];
+    const existing = await prisma.certificate.findUnique({
+      where: { courseId_userId: { courseId: spec.courseId, userId } },
+    });
+    if (existing) return existing;
+    const certificateNumber = `CRH-${new Date().getFullYear()}-${randomBytes(4).toString('hex').toUpperCase()}`;
+    return prisma.certificate.create({
+      data: { courseId: spec.courseId, userId, scorePercent: spec.scorePercent, certificateNumber },
+    });
+  }
+
+  // course2 не имеет итогового теста — сертификат выдаётся по факту завершения.
+  await ensureCertificate({ courseId: course2.id, userEmail: 'owner@crh.local' });
+  // course1 имеет итоговый тест — сертификат выдаётся только при наличии успешной попытки.
+  await ensureAttempt({
+    userEmail: 'admin@crh.local',
+    stage: TestAttemptStage.ANNUAL,
+    scorePercent: 100,
+    passed: true,
+    answers: {
+      [q[0].id]: correctOptionId(q[0]),
+      [q[1].id]: correctOptionIds(q[1]),
+      [q[2].id]: correctOptionId(q[2]),
+      [q[3].id]: 'О противодействии коррупции',
+    },
+  });
+  await ensureCertificate({ courseId: course1.id, userEmail: 'admin@crh.local', scorePercent: 100 });
 
   // ------------------------------------------------------------------
   // Академия комплаенса — Опросы

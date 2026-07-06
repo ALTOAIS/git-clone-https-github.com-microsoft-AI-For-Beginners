@@ -29,6 +29,7 @@ import { SurveyResultsPage } from './pages/academy/SurveyResultsPage';
 import { CampaignsListPage } from './pages/academy/CampaignsListPage';
 import { CampaignDetailPage } from './pages/academy/CampaignDetailPage';
 import { TrainingPlanPage } from './pages/academy/TrainingPlanPage';
+import { CertificatesPage } from './pages/academy/CertificatesPage';
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
           <Route path="/academy/campaigns" element={<CampaignsListPage />} />
           <Route path="/academy/campaigns/:id" element={<CampaignDetailPage />} />
           <Route path="/academy/training-plan" element={<TrainingPlanPage />} />
+          <Route path="/academy/certificates" element={<CertificatesPage />} />
           <Route path="/risks" element={<RiskRegisterPage />} />
           <Route path="/risks/:id" element={<RiskCardPage />} />
           <Route path="/risk-library" element={<RiskLibraryPage />} />

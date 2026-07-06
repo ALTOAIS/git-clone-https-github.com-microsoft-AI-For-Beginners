@@ -31,6 +31,7 @@ import { AcademyModule } from './modules/academy/academy.module';
 import { SurveysModule } from './modules/surveys/surveys.module';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { TrainingPlansModule } from './modules/training-plans/training-plans.module';
+import { CertificatesModule } from './modules/certificates/certificates.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { TrainingPlansModule } from './modules/training-plans/training-plans.mod
     SurveysModule,
     CampaignsModule,
     TrainingPlansModule,
+    CertificatesModule,
   ],
   controllers: [AppController],
   providers: [

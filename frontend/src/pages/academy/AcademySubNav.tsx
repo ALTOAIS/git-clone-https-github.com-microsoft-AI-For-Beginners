@@ -11,6 +11,7 @@ const ITEMS = [
   { key: '/academy/surveys', labelKey: 'academySubNav.surveys' },
   { key: '/academy/campaigns', labelKey: 'academySubNav.campaigns' },
   { key: '/academy/training-plan', labelKey: 'academySubNav.trainingPlan' },
+  { key: '/academy/certificates', labelKey: 'academySubNav.certificates' },
 ];
 
 export function AcademySubNav() {

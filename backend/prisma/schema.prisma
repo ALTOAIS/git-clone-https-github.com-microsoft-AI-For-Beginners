@@ -372,6 +372,7 @@ model User {
   createdCampaigns              Campaign[]                   @relation("CampaignCreatedBy")
   createdTrainingPlans          TrainingPlan[]               @relation("TrainingPlanCreatedBy")
   responsibleTrainingPlanItems  TrainingPlanItem[]           @relation("TrainingPlanItemResponsible")
+  certificates                  Certificate[]                @relation("CertificateRecipient")
 
   @@map("users")
 }
@@ -902,6 +903,7 @@ model Course {
   /// Пустой список означает «без ограничения по подразделению».
   applicableDepartments Department[]       @relation("CourseApplicableDepartments")
   planItems             TrainingPlanItem[]
+  certificates          Certificate[]
 
   @@map("courses")
 }
@@ -1206,4 +1208,26 @@ model TrainingPlanItem {
   updatedAt     DateTime               @updatedAt
 
   @@map("training_plan_items")
+}
+
+// ------------------------------------------------------------------
+// Сертификаты
+// ------------------------------------------------------------------
+
+/// Сертификат о прохождении курса — выдаётся автоматически при завершении
+/// назначения (`CourseAssignment.status = COMPLETED`). Если для курса создан
+/// итоговый тест, сертификат выдаётся только при наличии успешной попытки
+/// его прохождения; для курсов без теста достаточно самого факта завершения.
+model Certificate {
+  id                String   @id @default(uuid())
+  certificateNumber String   @unique
+  courseId          String
+  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User     @relation("CertificateRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  scorePercent      Int?
+  issuedAt          DateTime @default(now())
+
+  @@unique([courseId, userId])
+  @@map("certificates")
 }
