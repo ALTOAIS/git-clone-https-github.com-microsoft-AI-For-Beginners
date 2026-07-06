@@ -10,6 +10,7 @@ import {
   FileTextOutlined,
   RadarChartOutlined,
   ReadOutlined,
+  RobotOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
@@ -27,6 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', path: '/dashboard', labelKey: 'nav.dashboard', icon: DashboardOutlined },
   { key: 'analyses', path: '/analyses', labelKey: 'nav.analyses', icon: RadarChartOutlined },
   { key: 'academy', path: '/academy', labelKey: 'nav.academy', icon: ReadOutlined },
+  { key: 'ai-assistant', path: '/ai-assistant', labelKey: 'nav.aiAssistant', icon: RobotOutlined },
   { key: 'risks', path: '/risks', labelKey: 'nav.riskRegister', icon: AlertOutlined },
   { key: 'risk-library', path: '/risk-library', labelKey: 'nav.riskLibrary', icon: BookOutlined },
   { key: 'sources', path: '/sources', labelKey: 'nav.sources', icon: ApartmentOutlined },
