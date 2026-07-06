@@ -137,14 +137,25 @@ export class AcademyService {
 
   async addLesson(courseId: string, moduleId: string, dto: CreateLessonDto) {
     await this.findOne(courseId);
-    return this.prisma.courseLesson.create({ data: { moduleId, ...dto } });
+    return this.prisma.courseLesson.create({
+      data: {
+        moduleId,
+        ...dto,
+        scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
+      },
+    });
   }
 
   async updateLesson(courseId: string, lessonId: string, dto: UpdateLessonDto) {
     await this.findOne(courseId);
     return this.prisma.courseLesson.update({
       where: { id: lessonId },
-      data: dto,
+      data: {
+        ...dto,
+        ...(dto.scheduledAt !== undefined
+          ? { scheduledAt: new Date(dto.scheduledAt) }
+          : {}),
+      },
     });
   }
 
@@ -269,5 +280,73 @@ export class AcademyService {
         totalAssigned > 0 ? Math.round((completed / totalAssigned) * 100) : 0,
       averageProgress: Math.round(avgProgress._avg.progressPercent ?? 0),
     };
+  }
+
+  // ------------------------------------------------------------------
+  // Календарь обучения
+  // ------------------------------------------------------------------
+
+  async calendar() {
+    const [deadlines, events] = await Promise.all([
+      this.prisma.courseAssignment.findMany({
+        where: { dueDate: { not: null } },
+        include: {
+          course: { select: { id: true, title: true } },
+          user: { select: { id: true, fullName: true } },
+        },
+        orderBy: { dueDate: 'asc' },
+      }),
+      this.prisma.courseLesson.findMany({
+        where: { scheduledAt: { not: null } },
+        include: {
+          module: {
+            include: { course: { select: { id: true, title: true } } },
+          },
+        },
+        orderBy: { scheduledAt: 'asc' },
+      }),
+    ]);
+    return { deadlines, events };
+  }
+
+  // ------------------------------------------------------------------
+  // Матрица обучения
+  // ------------------------------------------------------------------
+
+  async matrix() {
+    const courses = await this.prisma.course.findMany({
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        isMandatory: true,
+        applicableRoles: true,
+      },
+      orderBy: { title: 'asc' },
+    });
+    const assignments = await this.prisma.courseAssignment.findMany({
+      select: {
+        courseId: true,
+        status: true,
+        user: { select: { role: true } },
+      },
+    });
+
+    const stats: Record<
+      string,
+      Record<string, { assigned: number; completed: number }>
+    > = {};
+    for (const a of assignments) {
+      const courseStats = (stats[a.courseId] ??= {});
+      const roleStats = (courseStats[a.user.role] ??= {
+        assigned: 0,
+        completed: 0,
+      });
+      roleStats.assigned += 1;
+      if (a.status === CourseAssignmentStatus.COMPLETED)
+        roleStats.completed += 1;
+    }
+
+    return { courses, stats };
   }
 }

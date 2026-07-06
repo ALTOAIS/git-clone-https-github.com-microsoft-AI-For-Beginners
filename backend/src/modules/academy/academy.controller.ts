@@ -50,6 +50,16 @@ export class AcademyController {
     return this.academyService.myAssignments(user.id);
   }
 
+  @Get('calendar')
+  calendar() {
+    return this.academyService.calendar();
+  }
+
+  @Get('matrix')
+  matrix() {
+    return this.academyService.matrix();
+  }
+
   @Get()
   findAll(
     @Query('page') page = '1',

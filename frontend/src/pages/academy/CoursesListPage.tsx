@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { academyApi } from '../../api/endpoints';
 import { useAuthStore } from '../../auth/authStore';
+import { ALL_ROLES, roleLabel } from '../../auth/roles';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import { useUsersList } from '../../hooks/useReferenceData';
@@ -175,6 +176,22 @@ export function CoursesListPage() {
             valuePropName="checked"
           >
             <Switch />
+          </Form.Item>
+          <Form.Item
+            name="applicableRoles"
+            label={
+              <span>
+                {t('coursesPage.form.applicableRolesLabel')}
+                <InfoTooltip text={t('tooltips.academy.applicableRoles')} />
+              </span>
+            }
+          >
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder={t('coursesPage.form.applicableRolesPlaceholder')}
+              options={ALL_ROLES.map((role) => ({ value: role, label: roleLabel(role) }))}
+            />
           </Form.Item>
         </Form>
       </Modal>

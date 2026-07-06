@@ -990,6 +990,7 @@ async function main() {
     status: CourseStatus;
     isMandatory: boolean;
     createdById: string;
+    applicableRoles?: Role[];
     modules: {
       order: number;
       title: string;
@@ -999,11 +1000,17 @@ async function main() {
         contentType: LessonContentType;
         content?: string;
         durationMinutes?: number;
+        scheduledAt?: Date;
       }[];
     }[];
   }) {
     const existing = await prisma.course.findFirst({ where: { title: spec.title } });
-    if (existing) return existing;
+    if (existing) {
+      return prisma.course.update({
+        where: { id: existing.id },
+        data: { applicableRoles: spec.applicableRoles ?? [] },
+      });
+    }
     return prisma.course.create({
       data: {
         title: spec.title,
@@ -1011,6 +1018,7 @@ async function main() {
         status: spec.status,
         isMandatory: spec.isMandatory,
         createdById: spec.createdById,
+        applicableRoles: spec.applicableRoles ?? [],
         modules: {
           create: spec.modules.map((m) => ({
             order: m.order,
@@ -1029,6 +1037,7 @@ async function main() {
     status: CourseStatus.PUBLISHED,
     isMandatory: true,
     createdById: users['officer@crh.local'],
+    applicableRoles: [],
     modules: [
       {
         order: 1,
@@ -1077,6 +1086,7 @@ async function main() {
     status: CourseStatus.PUBLISHED,
     isMandatory: true,
     createdById: users['manager@crh.local'],
+    applicableRoles: [Role.DEPARTMENT_MANAGER, Role.RISK_OWNER, Role.BOARD],
     modules: [
       {
         order: 1,
@@ -1124,6 +1134,7 @@ async function main() {
     status: CourseStatus.DRAFT,
     isMandatory: false,
     createdById: users['officer@crh.local'],
+    applicableRoles: [Role.DEPARTMENT_MANAGER, Role.COMPLIANCE_MANAGER, Role.BOARD],
     modules: [
       {
         order: 1,
@@ -1134,6 +1145,7 @@ async function main() {
             title: 'Вебинар: ответственность руководителя за комплаенс-культуру',
             contentType: LessonContentType.WEBINAR,
             durationMinutes: 45,
+            scheduledAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
           },
           {
             order: 2,
@@ -1145,6 +1157,16 @@ async function main() {
       },
     ],
   });
+
+  const webinarLesson = await prisma.courseLesson.findFirst({
+    where: { title: 'Вебинар: ответственность руководителя за комплаенс-культуру' },
+  });
+  if (webinarLesson && !webinarLesson.scheduledAt) {
+    await prisma.courseLesson.update({
+      where: { id: webinarLesson.id },
+      data: { scheduledAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) },
+    });
+  }
 
   const dayMs = 24 * 60 * 60 * 1000;
   async function ensureAssignment(spec: {

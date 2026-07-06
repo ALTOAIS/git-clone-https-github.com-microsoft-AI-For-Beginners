@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import type {
   Action,
+  AcademyCalendar,
   AcademySummary,
   AnalysisDetail,
   AnalysisListItem,
@@ -20,6 +21,7 @@ import type {
   RiskDetail,
   RiskListItem,
   Source,
+  TrainingMatrix,
   User,
 } from '../types';
 
@@ -290,6 +292,8 @@ export const academyApi = {
   list: (params: Record<string, unknown>) => apiClient.get<Paginated<CourseListItem>>('/courses', { params }),
   summary: () => apiClient.get<AcademySummary>('/courses/summary'),
   myAssignments: () => apiClient.get<MyCourseAssignment[]>('/courses/my'),
+  calendar: () => apiClient.get<AcademyCalendar>('/courses/calendar'),
+  matrix: () => apiClient.get<TrainingMatrix>('/courses/matrix'),
   get: (id: string) => apiClient.get<CourseDetail>(`/courses/${id}`),
   create: (data: Record<string, unknown>) => apiClient.post<CourseDetail>('/courses', data),
   update: (id: string, data: Record<string, unknown>) => apiClient.patch<CourseDetail>(`/courses/${id}`, data),

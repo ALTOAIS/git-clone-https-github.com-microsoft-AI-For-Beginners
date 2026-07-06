@@ -857,15 +857,18 @@ model AnalysisComment {
 
 /// Курс — верхнеуровневая единица обучения, создаваемая в Конструкторе курсов
 model Course {
-  id          String       @id @default(uuid())
-  title       String
-  description String?
-  status      CourseStatus @default(DRAFT)
-  isMandatory Boolean      @default(false)
-  createdById String?
-  createdBy   User?        @relation("CourseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id              String       @id @default(uuid())
+  title           String
+  description     String?
+  status          CourseStatus @default(DRAFT)
+  isMandatory     Boolean      @default(false)
+  /// Категории работников (роли), для которых курс обязателен — основа Матрицы обучения.
+  /// Пустой список означает «для всех работников».
+  applicableRoles Role[]       @default([])
+  createdById     String?
+  createdBy       User?        @relation("CourseCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   modules     CourseModule[]
   assignments CourseAssignment[]
@@ -896,14 +899,15 @@ model CourseLesson {
   contentType     LessonContentType
   content         String?
   durationMinutes Int?
+  /// Дата и время проведения — для вебинаров и очных мероприятий, отображается в Календаре обучения
+  scheduledAt     DateTime?
 
   @@map("course_lessons")
 }
 
 /// Назначение курса работнику и его прогресс — минимальная модель для
-/// Dashboard Академии и личного кабинета «Моя академия» в этой фазе.
-/// Автоматическое назначение по событиям в других модулях, календарь
-/// и матрица обучения по категориям должностей отложены на следующие фазы.
+/// Dashboard Академии и личного кабинета «Моя академия».
+/// Автоматическое назначение по событиям в других модулях отложено на следующие фазы.
 model CourseAssignment {
   id              String                 @id @default(uuid())
   courseId        String

@@ -603,6 +603,7 @@ export interface CourseLesson {
   contentType: LessonContentType;
   content?: string | null;
   durationMinutes?: number | null;
+  scheduledAt?: string | null;
 }
 
 export interface CourseModule {
@@ -632,6 +633,7 @@ export interface CourseListItem {
   description?: string | null;
   status: CourseStatus;
   isMandatory: boolean;
+  applicableRoles: Role[];
   createdBy?: NamedRef | null;
   createdAt: string;
   _count?: { modules: number; assignments: number };
@@ -659,4 +661,43 @@ export interface AcademySummary {
   overdue: number;
   completionPercent: number;
   averageProgress: number;
+}
+
+export interface CalendarDeadline {
+  id: string;
+  dueDate: string;
+  status: CourseAssignmentStatus;
+  course: { id: string; title: string };
+  user: NamedRef;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  contentType: LessonContentType;
+  scheduledAt: string;
+  module: { title: string; course: { id: string; title: string } };
+}
+
+export interface AcademyCalendar {
+  deadlines: CalendarDeadline[];
+  events: CalendarEvent[];
+}
+
+export interface TrainingMatrixCourse {
+  id: string;
+  title: string;
+  status: CourseStatus;
+  isMandatory: boolean;
+  applicableRoles: Role[];
+}
+
+export interface TrainingMatrixRoleStats {
+  assigned: number;
+  completed: number;
+}
+
+export interface TrainingMatrix {
+  courses: TrainingMatrixCourse[];
+  stats: Record<string, Partial<Record<Role, TrainingMatrixRoleStats>>>;
 }
