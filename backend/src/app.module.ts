@@ -30,6 +30,7 @@ import { AnalysesModule } from './modules/analyses/analyses.module';
 import { AcademyModule } from './modules/academy/academy.module';
 import { SurveysModule } from './modules/surveys/surveys.module';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
+import { TrainingPlansModule } from './modules/training-plans/training-plans.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { CampaignsModule } from './modules/campaigns/campaigns.module';
     AcademyModule,
     SurveysModule,
     CampaignsModule,
+    TrainingPlansModule,
   ],
   controllers: [AppController],
   providers: [

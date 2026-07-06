@@ -634,6 +634,7 @@ export interface CourseListItem {
   status: CourseStatus;
   isMandatory: boolean;
   applicableRoles: Role[];
+  applicableDepartments: NamedRef[];
   createdBy?: NamedRef | null;
   createdAt: string;
   _count?: { modules: number; assignments: number };
@@ -690,6 +691,7 @@ export interface TrainingMatrixCourse {
   status: CourseStatus;
   isMandatory: boolean;
   applicableRoles: Role[];
+  applicableDepartments: NamedRef[];
 }
 
 export interface TrainingMatrixRoleStats {
@@ -699,7 +701,46 @@ export interface TrainingMatrixRoleStats {
 
 export interface TrainingMatrix {
   courses: TrainingMatrixCourse[];
+  departments: NamedRef[];
   stats: Record<string, Partial<Record<Role, TrainingMatrixRoleStats>>>;
+  departmentStats: Record<string, Record<string, TrainingMatrixRoleStats>>;
+}
+
+// ------------------------------------------------------------------
+// Годовой план обучения
+// ------------------------------------------------------------------
+
+export type TrainingPlanStatus = 'DRAFT' | 'APPROVED' | 'COMPLETED';
+
+export type TrainingPlanItemStatus = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED';
+
+export interface TrainingPlanItem {
+  id: string;
+  planId: string;
+  courseId: string;
+  course: { id: string; title: string; status: CourseStatus };
+  quarter: number;
+  targetRoles: Role[];
+  responsibleId?: string | null;
+  responsible?: NamedRef & { email: string };
+  status: TrainingPlanItemStatus;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TrainingPlanListItem {
+  id: string;
+  year: number;
+  title: string;
+  status: TrainingPlanStatus;
+  createdBy?: NamedRef | null;
+  createdAt: string;
+  _count?: { items: number };
+}
+
+export interface TrainingPlanDetail extends TrainingPlanListItem {
+  items: TrainingPlanItem[];
 }
 
 // ------------------------------------------------------------------

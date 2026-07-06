@@ -27,6 +27,7 @@ import { academyApi } from '../../api/endpoints';
 import { ALL_ROLES, roleLabel } from '../../auth/roles';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
+import { useDepartments } from '../../hooks/useReferenceData';
 import type { CourseLesson, CourseModule } from '../../types';
 import { ALL_COURSE_STATUSES, ALL_LESSON_CONTENT_TYPES, courseStatusLabel, lessonContentTypeLabel } from '../../utils/academyDisplay';
 import { TestEditorSection } from './TestEditorSection';
@@ -50,6 +51,8 @@ export function CourseEditorPage() {
     enabled: !!id,
   });
 
+  const { data: departments } = useDepartments();
+
   useEffect(() => {
     if (course) {
       metaForm.setFieldsValue({
@@ -58,6 +61,7 @@ export function CourseEditorPage() {
         status: course.status,
         isMandatory: course.isMandatory,
         applicableRoles: course.applicableRoles,
+        applicableDepartmentIds: course.applicableDepartments.map((d) => d.id),
       });
     }
   }, [course, metaForm]);
@@ -188,6 +192,22 @@ export function CourseEditorPage() {
               allowClear
               placeholder={t('courseEditor.form.applicableRolesPlaceholder')}
               options={ALL_ROLES.map((role) => ({ value: role, label: roleLabel(role) }))}
+            />
+          </Form.Item>
+          <Form.Item
+            name="applicableDepartmentIds"
+            label={
+              <span>
+                {t('courseEditor.form.applicableDepartmentsLabel')}
+                <InfoTooltip text={t('tooltips.academy.applicableDepartments')} />
+              </span>
+            }
+          >
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder={t('courseEditor.form.applicableDepartmentsPlaceholder')}
+              options={departments?.map((d) => ({ value: d.id, label: d.name }))}
             />
           </Form.Item>
           <Button type="primary" onClick={handleSaveMeta}>

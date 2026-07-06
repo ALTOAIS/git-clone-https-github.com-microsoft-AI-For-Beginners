@@ -10,6 +10,7 @@ const ITEMS = [
   { key: '/academy/matrix', labelKey: 'academySubNav.matrix' },
   { key: '/academy/surveys', labelKey: 'academySubNav.surveys' },
   { key: '/academy/campaigns', labelKey: 'academySubNav.campaigns' },
+  { key: '/academy/training-plan', labelKey: 'academySubNav.trainingPlan' },
 ];
 
 export function AcademySubNav() {

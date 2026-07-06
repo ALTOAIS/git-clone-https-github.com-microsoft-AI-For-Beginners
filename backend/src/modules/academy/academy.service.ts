@@ -34,6 +34,7 @@ const TEST_DETAIL_INCLUDE = {
 
 const DETAIL_INCLUDE = {
   createdBy: { select: { id: true, fullName: true, email: true } },
+  applicableDepartments: { select: { id: true, name: true } },
   modules: {
     include: { lessons: { orderBy: { order: 'asc' as const } } },
     orderBy: { order: 'asc' as const },
@@ -49,6 +50,7 @@ const DETAIL_INCLUDE = {
 
 const LIST_INCLUDE = {
   createdBy: { select: { id: true, fullName: true } },
+  applicableDepartments: { select: { id: true, name: true } },
   _count: { select: { modules: true, assignments: true } },
 } satisfies Prisma.CourseInclude;
 
@@ -96,8 +98,15 @@ export class AcademyService {
   }
 
   async create(dto: CreateCourseDto, userId?: string) {
+    const { applicableDepartmentIds, ...rest } = dto;
     const course = await this.prisma.course.create({
-      data: { ...dto, createdById: userId },
+      data: {
+        ...rest,
+        createdById: userId,
+        applicableDepartments: applicableDepartmentIds
+          ? { connect: applicableDepartmentIds.map((id) => ({ id })) }
+          : undefined,
+      },
       include: DETAIL_INCLUDE,
     });
     await this.audit.record({
@@ -111,9 +120,15 @@ export class AcademyService {
 
   async update(id: string, dto: UpdateCourseDto, userId?: string) {
     await this.findOne(id);
+    const { applicableDepartmentIds, ...rest } = dto;
     const course = await this.prisma.course.update({
       where: { id },
-      data: dto,
+      data: {
+        ...rest,
+        applicableDepartments: applicableDepartmentIds
+          ? { set: applicableDepartmentIds.map((deptId) => ({ id: deptId })) }
+          : undefined,
+      },
       include: DETAIL_INCLUDE,
     });
     await this.audit.record({
@@ -335,40 +350,63 @@ export class AcademyService {
   // ------------------------------------------------------------------
 
   async matrix() {
-    const courses = await this.prisma.course.findMany({
-      select: {
-        id: true,
-        title: true,
-        status: true,
-        isMandatory: true,
-        applicableRoles: true,
-      },
-      orderBy: { title: 'asc' },
-    });
-    const assignments = await this.prisma.courseAssignment.findMany({
-      select: {
-        courseId: true,
-        status: true,
-        user: { select: { role: true } },
-      },
-    });
+    const [courses, departments, assignments] = await Promise.all([
+      this.prisma.course.findMany({
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          isMandatory: true,
+          applicableRoles: true,
+          applicableDepartments: { select: { id: true, name: true } },
+        },
+        orderBy: { title: 'asc' },
+      }),
+      this.prisma.department.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.courseAssignment.findMany({
+        select: {
+          courseId: true,
+          status: true,
+          user: { select: { role: true, departmentId: true } },
+        },
+      }),
+    ]);
 
     const stats: Record<
       string,
       Record<string, { assigned: number; completed: number }>
     > = {};
+    const departmentStats: Record<
+      string,
+      Record<string, { assigned: number; completed: number }>
+    > = {};
     for (const a of assignments) {
+      const completed = a.status === CourseAssignmentStatus.COMPLETED;
+
       const courseStats = (stats[a.courseId] ??= {});
       const roleStats = (courseStats[a.user.role] ??= {
         assigned: 0,
         completed: 0,
       });
       roleStats.assigned += 1;
-      if (a.status === CourseAssignmentStatus.COMPLETED)
-        roleStats.completed += 1;
+      if (completed) roleStats.completed += 1;
+
+      if (a.user.departmentId) {
+        const courseDeptStats = (departmentStats[a.courseId] ??= {});
+        const deptStats = (courseDeptStats[a.user.departmentId] ??= {
+          assigned: 0,
+          completed: 0,
+        });
+        deptStats.assigned += 1;
+        if (completed) deptStats.completed += 1;
+      }
     }
 
-    return { courses, stats };
+    return { courses, departments, stats, departmentStats };
   }
 
   // ------------------------------------------------------------------

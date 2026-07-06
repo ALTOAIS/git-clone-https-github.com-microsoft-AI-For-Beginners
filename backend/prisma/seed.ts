@@ -23,6 +23,8 @@ import {
   SurveyStatus,
   TestAttemptStage,
   TestQuestionType,
+  TrainingPlanItemStatus,
+  TrainingPlanStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -997,6 +999,7 @@ async function main() {
     isMandatory: boolean;
     createdById: string;
     applicableRoles?: Role[];
+    applicableDepartmentIds?: string[];
     modules: {
       order: number;
       title: string;
@@ -1014,7 +1017,12 @@ async function main() {
     if (existing) {
       return prisma.course.update({
         where: { id: existing.id },
-        data: { applicableRoles: spec.applicableRoles ?? [] },
+        data: {
+          applicableRoles: spec.applicableRoles ?? [],
+          applicableDepartments: {
+            set: (spec.applicableDepartmentIds ?? []).map((id) => ({ id })),
+          },
+        },
       });
     }
     return prisma.course.create({
@@ -1025,6 +1033,9 @@ async function main() {
         isMandatory: spec.isMandatory,
         createdById: spec.createdById,
         applicableRoles: spec.applicableRoles ?? [],
+        applicableDepartments: spec.applicableDepartmentIds
+          ? { connect: spec.applicableDepartmentIds.map((id) => ({ id })) }
+          : undefined,
         modules: {
           create: spec.modules.map((m) => ({
             order: m.order,
@@ -1093,6 +1104,10 @@ async function main() {
     isMandatory: true,
     createdById: users['manager@crh.local'],
     applicableRoles: [Role.DEPARTMENT_MANAGER, Role.RISK_OWNER, Role.BOARD],
+    applicableDepartmentIds: [
+      departments['Департамент закупок'],
+      departments['Финансовый департамент'],
+    ],
     modules: [
       {
         order: 1,
@@ -1133,7 +1148,7 @@ async function main() {
     ],
   });
 
-  await ensureCourse({
+  const course3 = await ensureCourse({
     title: 'Комплаенс для руководителей: расширенный курс',
     description:
       'Углублённый курс для руководителей о роли в системе комплаенса, управлении комплаенс-рисками подразделения и культуре нетерпимости к коррупции.',
@@ -1612,6 +1627,81 @@ async function main() {
     createdById: users['manager@crh.local'],
     courseIds: [course2.id],
     surveyIds: [survey1.id],
+  });
+
+  // ------------------------------------------------------------------
+  // Академия комплаенса — Годовой план обучения
+  // ------------------------------------------------------------------
+
+  const trainingPlan2026 = await (async () => {
+    const existing = await prisma.trainingPlan.findUnique({ where: { year: 2026 } });
+    if (existing) return existing;
+    return prisma.trainingPlan.create({
+      data: {
+        year: 2026,
+        title: 'Годовой план обучения на 2026 год',
+        status: TrainingPlanStatus.APPROVED,
+        createdById: users['manager@crh.local'],
+      },
+    });
+  })();
+
+  async function ensurePlanItem(spec: {
+    courseId: string;
+    quarter: number;
+    targetRoles: Role[];
+    responsibleEmail: string;
+    status: TrainingPlanItemStatus;
+    notes: string;
+  }) {
+    const existing = await prisma.trainingPlanItem.findFirst({
+      where: { planId: trainingPlan2026.id, courseId: spec.courseId, quarter: spec.quarter },
+    });
+    if (existing) return existing;
+    return prisma.trainingPlanItem.create({
+      data: {
+        planId: trainingPlan2026.id,
+        courseId: spec.courseId,
+        quarter: spec.quarter,
+        targetRoles: spec.targetRoles,
+        responsibleId: users[spec.responsibleEmail],
+        status: spec.status,
+        notes: spec.notes,
+      },
+    });
+  }
+
+  await ensurePlanItem({
+    courseId: course1.id,
+    quarter: 1,
+    targetRoles: [],
+    responsibleEmail: 'officer@crh.local',
+    status: TrainingPlanItemStatus.COMPLETED,
+    notes: 'Обязательное ежегодное обучение для всех работников компании.',
+  });
+  await ensurePlanItem({
+    courseId: course2.id,
+    quarter: 2,
+    targetRoles: [Role.DEPARTMENT_MANAGER, Role.RISK_OWNER, Role.BOARD],
+    responsibleEmail: 'manager@crh.local',
+    status: TrainingPlanItemStatus.IN_PROGRESS,
+    notes: 'Проводится в рамках кампании «Ежегодная декларация конфликта интересов и обучение 2026».',
+  });
+  await ensurePlanItem({
+    courseId: course3.id,
+    quarter: 3,
+    targetRoles: [Role.DEPARTMENT_MANAGER, Role.COMPLIANCE_MANAGER, Role.BOARD],
+    responsibleEmail: 'officer@crh.local',
+    status: TrainingPlanItemStatus.PLANNED,
+    notes: 'Публикация курса запланирована на начало третьего квартала.',
+  });
+  await ensurePlanItem({
+    courseId: course1.id,
+    quarter: 4,
+    targetRoles: [],
+    responsibleEmail: 'officer@crh.local',
+    status: TrainingPlanItemStatus.PLANNED,
+    notes: 'Повторное прохождение для новых сотрудников, принятых в течение года.',
   });
 
   console.log(`Заполнение завершено. Создано рисков: ${created} (существующие риски не изменялись).`);

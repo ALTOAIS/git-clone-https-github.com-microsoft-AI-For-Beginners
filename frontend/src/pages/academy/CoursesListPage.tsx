@@ -9,7 +9,7 @@ import { useAuthStore } from '../../auth/authStore';
 import { ALL_ROLES, roleLabel } from '../../auth/roles';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
-import { useUsersList } from '../../hooks/useReferenceData';
+import { useDepartments, useUsersList } from '../../hooks/useReferenceData';
 import type { CourseListItem, CourseStatus } from '../../types';
 import { ALL_COURSE_STATUSES, COURSE_STATUS_COLORS, courseStatusLabel } from '../../utils/academyDisplay';
 import { AcademySubNav } from './AcademySubNav';
@@ -32,6 +32,7 @@ export function CoursesListPage() {
   const [assignForm] = Form.useForm();
 
   const { data: users } = useUsersList();
+  const { data: departments } = useDepartments();
 
   const { data, isFetching } = useQuery({
     queryKey: ['courses', { page, status }],
@@ -191,6 +192,22 @@ export function CoursesListPage() {
               allowClear
               placeholder={t('coursesPage.form.applicableRolesPlaceholder')}
               options={ALL_ROLES.map((role) => ({ value: role, label: roleLabel(role) }))}
+            />
+          </Form.Item>
+          <Form.Item
+            name="applicableDepartmentIds"
+            label={
+              <span>
+                {t('coursesPage.form.applicableDepartmentsLabel')}
+                <InfoTooltip text={t('tooltips.academy.applicableDepartments')} />
+              </span>
+            }
+          >
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder={t('coursesPage.form.applicableDepartmentsPlaceholder')}
+              options={departments?.map((d) => ({ value: d.id, label: d.name }))}
             />
           </Form.Item>
         </Form>
