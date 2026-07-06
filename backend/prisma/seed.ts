@@ -6,8 +6,11 @@ import {
   ControlEffectiveness,
   ControlType,
   CorruptogenicFactorType,
+  CourseAssignmentStatus,
+  CourseStatus,
   IncidentAction,
   IncidentStatus,
+  LessonContentType,
   PrismaClient,
   ProcessControlPointType,
   RecommendationType,
@@ -976,6 +979,285 @@ async function main() {
       },
     });
   }
+
+  // ------------------------------------------------------------------
+  // Академия комплаенса — демо-курсы и назначения
+  // ------------------------------------------------------------------
+
+  async function ensureCourse(spec: {
+    title: string;
+    description: string;
+    status: CourseStatus;
+    isMandatory: boolean;
+    createdById: string;
+    modules: {
+      order: number;
+      title: string;
+      lessons: {
+        order: number;
+        title: string;
+        contentType: LessonContentType;
+        content?: string;
+        durationMinutes?: number;
+      }[];
+    }[];
+  }) {
+    const existing = await prisma.course.findFirst({ where: { title: spec.title } });
+    if (existing) return existing;
+    return prisma.course.create({
+      data: {
+        title: spec.title,
+        description: spec.description,
+        status: spec.status,
+        isMandatory: spec.isMandatory,
+        createdById: spec.createdById,
+        modules: {
+          create: spec.modules.map((m) => ({
+            order: m.order,
+            title: m.title,
+            lessons: { create: m.lessons },
+          })),
+        },
+      },
+    });
+  }
+
+  const course1 = await ensureCourse({
+    title: 'Противодействие коррупции: базовый курс',
+    description:
+      'Обязательный вводный курс по антикоррупционному законодательству Республики Казахстан и корпоративной политике компании.',
+    status: CourseStatus.PUBLISHED,
+    isMandatory: true,
+    createdById: users['officer@crh.local'],
+    modules: [
+      {
+        order: 1,
+        title: 'Введение в антикоррупционную политику',
+        lessons: [
+          {
+            order: 1,
+            title: 'Основные понятия и законодательство РК',
+            contentType: LessonContentType.ARTICLE,
+            content: 'Обзор Закона РК «О противодействии коррупции» и ключевых понятий: коррупционное правонарушение, конфликт интересов, аффилированность.',
+            durationMinutes: 20,
+          },
+          {
+            order: 2,
+            title: 'Политика компании по противодействию коррупции',
+            contentType: LessonContentType.PRESENTATION,
+            durationMinutes: 15,
+          },
+        ],
+      },
+      {
+        order: 2,
+        title: 'Практические аспекты',
+        lessons: [
+          {
+            order: 1,
+            title: 'Как распознать признаки коррупционных схем',
+            contentType: LessonContentType.CASE_STUDY,
+            durationMinutes: 30,
+          },
+          {
+            order: 2,
+            title: 'Итоговый чек-лист для сотрудников',
+            contentType: LessonContentType.CHECKLIST,
+            durationMinutes: 10,
+          },
+        ],
+      },
+    ],
+  });
+
+  const course2 = await ensureCourse({
+    title: 'Конфликт интересов: выявление и урегулирование',
+    description:
+      'Курс о порядке выявления, декларирования и урегулирования конфликта интересов для руководителей и работников с полномочиями по принятию решений.',
+    status: CourseStatus.PUBLISHED,
+    isMandatory: true,
+    createdById: users['manager@crh.local'],
+    modules: [
+      {
+        order: 1,
+        title: 'Понятие конфликта интересов',
+        lessons: [
+          {
+            order: 1,
+            title: 'Виды конфликта интересов и примеры из практики',
+            contentType: LessonContentType.ARTICLE,
+            durationMinutes: 15,
+          },
+          {
+            order: 2,
+            title: 'Разбор кейсов: личная заинтересованность в закупках',
+            contentType: LessonContentType.VIDEO,
+            durationMinutes: 25,
+          },
+        ],
+      },
+      {
+        order: 2,
+        title: 'Процедура декларирования',
+        lessons: [
+          {
+            order: 1,
+            title: 'Порядок заполнения декларации о конфликте интересов',
+            contentType: LessonContentType.INSTRUCTION,
+            durationMinutes: 10,
+          },
+          {
+            order: 2,
+            title: 'Практическое задание: заполнение декларации',
+            contentType: LessonContentType.PRACTICAL_TASK,
+            durationMinutes: 20,
+          },
+        ],
+      },
+    ],
+  });
+
+  await ensureCourse({
+    title: 'Комплаенс для руководителей: расширенный курс',
+    description:
+      'Углублённый курс для руководителей о роли в системе комплаенса, управлении комплаенс-рисками подразделения и культуре нетерпимости к коррупции.',
+    status: CourseStatus.DRAFT,
+    isMandatory: false,
+    createdById: users['officer@crh.local'],
+    modules: [
+      {
+        order: 1,
+        title: 'Роль руководителя в системе комплаенса',
+        lessons: [
+          {
+            order: 1,
+            title: 'Вебинар: ответственность руководителя за комплаенс-культуру',
+            contentType: LessonContentType.WEBINAR,
+            durationMinutes: 45,
+          },
+          {
+            order: 2,
+            title: 'Памятка руководителю по реагированию на сигналы',
+            contentType: LessonContentType.MEMO,
+            durationMinutes: 10,
+          },
+        ],
+      },
+    ],
+  });
+
+  const dayMs = 24 * 60 * 60 * 1000;
+  async function ensureAssignment(spec: {
+    courseId: string;
+    userEmail: string;
+    assignedByEmail: string;
+    status: CourseAssignmentStatus;
+    progressPercent: number;
+    dueDateOffsetDays?: number;
+    completed?: boolean;
+  }) {
+    const userId = users[spec.userEmail];
+    const existing = await prisma.courseAssignment.findUnique({
+      where: { courseId_userId: { courseId: spec.courseId, userId } },
+    });
+    if (existing) return existing;
+    return prisma.courseAssignment.create({
+      data: {
+        courseId: spec.courseId,
+        userId,
+        assignedById: users[spec.assignedByEmail],
+        status: spec.status,
+        progressPercent: spec.progressPercent,
+        dueDate: spec.dueDateOffsetDays !== undefined ? new Date(Date.now() + spec.dueDateOffsetDays * dayMs) : undefined,
+        completedAt: spec.completed ? new Date(Date.now() - 3 * dayMs) : undefined,
+      },
+    });
+  }
+
+  await ensureAssignment({
+    courseId: course1.id,
+    userEmail: 'admin@crh.local',
+    assignedByEmail: 'officer@crh.local',
+    status: CourseAssignmentStatus.COMPLETED,
+    progressPercent: 100,
+    dueDateOffsetDays: -20,
+    completed: true,
+  });
+  await ensureAssignment({
+    courseId: course1.id,
+    userEmail: 'officer@crh.local',
+    assignedByEmail: 'officer@crh.local',
+    status: CourseAssignmentStatus.IN_PROGRESS,
+    progressPercent: 60,
+    dueDateOffsetDays: 10,
+  });
+  await ensureAssignment({
+    courseId: course1.id,
+    userEmail: 'manager@crh.local',
+    assignedByEmail: 'officer@crh.local',
+    status: CourseAssignmentStatus.NOT_STARTED,
+    progressPercent: 0,
+    dueDateOffsetDays: -5,
+  });
+  await ensureAssignment({
+    courseId: course1.id,
+    userEmail: 'owner@crh.local',
+    assignedByEmail: 'officer@crh.local',
+    status: CourseAssignmentStatus.COMPLETED,
+    progressPercent: 100,
+    dueDateOffsetDays: -15,
+    completed: true,
+  });
+  await ensureAssignment({
+    courseId: course1.id,
+    userEmail: 'deptmgr@crh.local',
+    assignedByEmail: 'officer@crh.local',
+    status: CourseAssignmentStatus.IN_PROGRESS,
+    progressPercent: 30,
+    dueDateOffsetDays: -3,
+  });
+  await ensureAssignment({
+    courseId: course1.id,
+    userEmail: 'audit@crh.local',
+    assignedByEmail: 'officer@crh.local',
+    status: CourseAssignmentStatus.NOT_STARTED,
+    progressPercent: 0,
+    dueDateOffsetDays: 25,
+  });
+  await ensureAssignment({
+    courseId: course1.id,
+    userEmail: 'board@crh.local',
+    assignedByEmail: 'officer@crh.local',
+    status: CourseAssignmentStatus.NOT_STARTED,
+    progressPercent: 0,
+    dueDateOffsetDays: 30,
+  });
+
+  await ensureAssignment({
+    courseId: course2.id,
+    userEmail: 'manager@crh.local',
+    assignedByEmail: 'manager@crh.local',
+    status: CourseAssignmentStatus.IN_PROGRESS,
+    progressPercent: 50,
+    dueDateOffsetDays: 12,
+  });
+  await ensureAssignment({
+    courseId: course2.id,
+    userEmail: 'owner@crh.local',
+    assignedByEmail: 'manager@crh.local',
+    status: CourseAssignmentStatus.COMPLETED,
+    progressPercent: 100,
+    dueDateOffsetDays: -8,
+    completed: true,
+  });
+  await ensureAssignment({
+    courseId: course2.id,
+    userEmail: 'deptmgr@crh.local',
+    assignedByEmail: 'manager@crh.local',
+    status: CourseAssignmentStatus.NOT_STARTED,
+    progressPercent: 0,
+    dueDateOffsetDays: 20,
+  });
 
   console.log(`Заполнение завершено. Создано рисков: ${created} (существующие риски не изменялись).`);
   console.log('Демонстрационные учётные записи: admin@crh.local / officer@crh.local / manager@crh.local / owner@crh.local /');

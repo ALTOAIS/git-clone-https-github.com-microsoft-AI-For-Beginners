@@ -572,3 +572,91 @@ export interface AnalysisActionItem {
   comments?: string | null;
   linkedActionId?: string | null;
 }
+
+// ------------------------------------------------------------------
+// Академия комплаенса
+// ------------------------------------------------------------------
+
+export type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
+export type LessonContentType =
+  | 'PRESENTATION'
+  | 'ARTICLE'
+  | 'INSTRUCTION'
+  | 'MEMO'
+  | 'CHECKLIST'
+  | 'VIDEO'
+  | 'WEBINAR'
+  | 'IN_PERSON_EVENT'
+  | 'EBOOK'
+  | 'PDF_COURSE'
+  | 'INTERACTIVE'
+  | 'PRACTICAL_TASK'
+  | 'CASE_STUDY';
+
+export type CourseAssignmentStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+
+export interface CourseLesson {
+  id: string;
+  order: number;
+  title: string;
+  contentType: LessonContentType;
+  content?: string | null;
+  durationMinutes?: number | null;
+}
+
+export interface CourseModule {
+  id: string;
+  order: number;
+  title: string;
+  lessons: CourseLesson[];
+}
+
+export interface CourseAssignment {
+  id: string;
+  courseId: string;
+  userId: string;
+  user?: NamedRef & { email: string };
+  status: CourseAssignmentStatus;
+  assignedById?: string | null;
+  assignedBy?: NamedRef | null;
+  dueDate?: string | null;
+  progressPercent: number;
+  completedAt?: string | null;
+  createdAt: string;
+}
+
+export interface CourseListItem {
+  id: string;
+  title: string;
+  description?: string | null;
+  status: CourseStatus;
+  isMandatory: boolean;
+  createdBy?: NamedRef | null;
+  createdAt: string;
+  _count?: { modules: number; assignments: number };
+}
+
+export interface CourseDetail extends CourseListItem {
+  modules: CourseModule[];
+  assignments: CourseAssignment[];
+}
+
+export interface MyCourseAssignment {
+  id: string;
+  status: CourseAssignmentStatus;
+  progressPercent: number;
+  dueDate?: string | null;
+  completedAt?: string | null;
+  createdAt: string;
+  course: { id: string; title: string; description?: string | null; isMandatory: boolean };
+}
+
+export interface AcademySummary {
+  totalCourses: number;
+  totalAssigned: number;
+  completed: number;
+  overdue: number;
+  completionPercent: number;
+  averageProgress: number;
+}
