@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { IncidentAction, Prisma, RiskStatus } from '@prisma/client';
+import {
+  IncidentAction,
+  IncidentStatus,
+  Prisma,
+  RiskStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { RisksService } from '../risks/risks.service';
@@ -42,6 +47,21 @@ export class IncidentsService {
       this.prisma.incident.count({ where }),
     ]);
     return { items, total, page, pageSize };
+  }
+
+  async summary() {
+    const [total, open, underReview, resolved, closed] = await Promise.all([
+      this.prisma.incident.count(),
+      this.prisma.incident.count({ where: { status: IncidentStatus.OPEN } }),
+      this.prisma.incident.count({
+        where: { status: IncidentStatus.UNDER_REVIEW },
+      }),
+      this.prisma.incident.count({
+        where: { status: IncidentStatus.RESOLVED },
+      }),
+      this.prisma.incident.count({ where: { status: IncidentStatus.CLOSED } }),
+    ]);
+    return { total, open, underReview, resolved, closed };
   }
 
   async findOne(id: string) {

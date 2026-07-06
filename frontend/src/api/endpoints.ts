@@ -7,6 +7,7 @@ import type {
   AiChatResult,
   AiReportResult,
   AiReviewResult,
+  AiRiskIntelligenceDashboard,
   AiRiskRegisterEntryResult,
   AiSuggestControlsResult,
   AnalysisDetail,
@@ -437,4 +438,6 @@ export const aiApi = {
     apiClient.post<AiRiskRegisterEntryResult>('/ai/generate-risk-register-entry', { analysisId, analysisRiskId }),
   chat: (data: { message: string; module?: string; contextEntityType?: string; contextEntityId?: string }) =>
     apiClient.post<AiChatResult>('/ai/chat', data),
+  riskIntelligenceDashboard: () =>
+    apiClient.get<AiRiskIntelligenceDashboard>('/ai/risk-intelligence-dashboard'),
 };

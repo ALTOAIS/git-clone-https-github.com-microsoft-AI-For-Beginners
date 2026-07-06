@@ -1,7 +1,12 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AcademyService } from '../academy/academy.service';
+import { AnalysesService } from '../analyses/analyses.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { AuditService } from '../audit/audit.service';
+import { IncidentsService } from '../incidents/incidents.service';
 import { buildPdfReport } from '../reports/pdf.util';
+import { ACTIVE_STATUSES } from '../risks/risks.constants';
 import { AnalyzeRiskDto } from './dto/analyze-risk.dto';
 import { ChatDto } from './dto/chat.dto';
 import { GenerateRiskRegisterEntryDto } from './dto/generate-risk-register-entry.dto';
@@ -14,6 +19,7 @@ import {
   AiChatResult,
   AiReportResult,
   AiReviewResult,
+  AiRiskIntelligenceDashboard,
   AiRiskRegisterEntryProposal,
 } from './types/ai-results';
 
@@ -27,6 +33,10 @@ export class AiService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    private analyses: AnalysesService,
+    private academy: AcademyService,
+    private analytics: AnalyticsService,
+    private incidents: IncidentsService,
     @Inject(AI_PROVIDER) private provider: AiProvider,
   ) {}
 
@@ -420,5 +430,60 @@ export class AiService {
     });
 
     return { reply, disclaimer: AI_ADVISORY_DISCLAIMER };
+  }
+
+  async getRiskIntelligenceDashboard(
+    user: RequestUser,
+  ): Promise<AiRiskIntelligenceDashboard & { disclaimer: string }> {
+    const [
+      vakrSummary,
+      academySummary,
+      controlEffectiveness,
+      incidentsSummary,
+      activeRisks,
+      criticalRisks,
+    ] = await Promise.all([
+      this.analyses.summary(),
+      this.academy.summary(),
+      this.analytics.controlEffectiveness(),
+      this.incidents.summary(),
+      this.prisma.risk.count({ where: { status: { in: ACTIVE_STATUSES } } }),
+      this.prisma.risk.count({
+        where: { status: { in: ACTIVE_STATUSES }, inherentScore: { gte: 15 } },
+      }),
+    ]);
+
+    const insights = await this.provider.generateCrossModuleInsights({
+      vakrOverdue: vakrSummary.overdue,
+      vakrTotal: vakrSummary.total,
+      criticalRisks,
+      activeRisks,
+      ineffectiveControls: controlEffectiveness.INEFFECTIVE ?? 0,
+      incidentsOpen: incidentsSummary.open,
+      incidentsUnderReview: incidentsSummary.underReview,
+      academyCompletionPercent: academySummary.completionPercent,
+      academyOverdueAssignments: academySummary.overdue,
+    });
+
+    await this.logInteraction({
+      user,
+      module: 'CROSS_MODULE',
+      useCase: 'RISK_INTELLIGENCE_DASHBOARD',
+      inputSummary: `Активных рисков: ${activeRisks}, критических: ${criticalRisks}, анализов ВАКР: ${vakrSummary.total}`,
+      outputSummary: `Сформировано инсайтов: ${insights.length}`,
+    });
+
+    return {
+      vakr: vakrSummary,
+      riskRegister: { active: activeRisks, critical: criticalRisks },
+      controlEffectiveness,
+      incidents: incidentsSummary,
+      academy: {
+        completionPercent: academySummary.completionPercent,
+        overdueAssignments: academySummary.overdue,
+      },
+      insights,
+      disclaimer: AI_ADVISORY_DISCLAIMER,
+    };
   }
 }
