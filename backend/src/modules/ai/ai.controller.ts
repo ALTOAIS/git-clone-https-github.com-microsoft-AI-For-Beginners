@@ -92,6 +92,25 @@ export class AiController {
     return res.send(buffer);
   }
 
+  @Get('generate-vakr-report/:analysisId/docx')
+  @Roles(...SENSITIVE_AI_ROLES)
+  async generateVakrReportDocx(
+    @Param('analysisId') analysisId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.aiService.generateVakrReportDocx(
+      { analysisId },
+      user,
+    );
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': `attachment; filename="vakr-report-${analysisId}.docx"`,
+    });
+    return res.send(buffer);
+  }
+
   @Post('generate-risk-register-entry')
   @Roles(...SENSITIVE_AI_ROLES)
   generateRiskRegisterEntry(
