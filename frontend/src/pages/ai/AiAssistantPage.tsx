@@ -1,4 +1,4 @@
-import { CopyOutlined, DownloadOutlined, FilePdfOutlined, SendOutlined } from '@ant-design/icons';
+import { CopyOutlined, DownloadOutlined, FilePdfOutlined, FileWordOutlined, SendOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import {
   Alert,
@@ -284,6 +284,12 @@ export function AiAssistantPage() {
                     onClick={() => analysisId && downloadViaApi(aiApi.vakrReportPdfPath(analysisId), `vakr-report-${Date.now()}.pdf`)}
                   >
                     {t('aiAssistant.pdfButton')}
+                  </Button>
+                  <Button
+                    icon={<FileWordOutlined />}
+                    onClick={() => analysisId && downloadViaApi(aiApi.vakrReportDocxPath(analysisId), `vakr-report-${Date.now()}.docx`)}
+                  >
+                    {t('aiAssistant.wordButton')}
                   </Button>
                 </Space>
               }

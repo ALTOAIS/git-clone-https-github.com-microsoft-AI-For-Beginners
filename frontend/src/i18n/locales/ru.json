@@ -911,6 +911,7 @@
     "copyButton": "Копировать",
     "exportButton": "Экспортировать",
     "pdfButton": "Скачать PDF",
+    "wordButton": "Скачать Word",
     "dashboard": {
       "vakrTitle": "ВАКР",
       "riskRegisterTitle": "Реестр рисков",

@@ -1,4 +1,4 @@
-import { CopyOutlined, DownloadOutlined, FilePdfOutlined, RobotOutlined } from '@ant-design/icons';
+import { CopyOutlined, DownloadOutlined, FilePdfOutlined, FileWordOutlined, RobotOutlined } from '@ant-design/icons';
 import {
   App,
   Button,
@@ -343,6 +343,12 @@ export function VakrAiPanel({ analysis, onUpdated }: Props) {
                 onClick={() => downloadViaApi(aiApi.vakrReportPdfPath(analysis.id), `vakr-report-${Date.now()}.pdf`)}
               >
                 {t('aiAssistant.pdfButton')}
+              </Button>
+              <Button
+                icon={<FileWordOutlined />}
+                onClick={() => downloadViaApi(aiApi.vakrReportDocxPath(analysis.id), `vakr-report-${Date.now()}.docx`)}
+              >
+                {t('aiAssistant.wordButton')}
               </Button>
             </Space>
             {drawer.data.sections.map((section) => (

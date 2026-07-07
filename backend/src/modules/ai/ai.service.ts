@@ -5,6 +5,7 @@ import { AnalysesService } from '../analyses/analyses.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { AuditService } from '../audit/audit.service';
 import { IncidentsService } from '../incidents/incidents.service';
+import { buildDocxReport } from '../reports/docx.util';
 import { buildPdfReport } from '../reports/pdf.util';
 import { ACTIVE_STATUSES } from '../risks/risks.constants';
 import { AnalyzeRiskDto } from './dto/analyze-risk.dto';
@@ -360,6 +361,33 @@ export class AiService {
       { heading: 'Примечание', lines: [report.disclaimer] },
     ];
     return buildPdfReport(
+      report.title,
+      `Сформировано ИИ-ассистентом: ${generatedAt}`,
+      sections,
+    );
+  }
+
+  async generateVakrReportDocx(
+    dto: GenerateVakrReportDto,
+    user: RequestUser,
+  ): Promise<Buffer> {
+    const report = await this.generateVakrReport(dto, user);
+    const generatedAt = new Date(report.generatedAt).toLocaleDateString(
+      'ru-RU',
+      {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      },
+    );
+    const sections = [
+      ...report.sections.map((section) => ({
+        heading: section.heading,
+        lines: section.content.split('\n'),
+      })),
+      { heading: 'Примечание', lines: [report.disclaimer] },
+    ];
+    return buildDocxReport(
       report.title,
       `Сформировано ИИ-ассистентом: ${generatedAt}`,
       sections,
