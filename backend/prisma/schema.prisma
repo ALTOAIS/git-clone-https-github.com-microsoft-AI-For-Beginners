@@ -224,6 +224,7 @@ enum LessonContentType {
   INTERACTIVE
   PRACTICAL_TASK
   CASE_STUDY
+  QUIZ
 }
 
 enum CourseAssignmentStatus {
@@ -943,6 +944,8 @@ model CourseLesson {
   scheduledAt     DateTime?
 
   progress LessonProgress[]
+  /// Тест-урок (quiz) — заполняется только для уроков типа QUIZ
+  quiz     Test?
 
   @@map("course_lessons")
 }
@@ -984,15 +987,18 @@ model LessonProgress {
   @@map("lesson_progress")
 }
 
-/// Итоговый тест курса (один тест на курс — «итоговый экзамен» из ТЗ)
+/// Тест — либо итоговый тест курса (courseId), либо тест-урок/quiz (lessonId).
+/// Ровно одно из полей courseId/lessonId должно быть заполнено — проверяется на уровне сервиса.
 model Test {
-  id               String   @id @default(uuid())
-  courseId         String   @unique
-  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id               String        @id @default(uuid())
+  courseId         String?       @unique
+  course           Course?       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonId         String?       @unique
+  lesson           CourseLesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   title            String
-  passScorePercent Int      @default(70)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  passScorePercent Int           @default(70)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   questions TestQuestion[]
   attempts  TestAttempt[]
@@ -1032,20 +1038,25 @@ model TestQuestionOption {
 }
 
 /// Попытка прохождения теста — стадия (BEFORE/AFTER/CHECK_3M/CHECK_6M/ANNUAL)
-/// реализует «Проверку знаний» как поэтапные прохождения одного и того же теста.
+/// реализует «Проверку знаний» как поэтапные прохождения итогового теста курса.
 /// Автоматическое планирование стадий по расписанию отложено на следующую фазу.
+/// Для тестов-уроков (quiz) stage всегда NULL — попытки не привязаны к стадии
+/// карьерного цикла и допускают повторные попытки до успешного прохождения;
+/// Postgres считает каждый NULL уникальным в индексе @@unique ниже, поэтому
+/// это преднамеренно снимает ограничение «одна попытка» именно для quiz-уроков,
+/// не затрагивая поведение итогового теста курса.
 model TestAttempt {
-  id           String           @id @default(uuid())
+  id           String            @id @default(uuid())
   testId       String
-  test         Test             @relation(fields: [testId], references: [id], onDelete: Cascade)
+  test         Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
   userId       String
-  user         User             @relation("TestAttemptUser", fields: [userId], references: [id], onDelete: Cascade)
-  stage        TestAttemptStage
+  user         User              @relation("TestAttemptUser", fields: [userId], references: [id], onDelete: Cascade)
+  stage        TestAttemptStage?
   scorePercent Int
   passed       Boolean
   /// Присланные ответы { [questionId]: string | string[] } — хранится для истории/аудита
   answers      Json
-  submittedAt  DateTime         @default(now())
+  submittedAt  DateTime          @default(now())
 
   @@unique([testId, userId, stage])
   @@map("test_attempts")

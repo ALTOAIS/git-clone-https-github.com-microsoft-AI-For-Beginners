@@ -25,6 +25,7 @@ import { CreateModuleDto } from './dto/create-module.dto';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { CreateTestDto } from './dto/create-test.dto';
 import { SubmitAttemptDto } from './dto/submit-attempt.dto';
+import { SubmitQuizAttemptDto } from './dto/submit-quiz-attempt.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
@@ -282,5 +283,116 @@ export class AcademyController {
   @Roles(...MANAGE_ROLES)
   allAttempts(@Param('id') id: string) {
     return this.academyService.allAttempts(id);
+  }
+
+  // ------------------------------------------------------------------
+  // Тест-уроки (quiz)
+  // ------------------------------------------------------------------
+
+  @Get(':id/lessons/:lessonId/quiz')
+  @Roles(...MANAGE_ROLES)
+  getLessonQuiz(@Param('id') id: string, @Param('lessonId') lessonId: string) {
+    return this.academyService.getLessonQuiz(id, lessonId);
+  }
+
+  @Get(':id/lessons/:lessonId/quiz/for-attempt')
+  getLessonQuizForAttempt(
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+  ) {
+    return this.academyService.getLessonQuizForAttempt(id, lessonId);
+  }
+
+  @Post(':id/lessons/:lessonId/quiz')
+  @Roles(...MANAGE_ROLES)
+  createLessonQuiz(
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+    @Body() dto: CreateTestDto,
+  ) {
+    return this.academyService.createLessonQuiz(id, lessonId, dto);
+  }
+
+  @Patch(':id/lessons/:lessonId/quiz')
+  @Roles(...MANAGE_ROLES)
+  updateLessonQuiz(
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+    @Body() dto: UpdateTestDto,
+  ) {
+    return this.academyService.updateLessonQuiz(id, lessonId, dto);
+  }
+
+  @Delete(':id/lessons/:lessonId/quiz')
+  @Roles(...MANAGE_ROLES)
+  removeLessonQuiz(
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+  ) {
+    return this.academyService.removeLessonQuiz(id, lessonId);
+  }
+
+  @Post(':id/lessons/:lessonId/quiz/questions')
+  @Roles(...MANAGE_ROLES)
+  addQuizQuestion(
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+    @Body() dto: CreateQuestionDto,
+  ) {
+    return this.academyService.addQuizQuestion(id, lessonId, dto);
+  }
+
+  @Patch(':id/lessons/:lessonId/quiz/questions/:questionId')
+  @Roles(...MANAGE_ROLES)
+  updateQuizQuestion(
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+    @Param('questionId') questionId: string,
+    @Body() dto: UpdateQuestionDto,
+  ) {
+    return this.academyService.updateQuizQuestion(
+      id,
+      lessonId,
+      questionId,
+      dto,
+    );
+  }
+
+  @Delete(':id/lessons/:lessonId/quiz/questions/:questionId')
+  @Roles(...MANAGE_ROLES)
+  removeQuizQuestion(
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+    @Param('questionId') questionId: string,
+  ) {
+    return this.academyService.removeQuizQuestion(id, lessonId, questionId);
+  }
+
+  @Post(':id/lessons/:lessonId/quiz/attempts')
+  submitQuizAttempt(
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+    @Body() dto: SubmitQuizAttemptDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.academyService.submitQuizAttempt(id, lessonId, user.id, dto);
+  }
+
+  @Get(':id/lessons/:lessonId/quiz/attempts/my')
+  myQuizAttempts(
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.academyService.myQuizAttempts(id, lessonId, user.id);
+  }
+
+  @Get(':id/lessons/:lessonId/quiz/attempts')
+  @Roles(...MANAGE_ROLES)
+  allQuizAttempts(
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+  ) {
+    return this.academyService.allQuizAttempts(id, lessonId);
   }
 }

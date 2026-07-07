@@ -21,6 +21,7 @@ import { CreateModuleDto } from './dto/create-module.dto';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { CreateTestDto } from './dto/create-test.dto';
 import { SubmitAttemptDto } from './dto/submit-attempt.dto';
+import { SubmitQuizAttemptDto } from './dto/submit-quiz-attempt.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
@@ -854,6 +855,209 @@ export class AcademyService {
     const test = await this.getTest(courseId);
     return this.prisma.testAttempt.findMany({
       where: { testId: test.id },
+      include: { user: { select: { id: true, fullName: true, email: true } } },
+      orderBy: { submittedAt: 'desc' },
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // Тест-уроки (quiz) — тест, привязанный к конкретному уроку, а не к курсу
+  // ------------------------------------------------------------------
+
+  private async findQuizLesson(courseId: string, lessonId: string) {
+    const lesson = await this.prisma.courseLesson.findUnique({
+      where: { id: lessonId },
+      include: { module: true },
+    });
+    if (!lesson || lesson.module.courseId !== courseId) {
+      throw new NotFoundException('Урок не найден в этом курсе');
+    }
+    return lesson;
+  }
+
+  async getLessonQuiz(courseId: string, lessonId: string) {
+    await this.findQuizLesson(courseId, lessonId);
+    const quiz = await this.prisma.test.findUnique({
+      where: { lessonId },
+      include: TEST_DETAIL_INCLUDE,
+    });
+    if (!quiz)
+      throw new NotFoundException('Тест для этого урока ещё не создан');
+    return quiz;
+  }
+
+  async getLessonQuizForAttempt(courseId: string, lessonId: string) {
+    const quiz = await this.getLessonQuiz(courseId, lessonId);
+    return {
+      id: quiz.id,
+      lessonId: quiz.lessonId,
+      title: quiz.title,
+      passScorePercent: quiz.passScorePercent,
+      questions: quiz.questions.map((q) => ({
+        id: q.id,
+        order: q.order,
+        type: q.type,
+        text: q.text,
+        points: q.points,
+        options: q.options.map((o) => ({
+          id: o.id,
+          order: o.order,
+          text: o.text,
+        })),
+      })),
+    };
+  }
+
+  async createLessonQuiz(
+    courseId: string,
+    lessonId: string,
+    dto: CreateTestDto,
+  ) {
+    const lesson = await this.findQuizLesson(courseId, lessonId);
+    if (lesson.contentType !== 'QUIZ') {
+      throw new BadRequestException(
+        'Тест можно добавить только к уроку типа «Тест»',
+      );
+    }
+    const existing = await this.prisma.test.findUnique({ where: { lessonId } });
+    if (existing)
+      throw new BadRequestException('Тест для этого урока уже создан');
+    return this.prisma.test.create({
+      data: { lessonId, ...dto },
+      include: TEST_DETAIL_INCLUDE,
+    });
+  }
+
+  async updateLessonQuiz(
+    courseId: string,
+    lessonId: string,
+    dto: UpdateTestDto,
+  ) {
+    const quiz = await this.getLessonQuiz(courseId, lessonId);
+    return this.prisma.test.update({
+      where: { id: quiz.id },
+      data: dto,
+      include: TEST_DETAIL_INCLUDE,
+    });
+  }
+
+  async removeLessonQuiz(courseId: string, lessonId: string) {
+    const quiz = await this.getLessonQuiz(courseId, lessonId);
+    return this.prisma.test.delete({ where: { id: quiz.id } });
+  }
+
+  async addQuizQuestion(
+    courseId: string,
+    lessonId: string,
+    dto: CreateQuestionDto,
+  ) {
+    const quiz = await this.getLessonQuiz(courseId, lessonId);
+    return this.prisma.testQuestion.create({
+      data: {
+        testId: quiz.id,
+        order: dto.order,
+        type: dto.type,
+        text: dto.text,
+        points: dto.points,
+        correctAnswerText: dto.correctAnswerText,
+        options: dto.options ? { create: dto.options } : undefined,
+      },
+      include: { options: true },
+    });
+  }
+
+  async updateQuizQuestion(
+    courseId: string,
+    lessonId: string,
+    questionId: string,
+    dto: UpdateQuestionDto,
+  ) {
+    await this.getLessonQuiz(courseId, lessonId);
+    return this.prisma.testQuestion.update({
+      where: { id: questionId },
+      data: {
+        order: dto.order,
+        type: dto.type,
+        text: dto.text,
+        points: dto.points,
+        correctAnswerText: dto.correctAnswerText,
+        ...(dto.options
+          ? { options: { deleteMany: {}, create: dto.options } }
+          : {}),
+      },
+      include: { options: true },
+    });
+  }
+
+  async removeQuizQuestion(
+    courseId: string,
+    lessonId: string,
+    questionId: string,
+  ) {
+    await this.getLessonQuiz(courseId, lessonId);
+    return this.prisma.testQuestion.delete({ where: { id: questionId } });
+  }
+
+  async submitQuizAttempt(
+    courseId: string,
+    lessonId: string,
+    userId: string,
+    dto: SubmitQuizAttemptDto,
+  ) {
+    await this.findQuizLesson(courseId, lessonId);
+    const quiz = await this.prisma.test.findUnique({
+      where: { lessonId },
+      include: { questions: { include: { options: true } } },
+    });
+    if (!quiz)
+      throw new NotFoundException('Тест для этого урока ещё не создан');
+
+    let earned = 0;
+    let total = 0;
+    for (const q of quiz.questions) {
+      total += q.points;
+      earned += this.gradeQuestion(q, dto.answers[q.id]);
+    }
+    const scorePercent = total > 0 ? Math.round((earned / total) * 100) : 0;
+    const passed = scorePercent >= quiz.passScorePercent;
+
+    const attempt = await this.prisma.testAttempt.create({
+      data: {
+        testId: quiz.id,
+        userId,
+        stage: null,
+        scorePercent,
+        passed,
+        answers: dto.answers as Prisma.InputJsonValue,
+      },
+    });
+
+    if (passed) {
+      await this.prisma.lessonProgress.upsert({
+        where: { lessonId_userId: { lessonId, userId } },
+        create: { lessonId, userId },
+        update: {},
+      });
+      await this.recalculateAssignmentProgress(courseId, userId);
+    }
+
+    return attempt;
+  }
+
+  async myQuizAttempts(courseId: string, lessonId: string, userId: string) {
+    await this.findQuizLesson(courseId, lessonId);
+    const quiz = await this.prisma.test.findUnique({ where: { lessonId } });
+    if (!quiz) return [];
+    return this.prisma.testAttempt.findMany({
+      where: { testId: quiz.id, userId },
+      orderBy: { submittedAt: 'desc' },
+    });
+  }
+
+  async allQuizAttempts(courseId: string, lessonId: string) {
+    const quiz = await this.getLessonQuiz(courseId, lessonId);
+    return this.prisma.testAttempt.findMany({
+      where: { testId: quiz.id },
       include: { user: { select: { id: true, fullName: true, email: true } } },
       orderBy: { submittedAt: 'desc' },
     });

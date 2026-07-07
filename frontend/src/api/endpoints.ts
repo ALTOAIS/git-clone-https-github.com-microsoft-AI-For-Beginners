@@ -365,6 +365,31 @@ export const academyApi = {
     apiClient.post<TestAttempt>(`/courses/${courseId}/test/attempts`, data),
   myAttempts: (courseId: string) => apiClient.get<TestAttempt[]>(`/courses/${courseId}/test/attempts/my`),
   allAttempts: (courseId: string) => apiClient.get<TestAttempt[]>(`/courses/${courseId}/test/attempts`),
+
+  getLessonQuiz: (courseId: string, lessonId: string) =>
+    apiClient.get<TestDetail>(`/courses/${courseId}/lessons/${lessonId}/quiz`),
+  getLessonQuizForAttempt: (courseId: string, lessonId: string) =>
+    apiClient.get<TestDetail>(`/courses/${courseId}/lessons/${lessonId}/quiz/for-attempt`),
+  createLessonQuiz: (courseId: string, lessonId: string, data: Record<string, unknown>) =>
+    apiClient.post<TestDetail>(`/courses/${courseId}/lessons/${lessonId}/quiz`, data),
+  updateLessonQuiz: (courseId: string, lessonId: string, data: Record<string, unknown>) =>
+    apiClient.patch<TestDetail>(`/courses/${courseId}/lessons/${lessonId}/quiz`, data),
+  removeLessonQuiz: (courseId: string, lessonId: string) =>
+    apiClient.delete(`/courses/${courseId}/lessons/${lessonId}/quiz`),
+
+  addQuizQuestion: (courseId: string, lessonId: string, data: Record<string, unknown>) =>
+    apiClient.post(`/courses/${courseId}/lessons/${lessonId}/quiz/questions`, data),
+  updateQuizQuestion: (courseId: string, lessonId: string, questionId: string, data: Record<string, unknown>) =>
+    apiClient.patch(`/courses/${courseId}/lessons/${lessonId}/quiz/questions/${questionId}`, data),
+  removeQuizQuestion: (courseId: string, lessonId: string, questionId: string) =>
+    apiClient.delete(`/courses/${courseId}/lessons/${lessonId}/quiz/questions/${questionId}`),
+
+  submitQuizAttempt: (courseId: string, lessonId: string, data: Record<string, unknown>) =>
+    apiClient.post<TestAttempt>(`/courses/${courseId}/lessons/${lessonId}/quiz/attempts`, data),
+  myQuizAttempts: (courseId: string, lessonId: string) =>
+    apiClient.get<TestAttempt[]>(`/courses/${courseId}/lessons/${lessonId}/quiz/attempts/my`),
+  allQuizAttempts: (courseId: string, lessonId: string) =>
+    apiClient.get<TestAttempt[]>(`/courses/${courseId}/lessons/${lessonId}/quiz/attempts`),
 };
 
 // ---------------------------------------------------------------------------

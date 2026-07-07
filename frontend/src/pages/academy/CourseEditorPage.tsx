@@ -32,7 +32,7 @@ import { useDepartments } from '../../hooks/useReferenceData';
 import type { CourseLesson, CourseModule, LessonContentType } from '../../types';
 import { ALL_COURSE_STATUSES, ALL_LESSON_CONTENT_TYPES, courseStatusLabel, lessonContentTypeLabel } from '../../utils/academyDisplay';
 import { LessonAttachmentsPanel } from './LessonAttachmentsPanel';
-import { TestEditorSection } from './TestEditorSection';
+import { TestEditorSection, courseTestAdapter, lessonQuizAdapter } from './TestEditorSection';
 
 const VIDEO_CONTENT_TYPES: LessonContentType[] = ['VIDEO'];
 const EXTERNAL_LINK_CONTENT_TYPES: LessonContentType[] = ['WEBINAR', 'IN_PERSON_EVENT'];
@@ -411,9 +411,12 @@ export function CourseEditorPage() {
             <LessonAttachmentsPanel lessonId={lessonModal.editing.id} canEdit />
           </>
         )}
+        {lessonModal?.editing && watchedContentType === 'QUIZ' && (
+          <TestEditorSection adapter={lessonQuizAdapter(id!, lessonModal.editing.id)} />
+        )}
       </Modal>
 
-      <TestEditorSection courseId={id!} />
+      <TestEditorSection adapter={courseTestAdapter(id!)} />
     </div>
   );
 }
