@@ -9,6 +9,8 @@ const ALLOWED_MIME_TYPES = new Set([
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'image/png',
   'image/jpeg',
   'text/csv',

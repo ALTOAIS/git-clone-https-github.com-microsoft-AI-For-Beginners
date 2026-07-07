@@ -9,7 +9,7 @@ import { useAuthStore } from '../../auth/authStore';
 import { ALL_ROLES, roleLabel } from '../../auth/roles';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
-import { useDepartments, useUsersList } from '../../hooks/useReferenceData';
+import { useCompanies, useDepartments, useUsersList } from '../../hooks/useReferenceData';
 import type { CourseListItem, CourseStatus } from '../../types';
 import { ALL_COURSE_STATUSES, COURSE_STATUS_COLORS, courseStatusLabel } from '../../utils/academyDisplay';
 import { AcademySubNav } from './AcademySubNav';
@@ -33,6 +33,7 @@ export function CoursesListPage() {
 
   const { data: users } = useUsersList();
   const { data: departments } = useDepartments();
+  const { data: companies } = useCompanies();
 
   const { data, isFetching } = useQuery({
     queryKey: ['courses', { page, status }],
@@ -58,7 +59,20 @@ export function CoursesListPage() {
   const handleAssign = async () => {
     if (!assignFor) return;
     const values = await assignForm.validateFields();
-    await academyApi.assign(assignFor.id, { userIds: values.userIds, dueDate: values.dueDate?.toISOString() });
+    const hasTarget =
+      values.userIds?.length || values.departmentIds?.length || values.roles?.length || values.companyIds?.length;
+    if (!hasTarget) {
+      message.error(t('coursesPage.assignForm.atLeastOneTargetRequired'));
+      return;
+    }
+    await academyApi.assign(assignFor.id, {
+      userIds: values.userIds,
+      departmentIds: values.departmentIds,
+      roles: values.roles,
+      companyIds: values.companyIds,
+      startDate: values.startDate?.toISOString(),
+      dueDate: values.dueDate?.toISOString(),
+    });
     message.success(t('coursesPage.assigned'));
     setAssignFor(null);
     assignForm.resetFields();
@@ -221,18 +235,47 @@ export function CoursesListPage() {
         destroyOnHidden
       >
         <Form form={assignForm} layout="vertical">
-          <Form.Item
-            name="userIds"
-            label={t('coursesPage.assignForm.usersLabel')}
-            rules={[{ required: true, message: t('coursesPage.assignForm.usersRequired') }]}
-          >
+          <Typography.Paragraph type="secondary">{t('coursesPage.assignForm.hint')}</Typography.Paragraph>
+          <Form.Item name="userIds" label={t('coursesPage.assignForm.usersLabel')}>
             <Select
               mode="multiple"
               allowClear
               showSearch
               optionFilterProp="label"
+              placeholder={t('coursesPage.assignForm.usersPlaceholder')}
               options={users?.items.map((u) => ({ value: u.id, label: `${u.fullName} (${u.email})` }))}
             />
+          </Form.Item>
+          <Form.Item name="departmentIds" label={t('coursesPage.assignForm.departmentsLabel')}>
+            <Select
+              mode="multiple"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder={t('coursesPage.assignForm.departmentsPlaceholder')}
+              options={departments?.map((d) => ({ value: d.id, label: d.name }))}
+            />
+          </Form.Item>
+          <Form.Item name="roles" label={t('coursesPage.assignForm.rolesLabel')}>
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder={t('coursesPage.assignForm.rolesPlaceholder')}
+              options={ALL_ROLES.map((role) => ({ value: role, label: roleLabel(role) }))}
+            />
+          </Form.Item>
+          <Form.Item name="companyIds" label={t('coursesPage.assignForm.companiesLabel')}>
+            <Select
+              mode="multiple"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder={t('coursesPage.assignForm.companiesPlaceholder')}
+              options={companies?.map((c) => ({ value: c.id, label: c.name }))}
+            />
+          </Form.Item>
+          <Form.Item name="startDate" label={t('coursesPage.assignForm.startDateLabel')}>
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="dueDate" label={t('coursesPage.assignForm.dueDateLabel')}>
             <DatePicker style={{ width: '100%' }} />

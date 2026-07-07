@@ -6,10 +6,12 @@ import {
 import {
   CourseAssignmentStatus,
   CourseStatus,
+  EntityType,
   Prisma,
   TestQuestionType,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AttachmentsService } from '../attachments/attachments.service';
 import { AuditService } from '../audit/audit.service';
 import { CertificatesService } from '../certificates/certificates.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
@@ -61,6 +63,7 @@ export class AcademyService {
     private prisma: PrismaService,
     private audit: AuditService,
     private certificates: CertificatesService,
+    private attachments: AttachmentsService,
   ) {}
 
   async findAll(query: {
@@ -121,7 +124,16 @@ export class AcademyService {
   }
 
   async update(id: string, dto: UpdateCourseDto, userId?: string) {
-    await this.findOne(id);
+    const before = await this.findOne(id);
+    if (
+      dto.status === CourseStatus.PUBLISHED &&
+      before.status !== CourseStatus.PUBLISHED &&
+      before.modules.every((m) => m.lessons.length === 0)
+    ) {
+      throw new BadRequestException(
+        'Нельзя опубликовать курс без уроков — добавьте содержание перед публикацией',
+      );
+    }
     const { applicableDepartmentIds, ...rest } = dto;
     const course = await this.prisma.course.update({
       where: { id },
@@ -133,10 +145,15 @@ export class AcademyService {
       },
       include: DETAIL_INCLUDE,
     });
+    let action = 'UPDATE';
+    if (dto.status && dto.status !== before.status) {
+      if (dto.status === CourseStatus.PUBLISHED) action = 'PUBLISH';
+      else if (before.status === CourseStatus.PUBLISHED) action = 'UNPUBLISH';
+    }
     await this.audit.record({
       entityType: 'COURSE',
       entityId: id,
-      action: 'UPDATE',
+      action,
       userId,
     });
     return course;
@@ -145,6 +162,31 @@ export class AcademyService {
   async remove(id: string) {
     await this.findOne(id);
     return this.prisma.course.delete({ where: { id } });
+  }
+
+  async getPreview(id: string) {
+    const course = await this.findOne(id);
+    const lessonIds = course.modules.flatMap((m) => m.lessons.map((l) => l.id));
+    const attachments = await this.attachments.findForEntities(
+      EntityType.COURSE_LESSON,
+      lessonIds,
+    );
+    const byLesson = new Map<string, typeof attachments>();
+    for (const attachment of attachments) {
+      const list = byLesson.get(attachment.entityId) ?? [];
+      list.push(attachment);
+      byLesson.set(attachment.entityId, list);
+    }
+    return {
+      ...course,
+      modules: course.modules.map((m) => ({
+        ...m,
+        lessons: m.lessons.map((l) => ({
+          ...l,
+          attachments: byLesson.get(l.id) ?? [],
+        })),
+      })),
+    };
   }
 
   // ------------------------------------------------------------------
@@ -206,14 +248,46 @@ export class AcademyService {
   // Назначение курса и прогресс
   // ------------------------------------------------------------------
 
+  private async resolveTargetUserIds(
+    dto: CreateAssignmentDto,
+  ): Promise<string[]> {
+    const ids = new Set(dto.userIds ?? []);
+    if (dto.departmentIds?.length) {
+      const rows = await this.prisma.user.findMany({
+        where: { isActive: true, departmentId: { in: dto.departmentIds } },
+        select: { id: true },
+      });
+      rows.forEach((r) => ids.add(r.id));
+    }
+    if (dto.roles?.length) {
+      const rows = await this.prisma.user.findMany({
+        where: { isActive: true, role: { in: dto.roles } },
+        select: { id: true },
+      });
+      rows.forEach((r) => ids.add(r.id));
+    }
+    if (dto.companyIds?.length) {
+      const rows = await this.prisma.user.findMany({
+        where: { isActive: true, companyId: { in: dto.companyIds } },
+        select: { id: true },
+      });
+      rows.forEach((r) => ids.add(r.id));
+    }
+    if (ids.size === 0) {
+      throw new BadRequestException('Не указаны получатели назначения');
+    }
+    return [...ids];
+  }
+
   async assign(courseId: string, dto: CreateAssignmentDto, userId?: string) {
     await this.findOne(courseId);
+    const targetUserIds = await this.resolveTargetUserIds(dto);
     const existing = await this.prisma.courseAssignment.findMany({
-      where: { courseId, userId: { in: dto.userIds } },
+      where: { courseId, userId: { in: targetUserIds } },
       select: { userId: true },
     });
     const alreadyAssigned = new Set(existing.map((a) => a.userId));
-    const newUserIds = dto.userIds.filter((id) => !alreadyAssigned.has(id));
+    const newUserIds = targetUserIds.filter((id) => !alreadyAssigned.has(id));
 
     if (newUserIds.length > 0) {
       await this.prisma.courseAssignment.createMany({
@@ -221,6 +295,7 @@ export class AcademyService {
           courseId,
           userId: assigneeId,
           assignedById: userId,
+          startDate: dto.startDate ? new Date(dto.startDate) : undefined,
           dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
         })),
       });
@@ -229,7 +304,14 @@ export class AcademyService {
         entityId: courseId,
         action: 'ASSIGN',
         userId,
-        changes: { userIds: newUserIds },
+        changes: {
+          userIds: newUserIds,
+          criteria: {
+            departmentIds: dto.departmentIds,
+            roles: dto.roles,
+            companyIds: dto.companyIds,
+          },
+        },
       });
     }
     return this.findOne(courseId);

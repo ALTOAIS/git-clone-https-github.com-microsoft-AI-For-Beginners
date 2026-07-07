@@ -6,6 +6,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUrl,
 } from 'class-validator';
 
 export class CreateLessonDto {
@@ -21,10 +22,29 @@ export class CreateLessonDto {
   @IsEnum(LessonContentType)
   contentType: LessonContentType;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    description: 'Текст урока в формате Markdown',
+  })
   @IsOptional()
   @IsString()
   content?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Ссылка на видео — для уроков типа VIDEO',
+  })
+  @IsOptional()
+  @IsUrl()
+  videoUrl?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Внешняя ссылка (например, на подключение к вебинару)',
+  })
+  @IsOptional()
+  @IsUrl()
+  externalUrl?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

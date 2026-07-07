@@ -7,5 +7,6 @@ import { AttachmentsService } from './attachments.service';
   imports: [MulterModule.register({})],
   controllers: [AttachmentsController],
   providers: [AttachmentsService],
+  exports: [AttachmentsService],
 })
 export class AttachmentsModule {}

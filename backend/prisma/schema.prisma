@@ -97,6 +97,7 @@ enum EntityType {
   CONTROL
   ACTION
   INCIDENT
+  COURSE_LESSON
 }
 
 enum NotificationType {
@@ -930,7 +931,12 @@ model CourseLesson {
   order           Int
   title           String
   contentType     LessonContentType
+  /// Текст урока в формате Markdown
   content         String?
+  /// Ссылка на видео — для уроков типа VIDEO
+  videoUrl        String?
+  /// Внешняя ссылка (например, ссылка на подключение к вебинару) — для WEBINAR/IN_PERSON_EVENT
+  externalUrl     String?
   durationMinutes Int?
   /// Дата и время проведения — для вебинаров и очных мероприятий, отображается в Календаре обучения
   scheduledAt     DateTime?
@@ -950,6 +956,7 @@ model CourseAssignment {
   status          CourseAssignmentStatus @default(NOT_STARTED)
   assignedById    String?
   assignedBy      User?                  @relation("CourseAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+  startDate       DateTime?
   dueDate         DateTime?
   progressPercent Int                    @default(0)
   completedAt     DateTime?
