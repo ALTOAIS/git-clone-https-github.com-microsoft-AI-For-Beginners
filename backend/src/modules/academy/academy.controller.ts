@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -161,6 +160,23 @@ export class AcademyController {
     return this.academyService.removeLesson(id, lessonId);
   }
 
+  @Get(':id/player')
+  getPlayerData(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.academyService.getPlayerData(id, user.id);
+  }
+
+  @Post(':id/lessons/:lessonId/complete')
+  markLessonComplete(
+    @Param('id') id: string,
+    @Param('lessonId') lessonId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.academyService.markLessonComplete(id, lessonId, user.id);
+  }
+
   @Post(':id/assignments')
   @Roles(...MANAGE_ROLES)
   assign(
@@ -172,21 +188,12 @@ export class AcademyController {
   }
 
   @Patch(':id/assignments/:assignmentId')
-  async updateAssignment(
+  @Roles(...MANAGE_ROLES)
+  updateAssignment(
     @Param('id') id: string,
     @Param('assignmentId') assignmentId: string,
     @Body() dto: UpdateAssignmentDto,
-    @CurrentUser() user: AuthenticatedUser,
   ) {
-    const isManager = MANAGE_ROLES.some((role) => role === user.role);
-    if (!isManager) {
-      const assignment = await this.academyService.findAssignment(assignmentId);
-      if (assignment.userId !== user.id) {
-        throw new ForbiddenException(
-          'Можно изменять только собственный прогресс обучения',
-        );
-      }
-    }
     return this.academyService.updateAssignment(id, assignmentId, dto);
   }
 

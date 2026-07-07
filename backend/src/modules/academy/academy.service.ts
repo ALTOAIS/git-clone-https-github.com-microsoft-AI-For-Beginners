@@ -317,14 +317,6 @@ export class AcademyService {
     return this.findOne(courseId);
   }
 
-  async findAssignment(assignmentId: string) {
-    const assignment = await this.prisma.courseAssignment.findUnique({
-      where: { id: assignmentId },
-    });
-    if (!assignment) throw new NotFoundException('Назначение не найдено');
-    return assignment;
-  }
-
   async updateAssignment(
     courseId: string,
     assignmentId: string,
@@ -370,6 +362,173 @@ export class AcademyService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // ------------------------------------------------------------------
+  // Курс-плеер и прогресс прохождения
+  // ------------------------------------------------------------------
+
+  private async recalculateAssignmentProgress(
+    courseId: string,
+    userId: string,
+  ) {
+    const assignment = await this.prisma.courseAssignment.findUnique({
+      where: { courseId_userId: { courseId, userId } },
+    });
+    if (!assignment) return undefined;
+
+    const modules = await this.prisma.courseModule.findMany({
+      where: { courseId },
+      include: { lessons: { select: { id: true } } },
+    });
+    const lessonIds = modules.flatMap((m) => m.lessons.map((l) => l.id));
+    const test = await this.prisma.test.findUnique({ where: { courseId } });
+
+    const completedLessons = lessonIds.length
+      ? await this.prisma.lessonProgress.count({
+          where: { userId, lessonId: { in: lessonIds } },
+        })
+      : 0;
+
+    let testPassed = false;
+    if (test) {
+      const passingAttempt = await this.prisma.testAttempt.findFirst({
+        where: { testId: test.id, userId, passed: true },
+      });
+      testPassed = !!passingAttempt;
+    }
+
+    const totalItems = lessonIds.length + (test ? 1 : 0);
+    const completedItems = completedLessons + (testPassed ? 1 : 0);
+    const progressPercent =
+      totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+
+    let status: CourseAssignmentStatus = CourseAssignmentStatus.NOT_STARTED;
+    if (totalItems > 0 && completedItems >= totalItems) {
+      status = CourseAssignmentStatus.COMPLETED;
+    } else if (completedItems > 0) {
+      status = CourseAssignmentStatus.IN_PROGRESS;
+    }
+
+    const justCompleted =
+      status === CourseAssignmentStatus.COMPLETED &&
+      assignment.status !== CourseAssignmentStatus.COMPLETED;
+
+    const updated = await this.prisma.courseAssignment.update({
+      where: { id: assignment.id },
+      data: {
+        progressPercent,
+        status,
+        completedAt: justCompleted ? new Date() : assignment.completedAt,
+      },
+    });
+
+    if (justCompleted) {
+      await this.audit.record({
+        entityType: 'COURSE',
+        entityId: courseId,
+        action: 'COMPLETE',
+        userId,
+      });
+      await this.certificates.issueIfEligible(courseId, userId);
+    }
+
+    return updated;
+  }
+
+  async markLessonComplete(courseId: string, lessonId: string, userId: string) {
+    const assignment = await this.prisma.courseAssignment.findUnique({
+      where: { courseId_userId: { courseId, userId } },
+    });
+    if (!assignment) throw new NotFoundException('Курс вам не назначен');
+
+    const lesson = await this.prisma.courseLesson.findUnique({
+      where: { id: lessonId },
+      include: { module: true },
+    });
+    if (!lesson || lesson.module.courseId !== courseId) {
+      throw new NotFoundException('Урок не найден в этом курсе');
+    }
+
+    await this.prisma.lessonProgress.upsert({
+      where: { lessonId_userId: { lessonId, userId } },
+      create: { lessonId, userId },
+      update: {},
+    });
+
+    return this.recalculateAssignmentProgress(courseId, userId);
+  }
+
+  async getPlayerData(courseId: string, userId: string) {
+    const assignment = await this.prisma.courseAssignment.findUnique({
+      where: { courseId_userId: { courseId, userId } },
+    });
+    if (!assignment) throw new NotFoundException('Курс вам не назначен');
+
+    const course = await this.findOne(courseId);
+    const lessonIds = course.modules.flatMap((m) => m.lessons.map((l) => l.id));
+
+    const [attachments, progressRows, test] = await Promise.all([
+      this.attachments.findForEntities(EntityType.COURSE_LESSON, lessonIds),
+      lessonIds.length
+        ? this.prisma.lessonProgress.findMany({
+            where: { userId, lessonId: { in: lessonIds } },
+            select: { lessonId: true },
+          })
+        : Promise.resolve([]),
+      this.prisma.test.findUnique({ where: { courseId } }),
+    ]);
+
+    const byLesson = new Map<string, typeof attachments>();
+    for (const attachment of attachments) {
+      const list = byLesson.get(attachment.entityId) ?? [];
+      list.push(attachment);
+      byLesson.set(attachment.entityId, list);
+    }
+    const completedLessonIds = new Set(progressRows.map((p) => p.lessonId));
+
+    let testSummary: {
+      id: string;
+      title: string;
+      passed: boolean;
+      attempted: boolean;
+    } | null = null;
+    if (test) {
+      const attempts = await this.prisma.testAttempt.findMany({
+        where: { testId: test.id, userId },
+      });
+      testSummary = {
+        id: test.id,
+        title: test.title,
+        passed: attempts.some((a) => a.passed),
+        attempted: attempts.length > 0,
+      };
+    }
+
+    return {
+      course: {
+        id: course.id,
+        title: course.title,
+        description: course.description,
+      },
+      modules: course.modules.map((m) => ({
+        ...m,
+        lessons: m.lessons.map((l) => ({
+          ...l,
+          completed: completedLessonIds.has(l.id),
+          attachments: byLesson.get(l.id) ?? [],
+        })),
+      })),
+      assignment: {
+        id: assignment.id,
+        status: assignment.status,
+        progressPercent: assignment.progressPercent,
+        startDate: assignment.startDate,
+        dueDate: assignment.dueDate,
+        completedAt: assignment.completedAt,
+      },
+      test: testSummary,
+    };
   }
 
   // ------------------------------------------------------------------
@@ -676,12 +835,7 @@ export class AcademyService {
     });
 
     if (passed) {
-      const assignment = await this.prisma.courseAssignment.findUnique({
-        where: { courseId_userId: { courseId, userId } },
-      });
-      if (assignment?.status === CourseAssignmentStatus.COMPLETED) {
-        await this.certificates.issueIfEligible(courseId, userId);
-      }
+      await this.recalculateAssignmentProgress(courseId, userId);
     }
 
     return attempt;

@@ -375,6 +375,7 @@ model User {
   responsibleTrainingPlanItems  TrainingPlanItem[]           @relation("TrainingPlanItemResponsible")
   certificates                  Certificate[]                @relation("CertificateRecipient")
   aiInteractions                AiInteractionLog[]
+  lessonProgress                LessonProgress[]             @relation("LessonProgressUser")
 
   @@map("users")
 }
@@ -941,6 +942,8 @@ model CourseLesson {
   /// Дата и время проведения — для вебинаров и очных мероприятий, отображается в Календаре обучения
   scheduledAt     DateTime?
 
+  progress LessonProgress[]
+
   @@map("course_lessons")
 }
 
@@ -965,6 +968,20 @@ model CourseAssignment {
 
   @@unique([courseId, userId])
   @@map("course_assignments")
+}
+
+/// Отметка о прохождении конкретного урока конкретным работником —
+/// основа для автоматического расчёта прогресса и завершения курса.
+model LessonProgress {
+  id          String       @id @default(uuid())
+  lessonId    String
+  lesson      CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User         @relation("LessonProgressUser", fields: [userId], references: [id], onDelete: Cascade)
+  completedAt DateTime     @default(now())
+
+  @@unique([lessonId, userId])
+  @@map("lesson_progress")
 }
 
 /// Итоговый тест курса (один тест на курс — «итоговый экзамен» из ТЗ)

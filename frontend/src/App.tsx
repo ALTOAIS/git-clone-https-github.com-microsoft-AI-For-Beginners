@@ -17,6 +17,7 @@ import { AnalysesListPage } from './pages/analyses/AnalysesListPage';
 import { AnalysisWizardPage } from './pages/analyses/AnalysisWizardPage';
 import { AcademyDashboardPage } from './pages/academy/AcademyDashboardPage';
 import { MyAcademyPage } from './pages/academy/MyAcademyPage';
+import { CoursePlayerPage } from './pages/academy/CoursePlayerPage';
 import { CoursesListPage } from './pages/academy/CoursesListPage';
 import { CourseEditorPage } from './pages/academy/CourseEditorPage';
 import { CoursePreviewPage } from './pages/academy/CoursePreviewPage';
@@ -46,6 +47,7 @@ function App() {
           <Route path="/ai-assistant" element={<AiAssistantPage />} />
           <Route path="/academy" element={<AcademyDashboardPage />} />
           <Route path="/academy/my" element={<MyAcademyPage />} />
+          <Route path="/academy/learn/:id" element={<CoursePlayerPage />} />
           <Route path="/academy/courses" element={<CoursesListPage />} />
           <Route path="/academy/courses/:id" element={<CourseEditorPage />} />
           <Route path="/academy/courses/:id/preview" element={<CoursePreviewPage />} />
