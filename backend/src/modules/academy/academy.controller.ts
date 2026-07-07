@@ -80,6 +80,12 @@ export class AcademyController {
     });
   }
 
+  @Get(':id/preview')
+  @Roles(...MANAGE_ROLES)
+  preview(@Param('id') id: string) {
+    return this.academyService.getPreview(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.academyService.findOne(id);

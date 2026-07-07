@@ -13,6 +13,7 @@ import type {
   AnalysisDetail,
   AnalysisListItem,
   AppNotification,
+  Attachment,
   BusinessProcess,
   CampaignDetail,
   CampaignListItem,
@@ -23,7 +24,9 @@ import type {
   Company,
   Control,
   CourseDetail,
+  CourseLesson,
   CourseListItem,
+  CoursePreview,
   DashboardSummary,
   Department,
   Incident,
@@ -177,6 +180,8 @@ export const commentsApi = {
 
 export const attachmentsApi = {
   listForRisk: (riskId: string) => apiClient.get(`/attachments`, { params: { riskId } }),
+  listForEntity: (entityType: string, entityId: string) =>
+    apiClient.get<Attachment[]>(`/attachments`, { params: { entityType, entityId } }),
   upload: (file: File, entityType: string, entityId: string, riskId?: string) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -314,6 +319,7 @@ export const academyApi = {
   calendar: () => apiClient.get<AcademyCalendar>('/courses/calendar'),
   matrix: () => apiClient.get<TrainingMatrix>('/courses/matrix'),
   get: (id: string) => apiClient.get<CourseDetail>(`/courses/${id}`),
+  preview: (id: string) => apiClient.get<CoursePreview>(`/courses/${id}/preview`),
   create: (data: Record<string, unknown>) => apiClient.post<CourseDetail>('/courses', data),
   update: (id: string, data: Record<string, unknown>) => apiClient.patch<CourseDetail>(`/courses/${id}`, data),
   remove: (id: string) => apiClient.delete(`/courses/${id}`),
@@ -324,9 +330,9 @@ export const academyApi = {
   removeModule: (courseId: string, moduleId: string) => apiClient.delete(`/courses/${courseId}/modules/${moduleId}`),
 
   addLesson: (courseId: string, moduleId: string, data: Record<string, unknown>) =>
-    apiClient.post(`/courses/${courseId}/modules/${moduleId}/lessons`, data),
+    apiClient.post<CourseLesson>(`/courses/${courseId}/modules/${moduleId}/lessons`, data),
   updateLesson: (courseId: string, lessonId: string, data: Record<string, unknown>) =>
-    apiClient.patch(`/courses/${courseId}/lessons/${lessonId}`, data),
+    apiClient.patch<CourseLesson>(`/courses/${courseId}/lessons/${lessonId}`, data),
   removeLesson: (courseId: string, lessonId: string) => apiClient.delete(`/courses/${courseId}/lessons/${lessonId}`),
 
   assign: (courseId: string, data: Record<string, unknown>) => apiClient.post(`/courses/${courseId}/assignments`, data),

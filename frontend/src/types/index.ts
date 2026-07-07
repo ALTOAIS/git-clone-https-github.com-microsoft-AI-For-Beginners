@@ -602,8 +602,11 @@ export interface CourseLesson {
   title: string;
   contentType: LessonContentType;
   content?: string | null;
+  videoUrl?: string | null;
+  externalUrl?: string | null;
   durationMinutes?: number | null;
   scheduledAt?: string | null;
+  attachments?: Attachment[];
 }
 
 export interface CourseModule {
@@ -621,6 +624,7 @@ export interface CourseAssignment {
   status: CourseAssignmentStatus;
   assignedById?: string | null;
   assignedBy?: NamedRef | null;
+  startDate?: string | null;
   dueDate?: string | null;
   progressPercent: number;
   completedAt?: string | null;
@@ -645,10 +649,15 @@ export interface CourseDetail extends CourseListItem {
   assignments: CourseAssignment[];
 }
 
+export interface CoursePreview extends CourseListItem {
+  modules: CourseModule[];
+}
+
 export interface MyCourseAssignment {
   id: string;
   status: CourseAssignmentStatus;
   progressPercent: number;
+  startDate?: string | null;
   dueDate?: string | null;
   completedAt?: string | null;
   createdAt: string;

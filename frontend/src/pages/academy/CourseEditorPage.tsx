@@ -1,4 +1,4 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   App,
@@ -21,6 +21,7 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { academyApi } from '../../api/endpoints';
@@ -28,9 +29,13 @@ import { ALL_ROLES, roleLabel } from '../../auth/roles';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import { useDepartments } from '../../hooks/useReferenceData';
-import type { CourseLesson, CourseModule } from '../../types';
+import type { CourseLesson, CourseModule, LessonContentType } from '../../types';
 import { ALL_COURSE_STATUSES, ALL_LESSON_CONTENT_TYPES, courseStatusLabel, lessonContentTypeLabel } from '../../utils/academyDisplay';
+import { LessonAttachmentsPanel } from './LessonAttachmentsPanel';
 import { TestEditorSection } from './TestEditorSection';
+
+const VIDEO_CONTENT_TYPES: LessonContentType[] = ['VIDEO'];
+const EXTERNAL_LINK_CONTENT_TYPES: LessonContentType[] = ['WEBINAR', 'IN_PERSON_EVENT'];
 
 export function CourseEditorPage() {
   const { t } = useTranslation();
@@ -44,6 +49,8 @@ export function CourseEditorPage() {
   const [moduleForm] = Form.useForm();
   const [lessonModal, setLessonModal] = useState<{ moduleId: string; editing: CourseLesson | null } | null>(null);
   const [lessonForm] = Form.useForm();
+  const watchedContentType: LessonContentType | undefined = Form.useWatch('contentType', lessonForm);
+  const watchedContent: string | undefined = Form.useWatch('content', lessonForm);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', id],
@@ -73,6 +80,16 @@ export function CourseEditorPage() {
     await academyApi.update(id!, values);
     message.success(t('courseEditor.saved'));
     invalidate();
+  };
+
+  const handlePublish = async (status: 'PUBLISHED' | 'DRAFT') => {
+    try {
+      await academyApi.update(id!, { status });
+      message.success(status === 'PUBLISHED' ? t('courseEditor.published') : t('courseEditor.unpublished'));
+      invalidate();
+    } catch {
+      message.error(t('courseEditor.publishFailed'));
+    }
   };
 
   const openCreateModule = () => {
@@ -129,11 +146,14 @@ export function CourseEditorPage() {
     if (lessonModal.editing) {
       await academyApi.updateLesson(id!, lessonModal.editing.id, payload);
       message.success(t('courseEditor.lessonUpdated'));
+      setLessonModal(null);
     } else {
-      await academyApi.addLesson(id!, lessonModal.moduleId, payload);
+      const { data: created } = await academyApi.addLesson(id!, lessonModal.moduleId, payload);
       message.success(t('courseEditor.lessonAdded'));
+      // Keep the modal open in edit mode so materials can be attached right away —
+      // uploads need an existing lessonId.
+      setLessonModal({ moduleId: lessonModal.moduleId, editing: created });
     }
-    setLessonModal(null);
     invalidate();
   };
 
@@ -155,6 +175,16 @@ export function CourseEditorPage() {
           <InfoTooltip text={t('tooltips.academy.courseConstructor')} />
         </Typography.Title>
         <Space>
+          <Button icon={<EyeOutlined />} onClick={() => navigate(`/academy/courses/${id}/preview`)}>
+            {t('courseEditor.previewButton')}
+          </Button>
+          {course.status === 'PUBLISHED' ? (
+            <Button onClick={() => handlePublish('DRAFT')}>{t('courseEditor.unpublishButton')}</Button>
+          ) : (
+            <Button type="primary" onClick={() => handlePublish('PUBLISHED')}>
+              {t('courseEditor.publishButton')}
+            </Button>
+          )}
           <Button onClick={() => navigate('/academy/courses')}>{t('courseEditor.backButton')}</Button>
           <ModuleHelpButton moduleKey="academy" />
         </Space>
@@ -334,9 +364,32 @@ export function CourseEditorPage() {
           >
             <Select options={ALL_LESSON_CONTENT_TYPES.map((value) => ({ value, label: lessonContentTypeLabel(value) }))} />
           </Form.Item>
-          <Form.Item name="content" label={t('courseEditor.form.contentLabel')}>
-            <Input.TextArea rows={3} />
+          <Form.Item
+            name="content"
+            label={
+              <span>
+                {t('courseEditor.form.contentLabel')}
+                <InfoTooltip text={t('tooltips.academy.contentMarkdown')} />
+              </span>
+            }
+          >
+            <Input.TextArea rows={5} placeholder={t('courseEditor.form.contentPlaceholder')} />
           </Form.Item>
+          {watchedContent && (
+            <Card size="small" title={t('courseEditor.form.contentPreviewTitle')} style={{ marginBottom: 16 }}>
+              <ReactMarkdown>{watchedContent}</ReactMarkdown>
+            </Card>
+          )}
+          {watchedContentType && VIDEO_CONTENT_TYPES.includes(watchedContentType) && (
+            <Form.Item name="videoUrl" label={t('courseEditor.form.videoUrlLabel')} rules={[{ type: 'url' }]}>
+              <Input placeholder="https://..." />
+            </Form.Item>
+          )}
+          {watchedContentType && EXTERNAL_LINK_CONTENT_TYPES.includes(watchedContentType) && (
+            <Form.Item name="externalUrl" label={t('courseEditor.form.externalUrlLabel')} rules={[{ type: 'url' }]}>
+              <Input placeholder="https://..." />
+            </Form.Item>
+          )}
           <Form.Item name="durationMinutes" label={t('courseEditor.form.durationLabel')}>
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
@@ -352,6 +405,12 @@ export function CourseEditorPage() {
             <DatePicker showTime format="DD.MM.YYYY HH:mm" style={{ width: '100%' }} />
           </Form.Item>
         </Form>
+        {lessonModal?.editing && (
+          <>
+            <Typography.Title level={5}>{t('courseEditor.form.attachmentsLabel')}</Typography.Title>
+            <LessonAttachmentsPanel lessonId={lessonModal.editing.id} canEdit />
+          </>
+        )}
       </Modal>
 
       <TestEditorSection courseId={id!} />

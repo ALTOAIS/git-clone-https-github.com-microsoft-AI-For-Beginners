@@ -20,6 +20,23 @@ export class AttachmentsService {
     });
   }
 
+  findForEntity(entityType: EntityType, entityId: string) {
+    return this.prisma.attachment.findMany({
+      where: { entityType, entityId },
+      include: { uploadedBy: { select: { id: true, fullName: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  findForEntities(entityType: EntityType, entityIds: string[]) {
+    if (entityIds.length === 0) return Promise.resolve([]);
+    return this.prisma.attachment.findMany({
+      where: { entityType, entityId: { in: entityIds } },
+      include: { uploadedBy: { select: { id: true, fullName: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async create(params: {
     file: Express.Multer.File;
     entityType: EntityType;

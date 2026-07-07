@@ -35,8 +35,16 @@ export class AttachmentsController {
   constructor(private readonly attachmentsService: AttachmentsService) {}
 
   @Get()
-  findForRisk(@Query('riskId') riskId: string) {
-    return this.attachmentsService.findForRisk(riskId);
+  findForRisk(
+    @Query('riskId') riskId: string | undefined,
+    @Query('entityType') entityType: EntityType | undefined,
+    @Query('entityId') entityId: string | undefined,
+  ) {
+    if (riskId) return this.attachmentsService.findForRisk(riskId);
+    if (entityType && entityId) {
+      return this.attachmentsService.findForEntity(entityType, entityId);
+    }
+    return [];
   }
 
   @Post()
