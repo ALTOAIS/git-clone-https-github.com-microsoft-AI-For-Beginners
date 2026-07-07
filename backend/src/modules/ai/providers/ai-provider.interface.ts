@@ -47,6 +47,18 @@ export interface ChatFactsContext {
   extraContext?: string;
 }
 
+export interface CrossModuleFactsContext {
+  vakrOverdue: number;
+  vakrTotal: number;
+  criticalRisks: number;
+  activeRisks: number;
+  ineffectiveControls: number;
+  incidentsOpen: number;
+  incidentsUnderReview: number;
+  academyCompletionPercent: number;
+  academyOverdueAssignments: number;
+}
+
 /**
  * Abstraction over the underlying AI backend. Phase 1 ships `MockAiProvider`
  * only — the interface is designed so a real LLM-backed provider (Phase 2)
@@ -71,6 +83,7 @@ export interface AiProvider {
     justification: string;
   }>;
   chat(ctx: ChatFactsContext): Promise<string>;
+  generateCrossModuleInsights(ctx: CrossModuleFactsContext): Promise<string[]>;
 }
 
 export const AI_PROVIDER = 'AI_PROVIDER';

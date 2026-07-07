@@ -984,3 +984,13 @@ export interface AiChatResult {
   reply: string;
   disclaimer: string;
 }
+
+export interface AiRiskIntelligenceDashboard {
+  vakr: { total: number; completed: number; inProgress: number; overdue: number };
+  riskRegister: { active: number; critical: number };
+  controlEffectiveness: Record<string, number>;
+  incidents: { total: number; open: number; underReview: number; resolved: number; closed: number };
+  academy: { completionPercent: number; overdueAssignments: number };
+  insights: string[];
+  disclaimer: string;
+}

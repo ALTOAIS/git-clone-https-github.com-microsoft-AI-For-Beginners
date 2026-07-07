@@ -1,5 +1,15 @@
 import { RiskStatus } from '@prisma/client';
 
+/** Statuses considered "in work" for aggregate counts (excludes DRAFT, CLOSED, ARCHIVED). */
+export const ACTIVE_STATUSES: RiskStatus[] = [
+  RiskStatus.NEW,
+  RiskStatus.ASSESSMENT,
+  RiskStatus.APPROVED,
+  RiskStatus.MONITORING,
+  RiskStatus.MITIGATION,
+  RiskStatus.RESIDUAL_ASSESSMENT,
+];
+
 /** Allowed forward/back transitions for the risk lifecycle described in PRD section 7. */
 export const RISK_LIFECYCLE: Record<RiskStatus, RiskStatus[]> = {
   [RiskStatus.DRAFT]: [RiskStatus.NEW],

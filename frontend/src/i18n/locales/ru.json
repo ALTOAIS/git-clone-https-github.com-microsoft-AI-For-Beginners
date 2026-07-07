@@ -894,7 +894,8 @@
     "useCases": {
       "chat": "Чат",
       "review": "Проверка анализа",
-      "report": "Черновик отчёта"
+      "report": "Черновик отчёта",
+      "dashboard": "ИИ-аналитика рисков"
     },
     "reviewButton": "Проверить качество анализа",
     "reportButton": "Сформировать отчёт",
@@ -909,7 +910,32 @@
     "qualityIssues": "Замечания к качеству",
     "copyButton": "Копировать",
     "exportButton": "Экспортировать",
-    "pdfButton": "Скачать PDF"
+    "pdfButton": "Скачать PDF",
+    "dashboard": {
+      "vakrTitle": "ВАКР",
+      "riskRegisterTitle": "Реестр рисков",
+      "incidentsTitle": "Служебные проверки",
+      "academyTitle": "Академия комплаенса",
+      "total": "Всего",
+      "completed": "Завершено",
+      "inProgress": "В процессе",
+      "overdue": "Просрочено",
+      "active": "Активных",
+      "critical": "Критических",
+      "open": "Открыто",
+      "underReview": "На рассмотрении",
+      "resolved": "Разрешено",
+      "completionPercent": "Завершённость",
+      "overdueAssignments": "Просроченные назначения",
+      "controlEffectivenessTitle": "Эффективность контрольных мероприятий",
+      "controlEffectiveness": {
+        "effective": "Эффективен",
+        "partiallyEffective": "Частично эффективен",
+        "ineffective": "Неэффективен",
+        "notTested": "Не проверен"
+      },
+      "insightsTitle": "ИИ-инсайты"
+    }
   },
   "vakrAi": {
     "panelTitle": "ИИ-ассистент ВАКР",

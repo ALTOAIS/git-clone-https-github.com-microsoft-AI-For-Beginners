@@ -4,14 +4,17 @@ import {
   Alert,
   Button,
   Card,
+  Col,
   Empty,
   Input,
   List,
   Progress,
+  Row,
   Segmented,
   Select,
   Skeleton,
   Space,
+  Statistic,
   Tag,
   Typography,
 } from 'antd';
@@ -23,7 +26,21 @@ import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import type { AiReportResult, AiReviewResult } from '../../types';
 
-type UseCase = 'chat' | 'review' | 'report';
+type UseCase = 'chat' | 'review' | 'report' | 'dashboard';
+
+const CONTROL_EFFECTIVENESS_COLORS: Record<string, string> = {
+  EFFECTIVE: 'green',
+  PARTIALLY_EFFECTIVE: 'blue',
+  INEFFECTIVE: 'red',
+  NOT_TESTED: 'default',
+};
+
+const CONTROL_EFFECTIVENESS_LABEL_KEYS: Record<string, string> = {
+  EFFECTIVE: 'aiAssistant.dashboard.controlEffectiveness.effective',
+  PARTIALLY_EFFECTIVE: 'aiAssistant.dashboard.controlEffectiveness.partiallyEffective',
+  INEFFECTIVE: 'aiAssistant.dashboard.controlEffectiveness.ineffective',
+  NOT_TESTED: 'aiAssistant.dashboard.controlEffectiveness.notTested',
+};
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -57,6 +74,12 @@ export function AiAssistantPage() {
   const { data: analyses } = useQuery({
     queryKey: ['analyses-for-ai'],
     queryFn: () => analysesApi.list({ pageSize: 200 }).then((r) => r.data),
+  });
+
+  const { data: dashboard, isLoading: dashboardLoading } = useQuery({
+    queryKey: ['ai-risk-intelligence-dashboard'],
+    queryFn: () => aiApi.riskIntelligenceDashboard().then((r) => r.data),
+    enabled: useCase === 'dashboard',
   });
 
   const handleSendChat = async () => {
@@ -134,29 +157,32 @@ export function AiAssistantPage() {
           { label: t('aiAssistant.useCases.chat'), value: 'chat' },
           { label: t('aiAssistant.useCases.review'), value: 'review' },
           { label: t('aiAssistant.useCases.report'), value: 'report' },
+          { label: t('aiAssistant.useCases.dashboard'), value: 'dashboard' },
         ]}
       />
 
-      <Space style={{ marginBottom: 16 }}>
-        <Select
-          allowClear
-          placeholder={t('aiAssistant.contextPlaceholder')}
-          style={{ width: 340 }}
-          value={analysisId}
-          onChange={setAnalysisId}
-          options={analyses?.items.map((a) => ({ value: a.id, label: `${a.code} — ${a.name}` }))}
-        />
-        {useCase === 'review' && (
-          <Button type="primary" disabled={!analysisId} loading={loading} onClick={handleReview}>
-            {t('aiAssistant.reviewButton')}
-          </Button>
-        )}
-        {useCase === 'report' && (
-          <Button type="primary" disabled={!analysisId} loading={loading} onClick={handleReport}>
-            {t('aiAssistant.reportButton')}
-          </Button>
-        )}
-      </Space>
+      {useCase !== 'dashboard' && (
+        <Space style={{ marginBottom: 16 }}>
+          <Select
+            allowClear
+            placeholder={t('aiAssistant.contextPlaceholder')}
+            style={{ width: 340 }}
+            value={analysisId}
+            onChange={setAnalysisId}
+            options={analyses?.items.map((a) => ({ value: a.id, label: `${a.code} — ${a.name}` }))}
+          />
+          {useCase === 'review' && (
+            <Button type="primary" disabled={!analysisId} loading={loading} onClick={handleReview}>
+              {t('aiAssistant.reviewButton')}
+            </Button>
+          )}
+          {useCase === 'report' && (
+            <Button type="primary" disabled={!analysisId} loading={loading} onClick={handleReport}>
+              {t('aiAssistant.reportButton')}
+            </Button>
+          )}
+        </Space>
+      )}
 
       {error && <Alert type="error" showIcon message={error} style={{ marginBottom: 16 }} />}
 
@@ -270,6 +296,117 @@ export function AiAssistantPage() {
               ))}
               <Typography.Text type="secondary">{reportResult.disclaimer}</Typography.Text>
             </Card>
+          )}
+        </>
+      )}
+
+      {useCase === 'dashboard' && (
+        <>
+          {dashboardLoading && <Skeleton active paragraph={{ rows: 8 }} />}
+          {!dashboardLoading && dashboard && (
+            <>
+              <Row gutter={16}>
+                <Col span={6}>
+                  <Card>
+                    <Typography.Text strong>{t('aiAssistant.dashboard.vakrTitle')}</Typography.Text>
+                    <Row gutter={8} style={{ marginTop: 8 }}>
+                      <Col span={12}>
+                        <Statistic title={t('aiAssistant.dashboard.total')} value={dashboard.vakr.total} />
+                      </Col>
+                      <Col span={12}>
+                        <Statistic title={t('aiAssistant.dashboard.completed')} value={dashboard.vakr.completed} />
+                      </Col>
+                      <Col span={12}>
+                        <Statistic title={t('aiAssistant.dashboard.inProgress')} value={dashboard.vakr.inProgress} />
+                      </Col>
+                      <Col span={12}>
+                        <Statistic
+                          title={t('aiAssistant.dashboard.overdue')}
+                          value={dashboard.vakr.overdue}
+                          valueStyle={dashboard.vakr.overdue > 0 ? { color: '#cf1322' } : undefined}
+                        />
+                      </Col>
+                    </Row>
+                  </Card>
+                </Col>
+                <Col span={6}>
+                  <Card>
+                    <Typography.Text strong>{t('aiAssistant.dashboard.riskRegisterTitle')}</Typography.Text>
+                    <Row gutter={8} style={{ marginTop: 8 }}>
+                      <Col span={12}>
+                        <Statistic title={t('aiAssistant.dashboard.active')} value={dashboard.riskRegister.active} />
+                      </Col>
+                      <Col span={12}>
+                        <Statistic
+                          title={t('aiAssistant.dashboard.critical')}
+                          value={dashboard.riskRegister.critical}
+                          valueStyle={dashboard.riskRegister.critical > 0 ? { color: '#cf1322' } : undefined}
+                        />
+                      </Col>
+                    </Row>
+                  </Card>
+                </Col>
+                <Col span={6}>
+                  <Card>
+                    <Typography.Text strong>{t('aiAssistant.dashboard.incidentsTitle')}</Typography.Text>
+                    <Row gutter={8} style={{ marginTop: 8 }}>
+                      <Col span={12}>
+                        <Statistic title={t('aiAssistant.dashboard.total')} value={dashboard.incidents.total} />
+                      </Col>
+                      <Col span={12}>
+                        <Statistic title={t('aiAssistant.dashboard.open')} value={dashboard.incidents.open} />
+                      </Col>
+                      <Col span={12}>
+                        <Statistic title={t('aiAssistant.dashboard.underReview')} value={dashboard.incidents.underReview} />
+                      </Col>
+                      <Col span={12}>
+                        <Statistic title={t('aiAssistant.dashboard.resolved')} value={dashboard.incidents.resolved} />
+                      </Col>
+                    </Row>
+                  </Card>
+                </Col>
+                <Col span={6}>
+                  <Card>
+                    <Typography.Text strong>{t('aiAssistant.dashboard.academyTitle')}</Typography.Text>
+                    <Row gutter={[8, 12]} style={{ marginTop: 8 }}>
+                      <Col span={24}>
+                        <Statistic
+                          title={t('aiAssistant.dashboard.completionPercent')}
+                          value={dashboard.academy.completionPercent}
+                          suffix="%"
+                        />
+                      </Col>
+                      <Col span={24}>
+                        <Statistic
+                          title={t('aiAssistant.dashboard.overdueAssignments')}
+                          value={dashboard.academy.overdueAssignments}
+                          valueStyle={dashboard.academy.overdueAssignments > 0 ? { color: '#cf1322' } : undefined}
+                        />
+                      </Col>
+                    </Row>
+                  </Card>
+                </Col>
+              </Row>
+
+              <Card title={t('aiAssistant.dashboard.controlEffectivenessTitle')} style={{ marginTop: 16 }}>
+                <Space wrap>
+                  {Object.entries(dashboard.controlEffectiveness).map(([status, count]) => (
+                    <Tag color={CONTROL_EFFECTIVENESS_COLORS[status] ?? 'default'} key={status}>
+                      {t(CONTROL_EFFECTIVENESS_LABEL_KEYS[status] ?? status)}: {count}
+                    </Tag>
+                  ))}
+                </Space>
+              </Card>
+
+              <Card title={t('aiAssistant.dashboard.insightsTitle')} style={{ marginTop: 16 }}>
+                <ul>
+                  {dashboard.insights.map((insight, i) => (
+                    <li key={i}>{insight}</li>
+                  ))}
+                </ul>
+                <Typography.Text type="secondary">{dashboard.disclaimer}</Typography.Text>
+              </Card>
+            </>
           )}
         </>
       )}

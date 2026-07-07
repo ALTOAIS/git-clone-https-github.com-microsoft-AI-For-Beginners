@@ -5,6 +5,7 @@ import {
   AnalysisFactsContext,
   ChatFactsContext,
   ControlSuggestionContext,
+  CrossModuleFactsContext,
   ReportFactsContext,
   RiskRegisterFactsContext,
   RiskSuggestionContext,
@@ -224,5 +225,44 @@ export class MockAiProvider implements AiProvider {
       `соответствующему вашему вопросу («${ctx.message.slice(0, 120)}»), и свериться с внутренними политиками компании. ` +
       'Для окончательного решения по коррупционным рискам и юридически значимым вопросам обратитесь к комплаенс-офицеру.'
     );
+  }
+
+  async generateCrossModuleInsights(
+    ctx: CrossModuleFactsContext,
+  ): Promise<string[]> {
+    const insights: string[] = [];
+
+    if (ctx.vakrOverdue > 0) {
+      insights.push(
+        `${ctx.vakrOverdue} из ${ctx.vakrTotal} анализов ВАКР имеют просроченный срок исполнения — рекомендуется актуализировать сроки или ускорить завершение анализа.`,
+      );
+    }
+    if (ctx.criticalRisks > 0) {
+      insights.push(
+        `В реестре зафиксировано ${ctx.criticalRisks} критических рисков (из ${ctx.activeRisks} активных) — рекомендуется приоритизировать их рассмотрение на комитете по рискам.`,
+      );
+    }
+    if (ctx.ineffectiveControls > 0) {
+      insights.push(
+        `${ctx.ineffectiveControls} контрольных мероприятий признаны неэффективными — риски, которые они должны снижать, могут быть занижены в оценке остаточного риска.`,
+      );
+    }
+    if (ctx.incidentsOpen + ctx.incidentsUnderReview > 0) {
+      insights.push(
+        `${ctx.incidentsOpen + ctx.incidentsUnderReview} служебных проверок находятся в работе (на рассмотрении или открыты) — обратите внимание на сроки их завершения.`,
+      );
+    }
+    if (ctx.academyOverdueAssignments > 0) {
+      insights.push(
+        `${ctx.academyOverdueAssignments} назначенных обучений просрочены — недостаточная осведомлённость работников может повышать коррупционные риски в соответствующих подразделениях.`,
+      );
+    }
+    if (insights.length === 0) {
+      insights.push(
+        `Существенных кросс-модульных отклонений не выявлено: критических рисков нет, просроченных анализов ВАКР и обучений нет, завершённость Академии комплаенса — ${ctx.academyCompletionPercent}%.`,
+      );
+    }
+
+    return insights;
   }
 }

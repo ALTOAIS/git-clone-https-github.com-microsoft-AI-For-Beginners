@@ -101,6 +101,12 @@ export class AiController {
     return this.aiService.generateRiskRegisterEntry(dto, user);
   }
 
+  @Get('risk-intelligence-dashboard')
+  @Roles(...SENSITIVE_AI_ROLES)
+  getRiskIntelligenceDashboard(@CurrentUser() user: AuthenticatedUser) {
+    return this.aiService.getRiskIntelligenceDashboard(user);
+  }
+
   @Post('chat')
   chat(@Body() dto: ChatDto, @CurrentUser() user: AuthenticatedUser) {
     const isSensitiveContext = dto.contextEntityType === 'ANALYSIS';
