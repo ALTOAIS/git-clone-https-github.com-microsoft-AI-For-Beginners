@@ -1,11 +1,11 @@
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { App, Button, Card, Checkbox, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Card, Checkbox, Drawer, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { academyApi } from '../../api/endpoints';
+import { aiApi, academyApi } from '../../api/endpoints';
 import { InfoTooltip } from '../../components/InfoTooltip';
-import type { TestAttempt, TestDetail, TestQuestion } from '../../types';
+import type { AiQuizQuestionDraft, TestAttempt, TestDetail, TestQuestion } from '../../types';
 import {
   ALL_TEST_QUESTION_TYPES,
   testAttemptStageLabel,
@@ -14,6 +14,7 @@ import {
 
 export interface TestEditorAdapter {
   queryKey: string;
+  topicHint: string;
   getTest: () => Promise<TestDetail>;
   getAttempts: () => Promise<TestAttempt[]>;
   createTest: (data: Record<string, unknown>) => Promise<unknown>;
@@ -22,11 +23,13 @@ export interface TestEditorAdapter {
   addQuestion: (data: Record<string, unknown>) => Promise<unknown>;
   updateQuestion: (questionId: string, data: Record<string, unknown>) => Promise<unknown>;
   removeQuestion: (questionId: string) => Promise<unknown>;
+  generateQuestions: (questionCount: number) => Promise<AiQuizQuestionDraft[]>;
 }
 
-export function courseTestAdapter(courseId: string): TestEditorAdapter {
+export function courseTestAdapter(courseId: string, topicHint: string): TestEditorAdapter {
   return {
     queryKey: `course-test-${courseId}`,
+    topicHint,
     getTest: () => academyApi.getTest(courseId).then((r) => r.data),
     getAttempts: () => academyApi.allAttempts(courseId).then((r) => r.data),
     createTest: (data) => academyApi.createTest(courseId, data),
@@ -35,12 +38,15 @@ export function courseTestAdapter(courseId: string): TestEditorAdapter {
     addQuestion: (data) => academyApi.addQuestion(courseId, data),
     updateQuestion: (questionId, data) => academyApi.updateQuestion(courseId, questionId, data),
     removeQuestion: (questionId) => academyApi.removeQuestion(courseId, questionId),
+    generateQuestions: (questionCount) =>
+      aiApi.generateQuizQuestions({ courseId, topic: topicHint, questionCount }).then((r) => r.data.questions),
   };
 }
 
-export function lessonQuizAdapter(courseId: string, lessonId: string): TestEditorAdapter {
+export function lessonQuizAdapter(courseId: string, lessonId: string, topicHint: string): TestEditorAdapter {
   return {
     queryKey: `lesson-quiz-${courseId}-${lessonId}`,
+    topicHint,
     getTest: () => academyApi.getLessonQuiz(courseId, lessonId).then((r) => r.data),
     getAttempts: () => academyApi.allQuizAttempts(courseId, lessonId).then((r) => r.data),
     createTest: (data) => academyApi.createLessonQuiz(courseId, lessonId, data),
@@ -49,6 +55,8 @@ export function lessonQuizAdapter(courseId: string, lessonId: string): TestEdito
     addQuestion: (data) => academyApi.addQuizQuestion(courseId, lessonId, data),
     updateQuestion: (questionId, data) => academyApi.updateQuizQuestion(courseId, lessonId, questionId, data),
     removeQuestion: (questionId) => academyApi.removeQuizQuestion(courseId, lessonId, questionId),
+    generateQuestions: (questionCount) =>
+      aiApi.generateQuizQuestions({ courseId, topic: topicHint, questionCount }).then((r) => r.data.questions),
   };
 }
 
@@ -65,6 +73,11 @@ export function TestEditorSection({ adapter }: Props) {
   const [testForm] = Form.useForm();
   const [questionModal, setQuestionModal] = useState<{ editing: TestQuestion | null } | null>(null);
   const [questionForm] = Form.useForm();
+  const [aiQuestionCount, setAiQuestionCount] = useState(3);
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  const [aiDraftQuestions, setAiDraftQuestions] = useState<AiQuizQuestionDraft[]>([]);
+  const [addedQuestionIndexes, setAddedQuestionIndexes] = useState<number[]>([]);
 
   const { data: test, isLoading, isError } = useQuery({
     queryKey: [adapter.queryKey],
@@ -185,6 +198,34 @@ export function TestEditorSection({ adapter }: Props) {
     invalidate();
   };
 
+  const handleGenerateQuestions = async () => {
+    setGeneratingQuestions(true);
+    try {
+      const questions = await adapter.generateQuestions(aiQuestionCount);
+      setAiDraftQuestions(questions);
+      setAddedQuestionIndexes([]);
+      setAiDrawerOpen(true);
+    } catch {
+      message.error(t('courseEditor.test.aiGenerateFailed'));
+    } finally {
+      setGeneratingQuestions(false);
+    }
+  };
+
+  const handleAddDraftQuestion = async (draft: AiQuizQuestionDraft, index: number) => {
+    await adapter.addQuestion({
+      order: (test?.questions.length ?? 0) + index + 1,
+      type: draft.type,
+      text: draft.text,
+      points: draft.points,
+      correctAnswerText: draft.correctAnswerText,
+      options: draft.options,
+    });
+    setAddedQuestionIndexes((prev) => [...prev, index]);
+    message.success(t('courseEditor.test.questionAdded'));
+    invalidate();
+  };
+
   const watchedType = Form.useWatch('type', questionForm);
 
   if (isLoading) return null;
@@ -253,9 +294,15 @@ export function TestEditorSection({ adapter }: Props) {
         <Typography.Title level={5} style={{ margin: 0 }}>
           {t('courseEditor.test.questionsTitle')}
         </Typography.Title>
-        <Button size="small" icon={<PlusOutlined />} onClick={openCreateQuestion}>
-          {t('courseEditor.test.addQuestionButton')}
-        </Button>
+        <Space>
+          <InputNumber min={1} max={10} value={aiQuestionCount} onChange={(v) => setAiQuestionCount(v ?? 3)} />
+          <Button loading={generatingQuestions} onClick={handleGenerateQuestions}>
+            {t('courseEditor.test.aiGenerateQuestionsButton')}
+          </Button>
+          <Button size="small" icon={<PlusOutlined />} onClick={openCreateQuestion}>
+            {t('courseEditor.test.addQuestionButton')}
+          </Button>
+        </Space>
       </Space>
 
       <Table
@@ -413,6 +460,42 @@ export function TestEditorSection({ adapter }: Props) {
           )}
         </Form>
       </Modal>
+
+      <Drawer
+        title={t('courseEditor.test.aiDrawerTitle')}
+        open={aiDrawerOpen}
+        onClose={() => setAiDrawerOpen(false)}
+        width={560}
+        destroyOnHidden
+      >
+        {aiDraftQuestions.length === 0 ? (
+          <Typography.Text type="secondary">{t('courseEditor.test.aiNoSuggestions')}</Typography.Text>
+        ) : (
+          <Space direction="vertical" style={{ width: '100%' }}>
+            {aiDraftQuestions.map((question, index) => (
+              <Card key={index} size="small" title={question.text}>
+                {question.options && (
+                  <ul>
+                    {question.options.map((option, optionIndex) => (
+                      <li key={optionIndex}>
+                        {option.text} {option.isCorrect && <Tag color="green">{t('courseEditor.test.correctLabel')}</Tag>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Button
+                  type="primary"
+                  size="small"
+                  disabled={addedQuestionIndexes.includes(index)}
+                  onClick={() => handleAddDraftQuestion(question, index)}
+                >
+                  {addedQuestionIndexes.includes(index) ? t('courseEditor.test.aiAdded') : t('courseEditor.test.aiAddQuestion')}
+                </Button>
+              </Card>
+            ))}
+          </Space>
+        )}
+      </Drawer>
     </Card>
   );
 }

@@ -1496,6 +1496,9 @@
     "lessonAdded": "Урок добавлен",
     "lessonUpdated": "Урок обновлён",
     "lessonRemoved": "Урок удалён",
+    "aiGenerateTextButton": "Сгенерировать текст с помощью ИИ",
+    "aiReplaceContentConfirm": "Заменить текущий текст урока сгенерированным?",
+    "aiGenerateFailed": "Не удалось сгенерировать текст",
     "durationMinutes": "{{count}} мин.",
     "lessonColumns": {
       "order": "№",
@@ -1542,6 +1545,12 @@
       "deleteConfirm": "Удалить тест вместе со всеми вопросами и результатами прохождения?",
       "questionsTitle": "Вопросы теста",
       "addQuestionButton": "Добавить вопрос",
+      "aiGenerateQuestionsButton": "Сгенерировать вопросы с помощью ИИ",
+      "aiGenerateFailed": "Не удалось сгенерировать вопросы",
+      "aiDrawerTitle": "Вопросы, сгенерированные ИИ",
+      "aiNoSuggestions": "Не удалось сгенерировать вопросы",
+      "aiAddQuestion": "Добавить в тест",
+      "aiAdded": "Добавлено",
       "noQuestionsYet": "В тесте пока нет вопросов",
       "typeColumn": "Тип вопроса",
       "pointsColumn": "Баллы",
@@ -1571,6 +1580,22 @@
         "submittedAt": "Дата прохождения"
       }
     }
+  },
+  "aiCourseBuilder": {
+    "panelTitle": "ИИ-конструктор курса",
+    "panelDescription": "Сгенерируйте черновик структуры курса по теме — модули, уроки и текст можно отредактировать перед добавлением в курс.",
+    "topicPlaceholder": "Тема курса",
+    "audiencePlaceholder": "Целевая аудитория (необязательно)",
+    "moduleCountLabel": "Модулей",
+    "generateButton": "Сгенерировать структуру",
+    "drawerTitle": "Черновик структуры курса",
+    "descriptionLabel": "Описание курса",
+    "addToCourseButton": "Добавить в курс",
+    "removeModule": "Удалить модуль",
+    "removeLesson": "Удалить урок",
+    "added": "Структура курса добавлена",
+    "errorGeneric": "Не удалось выполнить запрос к ИИ-ассистенту",
+    "disclaimer": "Результат сформирован ИИ и носит рекомендательный характер. Проверьте и отредактируйте содержание перед добавлением в курс."
   },
   "coursePreview": {
     "title": "Просмотр курса",

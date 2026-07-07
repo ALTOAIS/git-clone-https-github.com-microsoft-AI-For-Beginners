@@ -5,6 +5,9 @@ import type {
   AcademySummary,
   AiAnalyzeRiskResult,
   AiChatResult,
+  AiCourseOutlineDraft,
+  AiLessonContentResult,
+  AiQuizQuestionsResult,
   AiReportResult,
   AiReviewResult,
   AiRiskIntelligenceDashboard,
@@ -31,6 +34,7 @@ import type {
   DashboardSummary,
   Department,
   Incident,
+  LessonContentType,
   MyCourseAssignment,
   Paginated,
   RiskDetail,
@@ -477,4 +481,10 @@ export const aiApi = {
     apiClient.post<AiChatResult>('/ai/chat', data),
   riskIntelligenceDashboard: () =>
     apiClient.get<AiRiskIntelligenceDashboard>('/ai/risk-intelligence-dashboard'),
+  generateCourseOutline: (data: { courseId: string; topic: string; audienceHint?: string; moduleCount?: number }) =>
+    apiClient.post<AiCourseOutlineDraft>('/ai/generate-course-outline', data),
+  generateLessonContent: (data: { courseId: string; courseTopic: string; lessonTitle: string; contentType: LessonContentType }) =>
+    apiClient.post<AiLessonContentResult>('/ai/generate-lesson-content', data),
+  generateQuizQuestions: (data: { courseId: string; topic: string; questionCount?: number }) =>
+    apiClient.post<AiQuizQuestionsResult>('/ai/generate-quiz-questions', data),
 };

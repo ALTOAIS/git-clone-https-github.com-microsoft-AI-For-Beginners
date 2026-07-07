@@ -20,6 +20,9 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { AiService } from './ai.service';
 import { AnalyzeRiskDto } from './dto/analyze-risk.dto';
 import { ChatDto } from './dto/chat.dto';
+import { GenerateCourseOutlineDto } from './dto/generate-course-outline.dto';
+import { GenerateLessonContentDto } from './dto/generate-lesson-content.dto';
+import { GenerateQuizQuestionsDto } from './dto/generate-quiz-questions.dto';
 import { GenerateRiskRegisterEntryDto } from './dto/generate-risk-register-entry.dto';
 import { GenerateVakrReportDto } from './dto/generate-vakr-report.dto';
 import { ReviewVakrAnalysisDto } from './dto/review-vakr-analysis.dto';
@@ -30,6 +33,12 @@ const SENSITIVE_AI_ROLES = [
   Role.COMPLIANCE_MANAGER,
   Role.COMPLIANCE_OFFICER,
   Role.INTERNAL_AUDIT,
+];
+
+const ACADEMY_AI_ROLES = [
+  Role.ADMINISTRATOR,
+  Role.COMPLIANCE_MANAGER,
+  Role.COMPLIANCE_OFFICER,
 ];
 
 @ApiTags('ai')
@@ -138,5 +147,32 @@ export class AiController {
       );
     }
     return this.aiService.chat(dto, user);
+  }
+
+  @Post('generate-course-outline')
+  @Roles(...ACADEMY_AI_ROLES)
+  generateCourseOutline(
+    @Body() dto: GenerateCourseOutlineDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.aiService.generateCourseOutline(dto, user);
+  }
+
+  @Post('generate-lesson-content')
+  @Roles(...ACADEMY_AI_ROLES)
+  generateLessonContent(
+    @Body() dto: GenerateLessonContentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.aiService.generateLessonContent(dto, user);
+  }
+
+  @Post('generate-quiz-questions')
+  @Roles(...ACADEMY_AI_ROLES)
+  generateQuizQuestions(
+    @Body() dto: GenerateQuizQuestionsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.aiService.generateQuizQuestions(dto, user);
   }
 }

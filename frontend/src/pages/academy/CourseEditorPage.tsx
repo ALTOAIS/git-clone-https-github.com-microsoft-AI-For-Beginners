@@ -24,18 +24,31 @@ import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { academyApi } from '../../api/endpoints';
+import { aiApi, academyApi } from '../../api/endpoints';
 import { ALL_ROLES, roleLabel } from '../../auth/roles';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import { useDepartments } from '../../hooks/useReferenceData';
 import type { CourseLesson, CourseModule, LessonContentType } from '../../types';
 import { ALL_COURSE_STATUSES, ALL_LESSON_CONTENT_TYPES, courseStatusLabel, lessonContentTypeLabel } from '../../utils/academyDisplay';
+import { AiCourseBuilderPanel } from './AiCourseBuilderPanel';
 import { LessonAttachmentsPanel } from './LessonAttachmentsPanel';
 import { TestEditorSection, courseTestAdapter, lessonQuizAdapter } from './TestEditorSection';
 
 const VIDEO_CONTENT_TYPES: LessonContentType[] = ['VIDEO'];
 const EXTERNAL_LINK_CONTENT_TYPES: LessonContentType[] = ['WEBINAR', 'IN_PERSON_EVENT'];
+const TEXT_CONTENT_TYPES: LessonContentType[] = [
+  'PRESENTATION',
+  'ARTICLE',
+  'INSTRUCTION',
+  'MEMO',
+  'CHECKLIST',
+  'EBOOK',
+  'PDF_COURSE',
+  'INTERACTIVE',
+  'PRACTICAL_TASK',
+  'CASE_STUDY',
+];
 
 export function CourseEditorPage() {
   const { t } = useTranslation();
@@ -51,6 +64,8 @@ export function CourseEditorPage() {
   const [lessonForm] = Form.useForm();
   const watchedContentType: LessonContentType | undefined = Form.useWatch('contentType', lessonForm);
   const watchedContent: string | undefined = Form.useWatch('content', lessonForm);
+  const watchedTitle: string | undefined = Form.useWatch('title', lessonForm);
+  const [generatingLessonContent, setGeneratingLessonContent] = useState(false);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', id],
@@ -157,6 +172,24 @@ export function CourseEditorPage() {
     invalidate();
   };
 
+  const handleGenerateLessonContent = async () => {
+    if (!watchedTitle || !watchedContentType) return;
+    setGeneratingLessonContent(true);
+    try {
+      const { data } = await aiApi.generateLessonContent({
+        courseId: id!,
+        courseTopic: course!.title,
+        lessonTitle: watchedTitle,
+        contentType: watchedContentType,
+      });
+      lessonForm.setFieldValue('content', data.content);
+    } catch {
+      message.error(t('courseEditor.aiGenerateFailed'));
+    } finally {
+      setGeneratingLessonContent(false);
+    }
+  };
+
   const handleDeleteLesson = async (lessonId: string) => {
     await academyApi.removeLesson(id!, lessonId);
     message.success(t('courseEditor.lessonRemoved'));
@@ -245,6 +278,8 @@ export function CourseEditorPage() {
           </Button>
         </Form>
       </Card>
+
+      <AiCourseBuilderPanel courseId={id!} courseTitle={course.title} onUpdated={invalidate} />
 
       <Space style={{ width: '100%', justifyContent: 'space-between', marginTop: 24, marginBottom: 8 }}>
         <Typography.Title level={4} style={{ margin: 0 }}>
@@ -375,6 +410,19 @@ export function CourseEditorPage() {
           >
             <Input.TextArea rows={5} placeholder={t('courseEditor.form.contentPlaceholder')} />
           </Form.Item>
+          {watchedContentType && watchedTitle && TEXT_CONTENT_TYPES.includes(watchedContentType) && (
+            <div style={{ marginBottom: 16 }}>
+              {watchedContent?.trim() ? (
+                <Popconfirm title={t('courseEditor.aiReplaceContentConfirm')} onConfirm={handleGenerateLessonContent}>
+                  <Button loading={generatingLessonContent}>{t('courseEditor.aiGenerateTextButton')}</Button>
+                </Popconfirm>
+              ) : (
+                <Button loading={generatingLessonContent} onClick={handleGenerateLessonContent}>
+                  {t('courseEditor.aiGenerateTextButton')}
+                </Button>
+              )}
+            </div>
+          )}
           {watchedContent && (
             <Card size="small" title={t('courseEditor.form.contentPreviewTitle')} style={{ marginBottom: 16 }}>
               <ReactMarkdown>{watchedContent}</ReactMarkdown>
@@ -412,11 +460,11 @@ export function CourseEditorPage() {
           </>
         )}
         {lessonModal?.editing && watchedContentType === 'QUIZ' && (
-          <TestEditorSection adapter={lessonQuizAdapter(id!, lessonModal.editing.id)} />
+          <TestEditorSection adapter={lessonQuizAdapter(id!, lessonModal.editing.id, lessonModal.editing.title)} />
         )}
       </Modal>
 
-      <TestEditorSection adapter={courseTestAdapter(id!)} />
+      <TestEditorSection adapter={courseTestAdapter(id!, course.title)} />
     </div>
   );
 }
