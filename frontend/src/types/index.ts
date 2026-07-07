@@ -592,7 +592,8 @@ export type LessonContentType =
   | 'PDF_COURSE'
   | 'INTERACTIVE'
   | 'PRACTICAL_TASK'
-  | 'CASE_STUDY';
+  | 'CASE_STUDY'
+  | 'QUIZ';
 
 export type CourseAssignmentStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
 
@@ -804,7 +805,8 @@ export interface TestQuestion {
 
 export interface TestDetail {
   id: string;
-  courseId: string;
+  courseId?: string | null;
+  lessonId?: string | null;
   title: string;
   passScorePercent: number;
   questions: TestQuestion[];
@@ -815,7 +817,7 @@ export interface TestAttempt {
   testId: string;
   userId: string;
   user?: NamedRef & { email: string };
-  stage: TestAttemptStage;
+  stage?: TestAttemptStage | null;
   scorePercent: number;
   passed: boolean;
   answers: Record<string, unknown>;

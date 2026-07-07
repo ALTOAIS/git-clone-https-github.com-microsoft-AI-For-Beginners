@@ -1614,7 +1614,8 @@
     "PDF_COURSE": "PDF-курс",
     "INTERACTIVE": "Интерактивный материал",
     "PRACTICAL_TASK": "Практическое задание",
-    "CASE_STUDY": "Кейс"
+    "CASE_STUDY": "Кейс",
+    "QUIZ": "Тест-урок"
   },
   "courseStatus": {
     "DRAFT": "Черновик",
@@ -1737,6 +1738,19 @@
       "score": "Балл",
       "passed": "Результат"
     }
+  },
+  "lessonQuiz": {
+    "noQuiz": "Тест для этого урока ещё не создан. Обратитесь к комплаенс-офицеру.",
+    "passScoreInfo": "Проходной балл: {{percent}}%",
+    "answerRequired": "Ответьте на вопрос",
+    "submitButton": "Отправить ответы",
+    "submitSuccess": "Тест пройден успешно",
+    "submitFailed": "Тест не пройден",
+    "passedTitle": "Тест пройден: {{percent}}%",
+    "passedDescription": "Урок отмечен как пройденный.",
+    "failedTitle": "Тест не пройден: {{percent}}%",
+    "failedDescription": "Проходной балл: {{percent}}%. Ознакомьтесь с материалами урока ещё раз и попробуйте снова.",
+    "retryButton": "Попробовать снова"
   },
   "surveyStatus": {
     "DRAFT": "Черновик",

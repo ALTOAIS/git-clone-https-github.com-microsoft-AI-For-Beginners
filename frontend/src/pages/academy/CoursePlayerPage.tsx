@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { academyApi } from '../../api/endpoints';
 import { LessonContentView } from './LessonContentView';
+import { LessonQuizPlayer } from './LessonQuizPlayer';
 
 export function CoursePlayerPage() {
   const { t } = useTranslation();
@@ -153,22 +154,30 @@ export function CoursePlayerPage() {
                 </Space>
               }
             >
-              <LessonContentView
-                lesson={currentLesson}
-                footer={
-                  <div style={{ marginTop: 16 }}>
-                    {currentLesson.completed ? (
-                      <Typography.Text type="success">
-                        <CheckCircleFilled /> {t('coursePlayer.lessonCompleted')}
-                      </Typography.Text>
-                    ) : (
-                      <Button type="primary" loading={completing} onClick={handleMarkComplete}>
-                        {t('coursePlayer.markCompleteButton')}
-                      </Button>
-                    )}
-                  </div>
-                }
-              />
+              {currentLesson.contentType === 'QUIZ' ? (
+                <LessonQuizPlayer
+                  courseId={id!}
+                  lesson={currentLesson}
+                  onSubmitted={() => queryClient.invalidateQueries({ queryKey })}
+                />
+              ) : (
+                <LessonContentView
+                  lesson={currentLesson}
+                  footer={
+                    <div style={{ marginTop: 16 }}>
+                      {currentLesson.completed ? (
+                        <Typography.Text type="success">
+                          <CheckCircleFilled /> {t('coursePlayer.lessonCompleted')}
+                        </Typography.Text>
+                      ) : (
+                        <Button type="primary" loading={completing} onClick={handleMarkComplete}>
+                          {t('coursePlayer.markCompleteButton')}
+                        </Button>
+                      )}
+                    </div>
+                  }
+                />
+              )}
             </Card>
           ) : (
             <Typography.Text type="secondary">{t('coursePlayer.noLessonsYet')}</Typography.Text>

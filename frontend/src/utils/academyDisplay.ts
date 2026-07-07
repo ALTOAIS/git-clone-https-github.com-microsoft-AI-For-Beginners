@@ -27,6 +27,7 @@ export const ALL_LESSON_CONTENT_TYPES: LessonContentType[] = [
   'INTERACTIVE',
   'PRACTICAL_TASK',
   'CASE_STUDY',
+  'QUIZ',
 ];
 
 export function lessonContentTypeLabel(value: LessonContentType): string {

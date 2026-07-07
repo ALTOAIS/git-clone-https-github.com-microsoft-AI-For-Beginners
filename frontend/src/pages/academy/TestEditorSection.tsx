@@ -5,18 +5,58 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { academyApi } from '../../api/endpoints';
 import { InfoTooltip } from '../../components/InfoTooltip';
-import type { TestAttempt, TestQuestion } from '../../types';
+import type { TestAttempt, TestDetail, TestQuestion } from '../../types';
 import {
   ALL_TEST_QUESTION_TYPES,
   testAttemptStageLabel,
   testQuestionTypeLabel,
 } from '../../utils/academyDisplay';
 
-interface Props {
-  courseId: string;
+export interface TestEditorAdapter {
+  queryKey: string;
+  getTest: () => Promise<TestDetail>;
+  getAttempts: () => Promise<TestAttempt[]>;
+  createTest: (data: Record<string, unknown>) => Promise<unknown>;
+  updateTest: (data: Record<string, unknown>) => Promise<unknown>;
+  removeTest: () => Promise<unknown>;
+  addQuestion: (data: Record<string, unknown>) => Promise<unknown>;
+  updateQuestion: (questionId: string, data: Record<string, unknown>) => Promise<unknown>;
+  removeQuestion: (questionId: string) => Promise<unknown>;
 }
 
-export function TestEditorSection({ courseId }: Props) {
+export function courseTestAdapter(courseId: string): TestEditorAdapter {
+  return {
+    queryKey: `course-test-${courseId}`,
+    getTest: () => academyApi.getTest(courseId).then((r) => r.data),
+    getAttempts: () => academyApi.allAttempts(courseId).then((r) => r.data),
+    createTest: (data) => academyApi.createTest(courseId, data),
+    updateTest: (data) => academyApi.updateTest(courseId, data),
+    removeTest: () => academyApi.removeTest(courseId),
+    addQuestion: (data) => academyApi.addQuestion(courseId, data),
+    updateQuestion: (questionId, data) => academyApi.updateQuestion(courseId, questionId, data),
+    removeQuestion: (questionId) => academyApi.removeQuestion(courseId, questionId),
+  };
+}
+
+export function lessonQuizAdapter(courseId: string, lessonId: string): TestEditorAdapter {
+  return {
+    queryKey: `lesson-quiz-${courseId}-${lessonId}`,
+    getTest: () => academyApi.getLessonQuiz(courseId, lessonId).then((r) => r.data),
+    getAttempts: () => academyApi.allQuizAttempts(courseId, lessonId).then((r) => r.data),
+    createTest: (data) => academyApi.createLessonQuiz(courseId, lessonId, data),
+    updateTest: (data) => academyApi.updateLessonQuiz(courseId, lessonId, data),
+    removeTest: () => academyApi.removeLessonQuiz(courseId, lessonId),
+    addQuestion: (data) => academyApi.addQuizQuestion(courseId, lessonId, data),
+    updateQuestion: (questionId, data) => academyApi.updateQuizQuestion(courseId, lessonId, questionId, data),
+    removeQuestion: (questionId) => academyApi.removeQuizQuestion(courseId, lessonId, questionId),
+  };
+}
+
+interface Props {
+  adapter: TestEditorAdapter;
+}
+
+export function TestEditorSection({ adapter }: Props) {
   const { t } = useTranslation();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
@@ -27,20 +67,20 @@ export function TestEditorSection({ courseId }: Props) {
   const [questionForm] = Form.useForm();
 
   const { data: test, isLoading, isError } = useQuery({
-    queryKey: ['course-test', courseId],
-    queryFn: () => academyApi.getTest(courseId).then((r) => r.data),
+    queryKey: [adapter.queryKey],
+    queryFn: adapter.getTest,
     retry: false,
   });
 
   const { data: attempts } = useQuery({
-    queryKey: ['course-test-attempts', courseId],
-    queryFn: () => academyApi.allAttempts(courseId).then((r) => r.data),
+    queryKey: [adapter.queryKey, 'attempts'],
+    queryFn: adapter.getAttempts,
     enabled: !!test,
   });
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['course-test', courseId] });
-    queryClient.invalidateQueries({ queryKey: ['course-test-attempts', courseId] });
+    queryClient.invalidateQueries({ queryKey: [adapter.queryKey] });
+    queryClient.invalidateQueries({ queryKey: [adapter.queryKey, 'attempts'] });
   };
 
   const openCreateTest = () => {
@@ -58,10 +98,10 @@ export function TestEditorSection({ courseId }: Props) {
   const handleSaveTest = async () => {
     const values = await testForm.validateFields();
     if (test) {
-      await academyApi.updateTest(courseId, values);
+      await adapter.updateTest(values);
       message.success(t('courseEditor.test.updated'));
     } else {
-      await academyApi.createTest(courseId, values);
+      await adapter.createTest(values);
       message.success(t('courseEditor.test.created'));
     }
     setTestModalOpen(false);
@@ -69,7 +109,7 @@ export function TestEditorSection({ courseId }: Props) {
   };
 
   const handleDeleteTest = async () => {
-    await academyApi.removeTest(courseId);
+    await adapter.removeTest();
     message.success(t('courseEditor.test.removed'));
     invalidate();
   };
@@ -129,10 +169,10 @@ export function TestEditorSection({ courseId }: Props) {
           : undefined,
     };
     if (questionModal?.editing) {
-      await academyApi.updateQuestion(courseId, questionModal.editing.id, payload);
+      await adapter.updateQuestion(questionModal.editing.id, payload);
       message.success(t('courseEditor.test.questionUpdated'));
     } else {
-      await academyApi.addQuestion(courseId, payload);
+      await adapter.addQuestion(payload);
       message.success(t('courseEditor.test.questionAdded'));
     }
     setQuestionModal(null);
@@ -140,7 +180,7 @@ export function TestEditorSection({ courseId }: Props) {
   };
 
   const handleDeleteQuestion = async (questionId: string) => {
-    await academyApi.removeQuestion(courseId, questionId);
+    await adapter.removeQuestion(questionId);
     message.success(t('courseEditor.test.questionRemoved'));
     invalidate();
   };
@@ -264,7 +304,7 @@ export function TestEditorSection({ courseId }: Props) {
               {
                 title: t('courseEditor.test.attemptColumns.stage'),
                 dataIndex: 'stage',
-                render: (v: TestAttempt['stage']) => testAttemptStageLabel(v),
+                render: (v: TestAttempt['stage']) => (v ? testAttemptStageLabel(v) : '—'),
               },
               { title: t('courseEditor.test.attemptColumns.score'), dataIndex: 'scorePercent', render: (v: number) => `${v}%` },
               {
