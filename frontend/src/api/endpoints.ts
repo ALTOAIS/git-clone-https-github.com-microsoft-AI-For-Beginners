@@ -26,6 +26,7 @@ import type {
   CourseDetail,
   CourseLesson,
   CourseListItem,
+  CoursePlayerData,
   CoursePreview,
   DashboardSummary,
   Department,
@@ -334,6 +335,10 @@ export const academyApi = {
   updateLesson: (courseId: string, lessonId: string, data: Record<string, unknown>) =>
     apiClient.patch<CourseLesson>(`/courses/${courseId}/lessons/${lessonId}`, data),
   removeLesson: (courseId: string, lessonId: string) => apiClient.delete(`/courses/${courseId}/lessons/${lessonId}`),
+
+  getPlayer: (courseId: string) => apiClient.get<CoursePlayerData>(`/courses/${courseId}/player`),
+  completeLesson: (courseId: string, lessonId: string) =>
+    apiClient.post(`/courses/${courseId}/lessons/${lessonId}/complete`, {}),
 
   assign: (courseId: string, data: Record<string, unknown>) => apiClient.post(`/courses/${courseId}/assignments`, data),
   updateAssignment: (courseId: string, assignmentId: string, data: Record<string, unknown>) =>

@@ -653,6 +653,31 @@ export interface CoursePreview extends CourseListItem {
   modules: CourseModule[];
 }
 
+export interface PlayerLesson extends CourseLesson {
+  completed: boolean;
+}
+
+export interface PlayerModule {
+  id: string;
+  order: number;
+  title: string;
+  lessons: PlayerLesson[];
+}
+
+export interface CoursePlayerData {
+  course: { id: string; title: string; description?: string | null };
+  modules: PlayerModule[];
+  assignment: {
+    id: string;
+    status: CourseAssignmentStatus;
+    progressPercent: number;
+    startDate?: string | null;
+    dueDate?: string | null;
+    completedAt?: string | null;
+  };
+  test: { id: string; title: string; passed: boolean; attempted: boolean } | null;
+}
+
 export interface MyCourseAssignment {
   id: string;
   status: CourseAssignmentStatus;

@@ -1,6 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { App, Form, InputNumber, Modal, Progress, Select, Space, Table, Tag, Typography } from 'antd';
-import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Progress, Space, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { academyApi } from '../../api/endpoints';
@@ -8,7 +7,6 @@ import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import type { MyCourseAssignment } from '../../types';
 import {
-  ALL_COURSE_ASSIGNMENT_STATUSES,
   COURSE_ASSIGNMENT_STATUS_COLORS,
   courseAssignmentStatusLabel,
   isAssignmentOverdue,
@@ -17,30 +15,12 @@ import { AcademySubNav } from './AcademySubNav';
 
 export function MyAcademyPage() {
   const { t } = useTranslation();
-  const { message } = App.useApp();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [editing, setEditing] = useState<MyCourseAssignment | null>(null);
-  const [form] = Form.useForm();
 
   const { data, isFetching } = useQuery({
     queryKey: ['my-course-assignments'],
     queryFn: () => academyApi.myAssignments().then((r) => r.data),
   });
-
-  const openEdit = (assignment: MyCourseAssignment) => {
-    setEditing(assignment);
-    form.setFieldsValue({ status: assignment.status, progressPercent: assignment.progressPercent });
-  };
-
-  const handleSave = async () => {
-    if (!editing) return;
-    const values = await form.validateFields();
-    await academyApi.updateAssignment(editing.course.id, editing.id, values);
-    message.success(t('myAcademy.updated'));
-    setEditing(null);
-    queryClient.invalidateQueries({ queryKey: ['my-course-assignments'] });
-  };
 
   return (
     <div>
@@ -83,7 +63,12 @@ export function MyAcademyPage() {
             ),
           },
           {
-            title: t('myAcademy.columns.progress'),
+            title: (
+              <span>
+                {t('myAcademy.columns.progress')}
+                <InfoTooltip text={t('tooltips.academy.progress')} />
+              </span>
+            ),
             dataIndex: 'progressPercent',
             width: 180,
             render: (v: number) => <Progress percent={v} size="small" />,
@@ -99,39 +84,13 @@ export function MyAcademyPage() {
             width: 220,
             render: (_: unknown, record: MyCourseAssignment) => (
               <Space>
-                <a onClick={() => openEdit(record)}>{t('myAcademy.updateLink')}</a>
+                <a onClick={() => navigate(`/academy/learn/${record.course.id}`)}>{t('myAcademy.continueLink')}</a>
                 <a onClick={() => navigate(`/academy/take-test/${record.course.id}`)}>{t('myAcademy.takeTestLink')}</a>
               </Space>
             ),
           },
         ]}
       />
-
-      <Modal
-        title={t('myAcademy.modalTitle')}
-        open={!!editing}
-        onCancel={() => setEditing(null)}
-        onOk={handleSave}
-        destroyOnHidden
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item name="status" label={t('myAcademy.form.statusLabel')} rules={[{ required: true }]}>
-            <Select options={ALL_COURSE_ASSIGNMENT_STATUSES.map((v) => ({ value: v, label: courseAssignmentStatusLabel(v) }))} />
-          </Form.Item>
-          <Form.Item
-            name="progressPercent"
-            label={
-              <span>
-                {t('myAcademy.form.progressLabel')}
-                <InfoTooltip text={t('tooltips.academy.progress')} />
-              </span>
-            }
-            rules={[{ required: true }]}
-          >
-            <InputNumber min={0} max={100} style={{ width: '100%' }} />
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   );
 }
