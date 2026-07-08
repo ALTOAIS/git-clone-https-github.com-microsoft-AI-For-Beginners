@@ -1,3 +1,4 @@
+import { LessonContentType, TestQuestionType } from '@prisma/client';
 import { AiControlSuggestion, AiRiskSuggestion } from '../types/ai-results';
 
 export interface RiskSuggestionContext {
@@ -59,6 +60,56 @@ export interface CrossModuleFactsContext {
   academyOverdueAssignments: number;
 }
 
+export interface CourseOutlineContext {
+  topic: string;
+  audienceHint?: string;
+  moduleCount: number;
+}
+
+export interface CourseOutlineLessonDraft {
+  order: number;
+  title: string;
+  contentType: LessonContentType;
+  content?: string;
+}
+
+export interface CourseOutlineModuleDraft {
+  order: number;
+  title: string;
+  lessons: CourseOutlineLessonDraft[];
+}
+
+export interface CourseOutlineDraft {
+  description: string;
+  modules: CourseOutlineModuleDraft[];
+}
+
+export interface LessonContentContext {
+  courseTopic: string;
+  lessonTitle: string;
+  contentType: LessonContentType;
+}
+
+export interface QuizQuestionsContext {
+  topic: string;
+  questionCount: number;
+}
+
+export interface QuizQuestionOptionDraft {
+  order: number;
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface QuizQuestionDraft {
+  order: number;
+  type: TestQuestionType;
+  text: string;
+  points: number;
+  options?: QuizQuestionOptionDraft[];
+  correctAnswerText?: string;
+}
+
 /**
  * Abstraction over the underlying AI backend. Phase 1 ships `MockAiProvider`
  * only — the interface is designed so a real LLM-backed provider (Phase 2)
@@ -84,6 +135,13 @@ export interface AiProvider {
   }>;
   chat(ctx: ChatFactsContext): Promise<string>;
   generateCrossModuleInsights(ctx: CrossModuleFactsContext): Promise<string[]>;
+  generateCourseOutline(ctx: CourseOutlineContext): Promise<CourseOutlineDraft>;
+  generateLessonContent(
+    ctx: LessonContentContext,
+  ): Promise<{ content: string }>;
+  generateQuizQuestions(
+    ctx: QuizQuestionsContext,
+  ): Promise<QuizQuestionDraft[]>;
 }
 
 export const AI_PROVIDER = 'AI_PROVIDER';

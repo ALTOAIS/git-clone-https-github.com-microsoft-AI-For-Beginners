@@ -14,8 +14,13 @@ export class SourcesService {
     search?: string;
   }) {
     const { page, pageSize, type, search } = params;
+    const types = type ? type.split(',').filter(Boolean) : [];
     const where: any = {
-      ...(type ? { type } : {}),
+      ...(types.length === 1
+        ? { type: types[0] }
+        : types.length > 1
+          ? { type: { in: types } }
+          : {}),
       ...(search
         ? {
             OR: [

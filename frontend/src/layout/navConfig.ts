@@ -3,16 +3,15 @@ import {
   ApartmentOutlined,
   AppstoreOutlined,
   AuditOutlined,
-  BarChartOutlined,
-  BookOutlined,
   CheckSquareOutlined,
   DashboardOutlined,
+  FileSearchOutlined,
   FileTextOutlined,
   RadarChartOutlined,
   ReadOutlined,
-  RobotOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
+  SolutionOutlined,
 } from '@ant-design/icons';
 import type { Role } from '../types';
 
@@ -22,21 +21,43 @@ export interface NavItem {
   labelKey: string;
   icon: React.ComponentType;
   roles?: Role[];
+  children?: NavItem[];
 }
 
 export const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', path: '/dashboard', labelKey: 'nav.dashboard', icon: DashboardOutlined },
-  { key: 'analyses', path: '/analyses', labelKey: 'nav.analyses', icon: RadarChartOutlined },
-  { key: 'academy', path: '/academy', labelKey: 'nav.academy', icon: ReadOutlined },
-  { key: 'ai-assistant', path: '/ai-assistant', labelKey: 'nav.aiAssistant', icon: RobotOutlined },
   { key: 'risks', path: '/risks', labelKey: 'nav.riskRegister', icon: AlertOutlined },
-  { key: 'risk-library', path: '/risk-library', labelKey: 'nav.riskLibrary', icon: BookOutlined },
-  { key: 'sources', path: '/sources', labelKey: 'nav.sources', icon: ApartmentOutlined },
-  { key: 'controls', path: '/controls', labelKey: 'nav.controls', icon: SafetyCertificateOutlined },
+  {
+    key: 'risk-sources',
+    path: '/analyses',
+    labelKey: 'nav.riskSources',
+    icon: ApartmentOutlined,
+    children: [
+      { key: 'risk-sources-vakr', path: '/analyses', labelKey: 'nav.riskSourcesVakr', icon: RadarChartOutlined },
+      { key: 'risk-sources-incidents', path: '/incidents', labelKey: 'nav.riskSourcesIncidents', icon: AuditOutlined },
+      {
+        key: 'risk-sources-inspections',
+        path: '/sources?type=AUDIT,STATE_INSPECTION',
+        labelKey: 'nav.riskSourcesInspections',
+        icon: FileSearchOutlined,
+      },
+      {
+        key: 'risk-sources-monitoring',
+        path: '/sources?type=ANTI_CORRUPTION_MONITORING',
+        labelKey: 'nav.riskSourcesMonitoring',
+        icon: SafetyCertificateOutlined,
+      },
+      {
+        key: 'risk-sources-due-diligence',
+        path: '/sources?type=CANDIDATE_DUE_DILIGENCE,COUNTERPARTY_DUE_DILIGENCE',
+        labelKey: 'nav.riskSourcesDueDiligence',
+        icon: SolutionOutlined,
+      },
+    ],
+  },
   { key: 'actions', path: '/actions', labelKey: 'nav.actionPlans', icon: CheckSquareOutlined },
-  { key: 'incidents', path: '/incidents', labelKey: 'nav.incidents', icon: AuditOutlined },
-  { key: 'analytics', path: '/analytics', labelKey: 'nav.analytics', icon: BarChartOutlined },
-  { key: 'reports', path: '/reports', labelKey: 'nav.reports', icon: FileTextOutlined },
+  { key: 'academy', path: '/academy', labelKey: 'nav.academy', icon: ReadOutlined },
+  { key: 'reports', path: '/reports', labelKey: 'nav.reportsAnalytics', icon: FileTextOutlined },
   {
     key: 'administration',
     path: '/administration',

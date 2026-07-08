@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App, Button, DatePicker, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { sourcesApi } from '../api/endpoints';
 import { useAuthStore } from '../auth/authStore';
 import { InfoTooltip } from '../components/InfoTooltip';
@@ -18,14 +19,19 @@ export function SourcesPage() {
   const user = useAuthStore((s) => s.user);
   const canManage = !!user && MANAGE_ROLES.includes(user.role);
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
 
   const [page, setPage] = useState(1);
-  const [type, setType] = useState<string | undefined>();
+  const [types, setTypes] = useState<string[]>(() => {
+    const preset = searchParams.get('type');
+    return preset ? preset.split(',').filter(Boolean) : [];
+  });
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm();
 
   const typeOptions = ALL_SOURCE_TYPES.map((value) => ({ value, label: sourceTypeLabel(value) }));
+  const type = types.length ? types.join(',') : undefined;
 
   const { data, isFetching } = useQuery({
     queryKey: ['sources', { page, type, search }],
@@ -69,10 +75,11 @@ export function SourcesPage() {
         <Input.Search placeholder={t('sourcesPage.searchPlaceholder')} allowClear style={{ width: 260 }} onSearch={setSearch} />
         <Select
           allowClear
+          mode="multiple"
           placeholder={t('sourcesPage.typePlaceholder')}
-          style={{ width: 240 }}
-          value={type}
-          onChange={setType}
+          style={{ minWidth: 240 }}
+          value={types}
+          onChange={setTypes}
           options={typeOptions}
         />
         <InfoTooltip text={t('tooltips.sources.typeGlossary')} />

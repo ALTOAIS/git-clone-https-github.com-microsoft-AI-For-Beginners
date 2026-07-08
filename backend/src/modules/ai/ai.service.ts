@@ -10,6 +10,9 @@ import { buildPdfReport } from '../reports/pdf.util';
 import { ACTIVE_STATUSES } from '../risks/risks.constants';
 import { AnalyzeRiskDto } from './dto/analyze-risk.dto';
 import { ChatDto } from './dto/chat.dto';
+import { GenerateCourseOutlineDto } from './dto/generate-course-outline.dto';
+import { GenerateLessonContentDto } from './dto/generate-lesson-content.dto';
+import { GenerateQuizQuestionsDto } from './dto/generate-quiz-questions.dto';
 import { GenerateRiskRegisterEntryDto } from './dto/generate-risk-register-entry.dto';
 import { GenerateVakrReportDto } from './dto/generate-vakr-report.dto';
 import { ReviewVakrAnalysisDto } from './dto/review-vakr-analysis.dto';
@@ -513,5 +516,81 @@ export class AiService {
       insights,
       disclaimer: AI_ADVISORY_DISCLAIMER,
     };
+  }
+
+  async generateCourseOutline(
+    dto: GenerateCourseOutlineDto,
+    user: RequestUser,
+  ) {
+    const course = await this.academy.findOne(dto.courseId);
+    const moduleCount = dto.moduleCount ?? 3;
+
+    const draft = await this.provider.generateCourseOutline({
+      topic: dto.topic,
+      audienceHint: dto.audienceHint,
+      moduleCount,
+    });
+
+    await this.logInteraction({
+      user,
+      module: 'ACADEMY',
+      useCase: 'GENERATE_COURSE_OUTLINE',
+      entityType: 'COURSE',
+      entityId: course.id,
+      inputSummary: `Курс: ${course.title}, тема: ${dto.topic}`,
+      outputSummary: `Сгенерировано модулей: ${draft.modules.length}`,
+    });
+
+    return { ...draft, disclaimer: AI_ADVISORY_DISCLAIMER };
+  }
+
+  async generateLessonContent(
+    dto: GenerateLessonContentDto,
+    user: RequestUser,
+  ) {
+    const course = await this.academy.findOne(dto.courseId);
+
+    const result = await this.provider.generateLessonContent({
+      courseTopic: dto.courseTopic,
+      lessonTitle: dto.lessonTitle,
+      contentType: dto.contentType,
+    });
+
+    await this.logInteraction({
+      user,
+      module: 'ACADEMY',
+      useCase: 'GENERATE_LESSON_CONTENT',
+      entityType: 'COURSE',
+      entityId: course.id,
+      inputSummary: `Урок: ${dto.lessonTitle}`,
+      outputSummary: `Сгенерирован текст (${result.content.length} симв.)`,
+    });
+
+    return { ...result, disclaimer: AI_ADVISORY_DISCLAIMER };
+  }
+
+  async generateQuizQuestions(
+    dto: GenerateQuizQuestionsDto,
+    user: RequestUser,
+  ) {
+    const course = await this.academy.findOne(dto.courseId);
+    const questionCount = dto.questionCount ?? 3;
+
+    const questions = await this.provider.generateQuizQuestions({
+      topic: dto.topic,
+      questionCount,
+    });
+
+    await this.logInteraction({
+      user,
+      module: 'ACADEMY',
+      useCase: 'GENERATE_QUIZ_QUESTIONS',
+      entityType: 'COURSE',
+      entityId: course.id,
+      inputSummary: `Тема: ${dto.topic}`,
+      outputSummary: `Сгенерировано вопросов: ${questions.length}`,
+    });
+
+    return { questions, disclaimer: AI_ADVISORY_DISCLAIMER };
   }
 }

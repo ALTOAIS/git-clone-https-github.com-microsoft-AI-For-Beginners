@@ -1,15 +1,93 @@
 import { Injectable } from '@nestjs/common';
+import { LessonContentType } from '@prisma/client';
 import { AiControlSuggestion, AiRiskSuggestion } from '../types/ai-results';
 import {
   AiProvider,
   AnalysisFactsContext,
   ChatFactsContext,
   ControlSuggestionContext,
+  CourseOutlineContext,
+  CourseOutlineDraft,
+  CourseOutlineModuleDraft,
   CrossModuleFactsContext,
+  LessonContentContext,
+  QuizQuestionDraft,
+  QuizQuestionsContext,
   ReportFactsContext,
   RiskRegisterFactsContext,
   RiskSuggestionContext,
 } from './ai-provider.interface';
+
+const MODULE_TITLE_TEMPLATES = [
+  'Введение и цели обучения',
+  'Основные понятия и нормативные требования',
+  'Практические ситуации и разбор кейсов',
+  'Типичные нарушения и ответственность',
+  'Итоговое закрепление материала',
+  'Дополнительные материалы и ресурсы',
+];
+
+const QUIZ_QUESTION_TEMPLATES: {
+  text: (topic: string) => string;
+  options: string[];
+  correctIndex: number;
+}[] = [
+  {
+    text: (topic) =>
+      `Что из перечисленного наиболее точно относится к теме «${topic}»?`,
+    options: [
+      'Формальное соблюдение процедуры без анализа существа вопроса',
+      'Своевременное выявление и информирование комплаенс-офицера о признаках нарушения',
+      'Игнорирование признаков нарушения при отсутствии прямого указания руководства',
+      'Принятие решения исключительно на основании личного опыта сотрудника',
+    ],
+    correctIndex: 1,
+  },
+  {
+    text: (topic) =>
+      `Какое действие сотрудника является правильным при возникновении конфликта интересов в рамках темы «${topic}»?`,
+    options: [
+      'Самостоятельно устранить конфликт, не уведомляя руководство',
+      'Продолжить участие в принятии решения, если конфликт незначителен',
+      'Раскрыть конфликт интересов и устраниться от принятия решения в соответствии с политикой компании',
+      'Передать решение вопроса коллеге без документального оформления',
+    ],
+    correctIndex: 2,
+  },
+  {
+    text: (topic) =>
+      `Кому следует сообщить о выявленных признаках нарушения по теме «${topic}»?`,
+    options: [
+      'Комплаенс-офицеру или по каналу для сообщений о нарушениях',
+      'Только непосредственному руководителю в устной форме',
+      'Внешним контрагентам для получения независимой оценки',
+      'Никому, если нарушение не привело к материальному ущербу',
+    ],
+    correctIndex: 0,
+  },
+  {
+    text: (topic) =>
+      `Верно ли утверждение: соблюдение требований по теме «${topic}» распространяется на всех сотрудников независимо от должности?`,
+    options: [
+      'Верно',
+      'Неверно — только на руководителей',
+      'Неверно — только на новых сотрудников',
+      'Неверно — только на определённые подразделения',
+    ],
+    correctIndex: 0,
+  },
+  {
+    text: (topic) =>
+      `Какая мера контроля наиболее эффективна для снижения рисков, связанных с темой «${topic}»?`,
+    options: [
+      'Отсутствие контроля при высоком уровне доверия к сотруднику',
+      'Разделение полномочий и обязательное согласование ключевых решений',
+      'Устная договорённость между коллегами без фиксации',
+      'Проверка только по итогам жалоб клиентов',
+    ],
+    correctIndex: 1,
+  },
+];
 
 const FACTOR_TYPE_RISK_HINTS: Record<
   string,
@@ -264,5 +342,105 @@ export class MockAiProvider implements AiProvider {
     }
 
     return insights;
+  }
+
+  private buildLessonContent(ctx: LessonContentContext): string {
+    const { lessonTitle, courseTopic, contentType } = ctx;
+    if (contentType === 'CASE_STUDY' || contentType === 'PRACTICAL_TASK') {
+      return (
+        `## ${lessonTitle}\n\n` +
+        `**Ситуация.** В рамках темы «${courseTopic}» сотрудник подразделения сталкивается со следующей ситуацией: ` +
+        'контрагент предлагает подарок сверх установленного компанией лимита в обмен на ускоренное согласование документов, при этом формальные основания для отказа от рассмотрения запроса контрагента отсутствуют.\n\n' +
+        '**Вопросы для обсуждения:**\n' +
+        '- Какие коррупциогенные факторы присутствуют в этой ситуации?\n' +
+        '- Какие внутренние политики компании применимы к данному случаю?\n' +
+        '- Каким должен быть правильный порядок действий сотрудника?\n\n' +
+        '**Разбор.** Правильные действия — зафиксировать факт предложения, отказаться от подарка сверх лимита и уведомить комплаенс-офицера в соответствии с политикой компании по подаркам и представительским расходам.'
+      );
+    }
+    return (
+      `## ${lessonTitle}\n\n` +
+      '### Что нужно знать\n' +
+      `Данный урок раскрывает тему «${lessonTitle}» в рамках курса «${courseTopic}» и знакомит с базовыми требованиями, которые должен соблюдать каждый сотрудник.\n\n` +
+      '### Ключевые требования\n' +
+      '- Соблюдать применимые внутренние политики и нормативные требования\n' +
+      '- Своевременно выявлять и документировать признаки нарушений\n' +
+      '- Обращаться к комплаенс-офицеру при возникновении сомнений\n\n' +
+      '### Типичные ошибки\n' +
+      '- Формальное прохождение процедуры без анализа существа вопроса\n' +
+      '- Несвоевременное информирование ответственных подразделений о выявленных рисках'
+    );
+  }
+
+  async generateCourseOutline(
+    ctx: CourseOutlineContext,
+  ): Promise<CourseOutlineDraft> {
+    const modules: CourseOutlineModuleDraft[] = [];
+    for (let i = 0; i < ctx.moduleCount; i++) {
+      const moduleTitle =
+        MODULE_TITLE_TEMPLATES[i % MODULE_TITLE_TEMPLATES.length];
+      const contentType: LessonContentType = moduleTitle.includes(
+        'Практические ситуации',
+      )
+        ? 'CASE_STUDY'
+        : 'ARTICLE';
+      const lessonTitle = `${moduleTitle}: ${ctx.topic}`;
+      modules.push({
+        order: i + 1,
+        title: moduleTitle,
+        lessons: [
+          {
+            order: 1,
+            title: lessonTitle,
+            contentType,
+            content: this.buildLessonContent({
+              courseTopic: ctx.topic,
+              lessonTitle,
+              contentType,
+            }),
+          },
+        ],
+      });
+    }
+
+    return {
+      description:
+        `Курс охватывает тему «${ctx.topic}»` +
+        (ctx.audienceHint
+          ? ` для целевой аудитории: ${ctx.audienceHint}.`
+          : '.') +
+        ' Черновик сформирован ИИ-ассистентом и требует проверки комплаенс-офицером перед публикацией.',
+      modules,
+    };
+  }
+
+  async generateLessonContent(
+    ctx: LessonContentContext,
+  ): Promise<{ content: string }> {
+    return { content: this.buildLessonContent(ctx) };
+  }
+
+  async generateQuizQuestions(
+    ctx: QuizQuestionsContext,
+  ): Promise<QuizQuestionDraft[]> {
+    const count = Math.min(
+      ctx.questionCount,
+      QUIZ_QUESTION_TEMPLATES.length * 2,
+    );
+    return Array.from({ length: count }, (_, index) => {
+      const template =
+        QUIZ_QUESTION_TEMPLATES[index % QUIZ_QUESTION_TEMPLATES.length];
+      return {
+        order: index + 1,
+        type: 'SINGLE_CHOICE' as const,
+        text: template.text(ctx.topic),
+        points: 10,
+        options: template.options.map((text, optionIndex) => ({
+          order: optionIndex + 1,
+          text,
+          isCorrect: optionIndex === template.correctIndex,
+        })),
+      };
+    });
   }
 }

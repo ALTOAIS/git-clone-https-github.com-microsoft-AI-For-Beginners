@@ -1030,3 +1030,47 @@ export interface AiRiskIntelligenceDashboard {
   insights: string[];
   disclaimer: string;
 }
+
+export interface AiCourseOutlineLessonDraft {
+  order: number;
+  title: string;
+  contentType: LessonContentType;
+  content?: string;
+}
+
+export interface AiCourseOutlineModuleDraft {
+  order: number;
+  title: string;
+  lessons: AiCourseOutlineLessonDraft[];
+}
+
+export interface AiCourseOutlineDraft {
+  description: string;
+  modules: AiCourseOutlineModuleDraft[];
+  disclaimer: string;
+}
+
+export interface AiLessonContentResult {
+  content: string;
+  disclaimer: string;
+}
+
+export interface AiQuizQuestionOptionDraft {
+  order: number;
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface AiQuizQuestionDraft {
+  order: number;
+  type: TestQuestionType;
+  text: string;
+  points: number;
+  options?: AiQuizQuestionOptionDraft[];
+  correctAnswerText?: string;
+}
+
+export interface AiQuizQuestionsResult {
+  questions: AiQuizQuestionDraft[];
+  disclaimer: string;
+}
