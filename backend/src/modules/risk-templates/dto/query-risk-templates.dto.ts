@@ -1,7 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { RiskTemplateDirection } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsEnum, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class QueryRiskTemplatesDto {
   @ApiProperty({ required: false })
@@ -44,7 +51,10 @@ export class QueryRiskTemplatesDto {
   @IsString()
   tags?: string;
 
-  @ApiProperty({ required: false, description: 'Включить деактивированные шаблоны' })
+  @ApiProperty({
+    required: false,
+    description: 'Включить деактивированные шаблоны',
+  })
   @IsOptional()
   @Type(() => Boolean)
   includeInactive?: boolean;

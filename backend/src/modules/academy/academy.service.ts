@@ -576,11 +576,18 @@ export class AcademyService {
       }),
     ]);
 
-    const courseTotals = new Map<string, { assigned: number; completed: number }>();
+    const courseTotals = new Map<
+      string,
+      { assigned: number; completed: number }
+    >();
     for (const row of assignmentsByCourse) {
-      const entry = courseTotals.get(row.courseId) ?? { assigned: 0, completed: 0 };
+      const entry = courseTotals.get(row.courseId) ?? {
+        assigned: 0,
+        completed: 0,
+      };
       entry.assigned += row._count._all;
-      if (row.status === CourseAssignmentStatus.COMPLETED) entry.completed += row._count._all;
+      if (row.status === CourseAssignmentStatus.COMPLETED)
+        entry.completed += row._count._all;
       courseTotals.set(row.courseId, entry);
     }
     const lowCompletionCourseIds = [...courseTotals.entries()]
@@ -605,7 +612,9 @@ export class AcademyService {
       .slice(0, 5);
 
     const lowScoreTestIds = attemptsByTest
-      .filter((row) => row._count._all >= 1 && (row._avg.scorePercent ?? 0) < 60)
+      .filter(
+        (row) => row._count._all >= 1 && (row._avg.scorePercent ?? 0) < 60,
+      )
       .map((row) => row.testId);
     const lowScoreTestsData = lowScoreTestIds.length
       ? await this.prisma.test.findMany({

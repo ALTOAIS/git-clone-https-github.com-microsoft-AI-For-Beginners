@@ -174,9 +174,13 @@ export interface AiProvider {
   generateQuizQuestions(
     ctx: QuizQuestionsContext,
   ): Promise<QuizQuestionDraft[]>;
-  improveRiskDescription(ctx: ImproveDescriptionContext): Promise<{ improvedDescription: string }>;
+  improveRiskDescription(
+    ctx: ImproveDescriptionContext,
+  ): Promise<{ improvedDescription: string }>;
   suggestRiskActions(ctx: SuggestRiskActionsContext): Promise<string[]>;
-  generateRiskForProcess(ctx: GenerateRiskForProcessContext): Promise<RiskTemplateDraft>;
+  generateRiskForProcess(
+    ctx: GenerateRiskForProcessContext,
+  ): Promise<RiskTemplateDraft>;
 }
 
 export const AI_PROVIDER = 'AI_PROVIDER';

@@ -12,7 +12,10 @@ const LIST_INCLUDE = {
 } satisfies Prisma.RiskTemplateInclude;
 
 /** Same low/medium/high/critical bucketing as the Risk Register's scoreLevel() util. */
-function scoreLevelRange(level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'): { gte: number; lt?: number } {
+function scoreLevelRange(level: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'): {
+  gte: number;
+  lt?: number;
+} {
   switch (level) {
     case 'CRITICAL':
       return { gte: 15 };
@@ -41,7 +44,9 @@ export class RiskTemplatesService {
       isActive: query.includeInactive ? undefined : true,
       ...(query.categoryId ? { categoryId: query.categoryId } : {}),
       ...(query.direction ? { direction: query.direction } : {}),
-      ...(query.riskLevel ? { baseScore: scoreLevelRange(query.riskLevel) } : {}),
+      ...(query.riskLevel
+        ? { baseScore: scoreLevelRange(query.riskLevel) }
+        : {}),
       ...(tags.length ? { tags: { hasSome: tags } } : {}),
       ...(query.search
         ? {
@@ -96,7 +101,10 @@ export class RiskTemplatesService {
       where: {
         id: { not: id },
         isActive: true,
-        OR: [{ direction: template.direction }, { tags: { hasSome: template.tags } }],
+        OR: [
+          { direction: template.direction },
+          { tags: { hasSome: template.tags } },
+        ],
       },
       include: { category: { select: { id: true, name: true } } },
       take: 30,
@@ -261,8 +269,12 @@ export class RiskTemplatesService {
     const descriptionParts = [
       dto.description ?? template.description,
       template.causes ? `Причины возникновения: ${template.causes}` : null,
-      template.corruptionScheme ? `Возможная коррупционная схема: ${template.corruptionScheme}` : null,
-      template.consequences ? `Возможные последствия: ${template.consequences}` : null,
+      template.corruptionScheme
+        ? `Возможная коррупционная схема: ${template.corruptionScheme}`
+        : null,
+      template.consequences
+        ? `Возможные последствия: ${template.consequences}`
+        : null,
       template.redFlags ? `Red flags / индикаторы: ${template.redFlags}` : null,
     ].filter(Boolean);
 

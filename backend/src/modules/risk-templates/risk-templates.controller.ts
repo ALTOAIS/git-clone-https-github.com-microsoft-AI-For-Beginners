@@ -22,7 +22,11 @@ import { QueryRiskTemplatesDto } from './dto/query-risk-templates.dto';
 import { UpdateRiskTemplateDto } from './dto/update-risk-template.dto';
 import { RiskTemplatesService } from './risk-templates.service';
 
-const EDIT_ROLES = [Role.ADMINISTRATOR, Role.COMPLIANCE_MANAGER, Role.COMPLIANCE_OFFICER];
+const EDIT_ROLES = [
+  Role.ADMINISTRATOR,
+  Role.COMPLIANCE_MANAGER,
+  Role.COMPLIANCE_OFFICER,
+];
 /** Any authenticated user with a risk/analysis authoring role may use a template to create a risk. */
 const USE_ROLES = [...EDIT_ROLES, Role.RISK_OWNER, Role.DEPARTMENT_MANAGER];
 
@@ -54,7 +58,10 @@ export class RiskTemplatesController {
 
   @Post()
   @Roles(...EDIT_ROLES)
-  create(@Body() dto: CreateRiskTemplateDto, @CurrentUser() user: AuthenticatedUser) {
+  create(
+    @Body() dto: CreateRiskTemplateDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.service.create(dto, user.id);
   }
 
