@@ -7,6 +7,8 @@ import { InfoTooltip } from '../../../components/InfoTooltip';
 import { useDepartments, useUsersList } from '../../../hooks/useReferenceData';
 import type { AnalysisDetail, AnalysisProcessStep } from '../../../types';
 import { ALL_PROCESS_CONTROL_POINT_TYPES, processControlPointTypeLabel } from '../../../utils/analysisDisplay';
+import { AnalysisNavigatorPanel } from '../AnalysisNavigatorPanel';
+import { buildScopedQuestionKey, PROCESS_SUBQUESTIONS } from '../navigatorQuestions';
 
 interface Props {
   analysis: AnalysisDetail;
@@ -77,6 +79,18 @@ export function Stage5ProcessMapTab({ analysis, onUpdated }: Props) {
         dataSource={[...analysis.processSteps].sort((a, b) => a.order - b.order)}
         pagination={false}
         locale={{ emptyText: t('analysisStage5.noStepsYet') }}
+        expandable={{
+          expandedRowRender: (step) => (
+            <AnalysisNavigatorPanel
+              analysisId={analysis.id}
+              title={t('analysisStage5.processQuestionsTitle')}
+              questions={PROCESS_SUBQUESTIONS.map((q) => ({
+                key: buildScopedQuestionKey('proc', step.id, q.key),
+                label: q.label,
+              }))}
+            />
+          ),
+        }}
         columns={[
           { title: t('analysisStage5.columns.order'), dataIndex: 'order', width: 70 },
           { title: t('analysisStage5.columns.name'), dataIndex: 'name' },

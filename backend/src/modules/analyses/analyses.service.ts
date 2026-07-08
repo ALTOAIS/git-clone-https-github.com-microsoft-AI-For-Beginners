@@ -10,7 +10,9 @@ import { AuditService } from '../audit/audit.service';
 import { RisksService } from '../risks/risks.service';
 import {
   ANALYSIS_STAGE_ORDER,
+  CORRUPTOGENIC_FACTOR_LABELS,
   isForwardStageTransition,
+  SOURCE_CHECKLIST_CATALOG,
 } from './analyses.constants';
 import { AssessAnalysisRiskDto } from './dto/assess-analysis-risk.dto';
 import { ChangeStageDto } from './dto/change-stage.dto';
@@ -18,6 +20,7 @@ import { CreateActionItemDto } from './dto/create-action-item.dto';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { CreateAnalysisRiskDto } from './dto/create-analysis-risk.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { CreateExposedPositionDto } from './dto/create-exposed-position.dto';
 import { CreateFactorDto } from './dto/create-factor.dto';
 import { CreatePlanItemDto } from './dto/create-plan-item.dto';
 import { CreateProcessStepDto } from './dto/create-process-step.dto';
@@ -26,16 +29,20 @@ import { CreateWorkingGroupMemberDto } from './dto/create-working-group-member.d
 import { UpdateActionItemDto } from './dto/update-action-item.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
 import { UpdateAnalysisRiskDto } from './dto/update-analysis-risk.dto';
+import { UpdateExposedPositionDto } from './dto/update-exposed-position.dto';
 import { UpdateFactorDto } from './dto/update-factor.dto';
 import { UpdateProcessStepDto } from './dto/update-process-step.dto';
 import { UpdateReassessmentDto } from './dto/update-reassessment.dto';
 import { UpdateRecommendationDto } from './dto/update-recommendation.dto';
 import { UpdateWorkingGroupMemberDto } from './dto/update-working-group-member.dto';
+import { UpsertChecklistAnswerDto } from './dto/upsert-checklist-answer.dto';
 
 const DETAIL_INCLUDE = {
   company: true,
   lead: { select: { id: true, fullName: true, email: true, role: true } },
   createdBy: { select: { id: true, fullName: true, email: true } },
+  decisionMaker: { select: { id: true, fullName: true, email: true } },
+  coordinator: { select: { id: true, fullName: true, email: true } },
   departments: { include: { department: true } },
   workingGroup: {
     include: {
@@ -62,7 +69,9 @@ const DETAIL_INCLUDE = {
     orderBy: { order: 'asc' as const },
   },
   factors: {
-    include: { processStep: { select: { id: true, name: true } } },
+    include: {
+      processStep: { select: { id: true, name: true, departmentId: true } },
+    },
     orderBy: { createdAt: 'asc' as const },
   },
   risks: {
@@ -209,6 +218,13 @@ export class AnalysesService {
         deadline: dto.deadline ? new Date(dto.deadline) : undefined,
         leadId: dto.leadId,
         status: dto.status,
+        orderBasis: dto.orderBasis,
+        orderNumber: dto.orderNumber,
+        orderDate: dto.orderDate ? new Date(dto.orderDate) : undefined,
+        decisionMakerId: dto.decisionMakerId,
+        analysisScope: dto.analysisScope,
+        coordinatorId: dto.coordinatorId,
+        extensionRequested: dto.extensionRequested,
         departments: dto.departmentIds
           ? {
               create: dto.departmentIds.map((departmentId) => ({
@@ -532,6 +548,200 @@ export class AnalysesService {
   }
 
   // ------------------------------------------------------------------
+  // "ВАКР-навигатор" — универсальный чек-лист вопросов, переиспользуется на
+  // всех шагах упрощённого ВАКР (карточка анализа, источники информации,
+  // процессы/факторы, рекомендации). Каталог вопросов — на фронтенде,
+  // здесь хранятся только ответы.
+  // ------------------------------------------------------------------
+
+  private readonly checklistAnswerInclude = {
+    responsibleDepartment: { select: { id: true, name: true } },
+    linkedDocument: { select: { id: true, fileName: true } },
+    linkedFactor: { select: { id: true, factorType: true } },
+    linkedRisk: { select: { id: true, title: true } },
+    linkedRecommendation: { select: { id: true, description: true } },
+    updatedBy: { select: { id: true, fullName: true } },
+  } satisfies Prisma.AnalysisChecklistAnswerInclude;
+
+  async getChecklist(analysisId: string) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisChecklistAnswer.findMany({
+      where: { analysisId },
+      include: this.checklistAnswerInclude,
+    });
+  }
+
+  async upsertChecklistAnswer(
+    analysisId: string,
+    questionKey: string,
+    dto: UpsertChecklistAnswerDto,
+    userId?: string,
+  ) {
+    await this.findOne(analysisId);
+    const data = {
+      status: dto.status,
+      comment: dto.comment,
+      responsibleDepartmentId: dto.responsibleDepartmentId,
+      dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+      isCurrent: dto.isCurrent,
+      isReliable: dto.isReliable,
+      linkedDocumentId: dto.linkedDocumentId,
+      linkedFactorId: dto.linkedFactorId,
+      linkedRiskId: dto.linkedRiskId,
+      linkedRecommendationId: dto.linkedRecommendationId,
+      updatedById: userId,
+    };
+    const answer = await this.prisma.analysisChecklistAnswer.upsert({
+      where: { analysisId_questionKey: { analysisId, questionKey } },
+      create: { analysisId, questionKey, ...data },
+      update: data,
+      include: this.checklistAnswerInclude,
+    });
+    await this.audit.record({
+      entityType: 'ANALYSIS_CHECKLIST',
+      entityId: answer.id,
+      action: 'UPSERT',
+      userId,
+    });
+    return answer;
+  }
+
+  // ------------------------------------------------------------------
+  // "Должности, подверженные коррупционным рискам" — шаг "Процессы, факторы и риски"
+  // ------------------------------------------------------------------
+
+  private readonly exposedPositionInclude = {
+    department: { select: { id: true, name: true } },
+    linkedRisk: { select: { id: true, title: true } },
+  } satisfies Prisma.AnalysisExposedPositionInclude;
+
+  async listExposedPositions(analysisId: string) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisExposedPosition.findMany({
+      where: { analysisId },
+      include: this.exposedPositionInclude,
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async addExposedPosition(analysisId: string, dto: CreateExposedPositionDto) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisExposedPosition.create({
+      data: { analysisId, ...dto },
+      include: this.exposedPositionInclude,
+    });
+  }
+
+  async updateExposedPosition(
+    analysisId: string,
+    positionId: string,
+    dto: UpdateExposedPositionDto,
+  ) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisExposedPosition.update({
+      where: { id: positionId },
+      data: dto,
+      include: this.exposedPositionInclude,
+    });
+  }
+
+  async removeExposedPosition(analysisId: string, positionId: string) {
+    await this.findOne(analysisId);
+    return this.prisma.analysisExposedPosition.delete({
+      where: { id: positionId },
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // Шаг "Отчёт и завершение" — проверка полноты перед формированием справки
+  // ------------------------------------------------------------------
+
+  async getCompletenessCheck(analysisId: string) {
+    const analysis = await this.findOne(analysisId);
+    const risksAssessed =
+      analysis.risks.length > 0 &&
+      analysis.risks.every((r) => r.likelihood != null && r.impact != null);
+    const hasExposedPositions =
+      (await this.prisma.analysisExposedPosition.count({
+        where: { analysisId },
+      })) > 0;
+
+    const checks: { key: string; ok: boolean; label: string }[] = [
+      {
+        key: 'hasBasis',
+        ok: !!(analysis.orderBasis || analysis.legalBasis),
+        label: 'Не указано основание проведения анализа',
+      },
+      {
+        key: 'hasSubject',
+        ok: !!analysis.subject,
+        label: 'Не указан объект анализа',
+      },
+      {
+        key: 'hasScope',
+        ok: !!analysis.analysisScope,
+        label: 'Не выбраны направления анализа',
+      },
+      {
+        key: 'hasSources',
+        ok: analysis.documents.length > 0,
+        label: 'Не загружены источники информации',
+      },
+      {
+        key: 'hasProcesses',
+        ok: analysis.processSteps.length > 0,
+        label: 'Не описаны процессы',
+      },
+      {
+        key: 'hasFactors',
+        ok: analysis.factors.length > 0,
+        label: 'Не выявлены коррупциогенные факторы',
+      },
+      {
+        key: 'hasRisks',
+        ok: analysis.risks.length > 0,
+        label: 'Не созданы риски',
+      },
+      {
+        key: 'risksAssessed',
+        ok: risksAssessed,
+        label: 'Не все риски оценены',
+      },
+      {
+        key: 'hasRecommendations',
+        ok: analysis.recommendations.length > 0,
+        label: 'Не добавлены рекомендации',
+      },
+      {
+        key: 'hasActionItems',
+        ok: analysis.actionItems.length > 0,
+        label: 'Не добавлены мероприятия',
+      },
+      {
+        key: 'hasExposedPositions',
+        ok: hasExposedPositions,
+        label: 'Не определены должности, подверженные коррупционным рискам',
+      },
+    ];
+
+    return {
+      hasBasis: checks[0].ok,
+      hasSubject: checks[1].ok,
+      hasScope: checks[2].ok,
+      hasSources: checks[3].ok,
+      hasProcesses: checks[4].ok,
+      hasFactors: checks[5].ok,
+      hasRisks: checks[6].ok,
+      risksAssessed,
+      hasRecommendations: checks[8].ok,
+      hasActionItems: checks[9].ok,
+      hasExposedPositions,
+      missingLabels: checks.filter((c) => !c.ok).map((c) => c.label),
+      isComplete: checks.every((c) => c.ok),
+    };
+  }
+
+  // ------------------------------------------------------------------
   // Stage 9: Recommendations
   // ------------------------------------------------------------------
 
@@ -663,22 +873,63 @@ export class AnalysesService {
       );
     }
 
+    // Answers linked to a risk (e.g. an information-source checklist row the
+    // user tied to this risk) supply the "источник информации" for its origin.
+    const linkedSourceAnswers =
+      await this.prisma.analysisChecklistAnswer.findMany({
+        where: { analysisId, linkedRiskId: { not: null } },
+      });
+    const sourceLabelByRiskId = new Map<string, string>();
+    for (const answer of linkedSourceAnswers) {
+      const catalogEntry = SOURCE_CHECKLIST_CATALOG.find(
+        (c) => c.key === answer.questionKey,
+      );
+      if (catalogEntry && answer.linkedRiskId) {
+        sourceLabelByRiskId.set(answer.linkedRiskId, catalogEntry.label);
+      }
+    }
+
     const linkedRiskIds = new Map<string, string>();
     for (const risk of analysis.risks) {
       if (risk.linkedRiskId) {
         linkedRiskIds.set(risk.id, risk.linkedRiskId);
         continue;
       }
+      const factor = risk.factorId
+        ? analysis.factors.find((f) => f.id === risk.factorId)
+        : undefined;
+      const recommendation = analysis.recommendations.find(
+        (r) => r.riskId === risk.id,
+      );
+      const originContext = {
+        analysisCode: analysis.code,
+        analysisName: analysis.name,
+        objectOfAnalysis: analysis.subject ?? undefined,
+        scope: analysis.analysisScope ?? undefined,
+        process: factor?.processStep?.name ?? undefined,
+        corruptogenicFactor: factor
+          ? (CORRUPTOGENIC_FACTOR_LABELS[factor.factorType] ??
+            factor.factorType)
+          : undefined,
+        informationSource: sourceLabelByRiskId.get(risk.id) ?? undefined,
+        cause: risk.cause ?? undefined,
+        consequences: risk.consequences ?? undefined,
+        recommendation: recommendation?.description ?? undefined,
+      };
+
       const createdRisk = await this.risksService.create(
         {
           title: risk.title,
           description: risk.description ?? undefined,
           categoryId: risk.categoryId ?? undefined,
           companyId: analysis.companyId ?? undefined,
+          departmentId: factor?.processStep?.departmentId ?? undefined,
           ownerId: risk.ownerId ?? undefined,
           likelihood: risk.likelihood ?? undefined,
           impact: risk.impact ?? undefined,
           sourceTemplateId: risk.sourceTemplateId ?? undefined,
+          sourceAnalysisId: analysisId,
+          originContext,
         },
         userId,
       );

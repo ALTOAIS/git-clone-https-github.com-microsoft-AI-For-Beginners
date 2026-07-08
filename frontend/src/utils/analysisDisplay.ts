@@ -98,13 +98,23 @@ export function processControlPointTypeLabel(value: ProcessControlPointType): st
 }
 
 export const ALL_CORRUPTOGENIC_FACTOR_TYPES: CorruptogenicFactorType[] = [
+  'LEGAL_GAP',
+  'LEGAL_COLLISION',
+  'LINGUISTIC_UNCERTAINTY',
   'DISCRETION',
-  'CONFLICT_OF_INTEREST',
+  'RIGHT_INSTEAD_OF_DUTY',
+  'EXCESSIVE_REQUIREMENTS',
+  'ADMINISTRATIVE_BARRIERS',
+  'IMPROPER_FUNCTIONS_DEFINITION',
+  'NO_DEADLINES',
+  'NO_DECISION_GROUNDS',
   'LACK_OF_CONTROL',
-  'OPACITY',
-  'EXCEPTIONS',
+  'CONFLICT_OF_INTEREST',
   'MANUAL_OPERATIONS',
+  'OPACITY',
   'INFORMATION_ACCESS',
+  'EXTERNAL_INTERACTION',
+  'EXCEPTIONS',
   'SUPPLIER_CONTACTS',
   'HR_DECISIONS',
   'FINANCIAL_OPERATIONS',
@@ -112,6 +122,16 @@ export const ALL_CORRUPTOGENIC_FACTOR_TYPES: CorruptogenicFactorType[] = [
   'PERMITS',
   'PROPERTY_USE',
 ];
+
+export const ANALYSIS_SCOPE_VALUES: Array<{ value: 'LEGAL_ACTS' | 'ORG_MANAGEMENT' | 'BOTH' }> = [
+  { value: 'LEGAL_ACTS' },
+  { value: 'ORG_MANAGEMENT' },
+  { value: 'BOTH' },
+];
+
+export function analysisScopeLabel(value: 'LEGAL_ACTS' | 'ORG_MANAGEMENT' | 'BOTH'): string {
+  return i18n.t(`analysisScope.${value}`);
+}
 
 export function corruptogenicFactorTypeLabel(value: CorruptogenicFactorType): string {
   return i18n.t(`corruptogenicFactorType.${value}`);

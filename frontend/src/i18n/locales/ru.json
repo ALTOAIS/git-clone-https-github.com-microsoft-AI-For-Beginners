@@ -433,7 +433,23 @@
     "companyLabel": "Компания",
     "departmentLabel": "Подразделение",
     "ownerLabel": "Владелец",
-    "updated": "Риск обновлён"
+    "updated": "Риск обновлён",
+    "origin": {
+      "title": "Происхождение риска",
+      "source": "Источник",
+      "sourceVakr": "ВАКР",
+      "sourceTemplate": "Типовой риск",
+      "analysis": "Анализ ВАКР",
+      "template": "Типовой риск",
+      "object": "Объект анализа",
+      "scope": "Направление анализа",
+      "process": "Процесс",
+      "factor": "Коррупциогенный фактор",
+      "informationSource": "Источник информации",
+      "cause": "Причина риска",
+      "consequences": "Последствия",
+      "recommendation": "Рекомендация"
+    }
   },
   "riskAssessment": {
     "inherentScoreLabel": "Балл неотъемлемого риска",
@@ -1158,6 +1174,8 @@
       "actionsTitle": "План мероприятий",
       "noActions": "Мероприятия пока не добавлены",
       "generateReportButton": "Сформировать отчёт ВАКР",
+      "completenessWarningTitle": "Не все элементы анализа заполнены",
+      "completenessOkTitle": "Все обязательные элементы анализа заполнены",
       "finishButton": "Завершить анализ",
       "confirmTitle": "Завершить анализ?",
       "confirmDescription": "Все выявленные риски будут перенесены в реестр комплаенс-рисков, а мероприятия — в общий план мероприятий. Действие нельзя отменить.",
@@ -1286,6 +1304,23 @@
     "deadlineLabel": "Срок исполнения",
     "subjectLabel": "Предмет анализа",
     "legalBasisLabel": "Нормативное основание",
+    "orderBasis": "Основание проведения (решение/приказ)",
+    "orderBasisLabel": "На основании какого решения/приказа проводится ВАКР",
+    "orderBasisPlaceholder": "Например: приказ руководителя от ... № ...",
+    "orderNumberDate": "Номер и дата решения",
+    "orderNumberLabel": "Номер решения/приказа",
+    "orderDateLabel": "Дата решения/приказа",
+    "decisionMaker": "Кто принял решение",
+    "decisionMakerLabel": "Кто принял решение",
+    "analysisScope": "Направления анализа",
+    "analysisScopeLabel": "Направления анализа",
+    "coordinator": "Ответственный за координацию",
+    "coordinatorLabel": "Ответственный за координацию",
+    "extensionRequested": "Продление срока",
+    "extensionRequestedLabel": "Требуется продление срока анализа",
+    "analysisForm": "Кто проводит анализ",
+    "analysisFormGroup": "Рабочая группа",
+    "analysisFormSingle": "Уполномоченное лицо",
     "save": "Сохранить",
     "cancel": "Отмена"
   },
@@ -1360,7 +1395,19 @@
     "noDocumentsYet": "Документы пока не загружены",
     "download": "Скачать",
     "delete": "Удалить",
-    "uploadedByPrefix": "загрузил(а)"
+    "uploadedByPrefix": "загрузил(а)",
+    "sourceChecklistTitle": "Чек-лист источников информации",
+    "sourceChecklistColumns": {
+      "source": "Источник",
+      "status": "Статус",
+      "responsibleDepartment": "Ответственное подразделение",
+      "dueDate": "Срок предоставления",
+      "document": "Файл",
+      "currentReliable": "Актуальность и достоверность",
+      "isCurrent": "Актуально",
+      "isReliable": "Достоверно",
+      "comment": "Комментарий"
+    }
   },
   "analysisStage5": {
     "intro": "Постройте карту бизнес-процесса: последовательность этапов, ответственные подразделения и исполнители, нормативное основание, входные и выходные данные, а также точки контроля на каждом этапе.",
@@ -1390,7 +1437,8 @@
     "legalBasisLabel": "Нормативное основание",
     "inputLabel": "Входные данные",
     "outputLabel": "Результат (выходные данные)",
-    "controlPointsLabel": "Точки контроля"
+    "controlPointsLabel": "Точки контроля",
+    "processQuestionsTitle": "Вопросы для анализа процесса"
   },
   "analysisStage6": {
     "intro": "Для каждого этапа процесса выявите коррупциогенные факторы — условия, повышающие вероятность коррупционных проявлений.",
@@ -1445,7 +1493,46 @@
     "interestedPartiesLabel": "Заинтересованные лица",
     "consequencesLabel": "Последствия",
     "existingControlsLabel": "Действующие меры контроля",
-    "ownerLabel": "Владелец риска"
+    "ownerLabel": "Владелец риска",
+    "formulaButton": "Создать риск по формуле",
+    "formulaModalTitle": "Формулировка риска",
+    "formulaHint": "Из-за [причина/фактор] существует риск [событие], который может привести к [последствие].",
+    "formula": {
+      "prefix": "Из-за",
+      "middle": "существует риск",
+      "suffix": "который может привести к",
+      "event": "Риск",
+      "causeLabel": "Причина / фактор",
+      "causePlaceholder": "например, отсутствия контроля при приёмке товаров",
+      "eventLabel": "Событие (риск)",
+      "eventPlaceholder": "например, приёмки некачественного товара за вознаграждение",
+      "consequenceLabel": "Последствие",
+      "consequencePlaceholder": "например, финансовым потерям и ущербу репутации"
+    },
+    "exposedPositions": {
+      "title": "Должности, подверженные коррупционным рискам",
+      "addButton": "Добавить должность",
+      "empty": "Должности пока не определены",
+      "saved": "Должность сохранена",
+      "removed": "Должность удалена",
+      "modalTitleAdd": "Добавление должности",
+      "modalTitleEdit": "Изменение должности",
+      "positionLabel": "Должность",
+      "departmentLabel": "Подразделение",
+      "authoritiesLabel": "Полномочия",
+      "riskLabel": "Связанный риск",
+      "riskLevelLabel": "Уровень риска",
+      "controlsLabel": "Рекомендуемые меры контроля",
+      "trainingLabel": "Требуется обучение",
+      "columns": {
+        "position": "Должность",
+        "department": "Подразделение",
+        "risk": "Связанный риск",
+        "riskLevel": "Уровень риска",
+        "trainingNeeded": "Обучение",
+        "actions": "Действия"
+      }
+    }
   },
   "analysisStage8": {
     "intro": "Оцените каждый выявленный риск по вероятности и последствиям, зафиксируйте эффективность действующих мер контроля и остаточный уровень риска.",
@@ -1490,7 +1577,33 @@
     "FINANCIAL_OPERATIONS": "Финансовые операции",
     "PROCUREMENT": "Закупки",
     "PERMITS": "Выдача разрешений",
-    "PROPERTY_USE": "Использование имущества"
+    "PROPERTY_USE": "Использование имущества",
+    "LEGAL_GAP": "Правовой пробел",
+    "LEGAL_COLLISION": "Коллизия правовых норм",
+    "LINGUISTIC_UNCERTAINTY": "Юридико-лингвистическая неопределённость",
+    "RIGHT_INSTEAD_OF_DUTY": "Право вместо обязанности",
+    "EXCESSIVE_REQUIREMENTS": "Завышенные требования",
+    "ADMINISTRATIVE_BARRIERS": "Излишние административные барьеры",
+    "IMPROPER_FUNCTIONS_DEFINITION": "Ненадлежащее определение функций, обязанностей, прав и ответственности",
+    "NO_DEADLINES": "Отсутствие сроков",
+    "NO_DECISION_GROUNDS": "Отсутствие оснований принятия решения",
+    "EXTERNAL_INTERACTION": "Взаимодействие с внешними лицами"
+  },
+  "analysisScope": {
+    "LEGAL_ACTS": "НПА и внутренние документы",
+    "ORG_MANAGEMENT": "Организационно-управленческая деятельность",
+    "BOTH": "Оба направления (НПА и орг.-управленческая деятельность)"
+  },
+  "analysisNavigator": {
+    "title": "Вопросы для анализа",
+    "detailsTitle": "Комментарий и связи",
+    "commentPlaceholder": "Комментарий к вопросу",
+    "linkPlaceholder": {
+      "document": "Связать с документом",
+      "factor": "Связать с фактором",
+      "risk": "Связать с риском",
+      "recommendation": "Связать с рекомендацией"
+    }
   },
   "analysisStage9": {
     "intro": "Сформируйте рекомендации по устранению или снижению выявленных коррупционных рисков.",
@@ -1514,7 +1627,8 @@
     "riskLabel": "Риск",
     "typeLabel": "Тип рекомендации",
     "descriptionLabel": "Описание",
-    "responsibleLabel": "Ответственный"
+    "responsibleLabel": "Ответственный",
+    "recommendationQuestionsTitle": "Вопросы по рекомендации"
   },
   "analysisStage10": {
     "intro": "Составьте план мероприятий по реализации рекомендаций: задачи, ожидаемый результат, ответственных, сроки и приоритет.",

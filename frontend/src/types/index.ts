@@ -285,6 +285,19 @@ export interface RiskListItem {
   _count?: { actions: number; controls: number };
 }
 
+export interface RiskOriginContext {
+  analysisCode?: string;
+  analysisName?: string;
+  objectOfAnalysis?: string | null;
+  scope?: AnalysisScope | null;
+  process?: string | null;
+  corruptogenicFactor?: string | null;
+  informationSource?: string | null;
+  cause?: string | null;
+  consequences?: string | null;
+  recommendation?: string | null;
+}
+
 export interface RiskDetail extends RiskListItem {
   description?: string | null;
   categoryId?: string | null;
@@ -302,6 +315,11 @@ export interface RiskDetail extends RiskListItem {
   approvedAt?: string | null;
   closedAt?: string | null;
   archivedAt?: string | null;
+  sourceTemplateId?: string | null;
+  sourceTemplate?: { id: string; code: string; title: string } | null;
+  sourceAnalysisId?: string | null;
+  sourceAnalysis?: { id: string; code: string; name: string } | null;
+  originContext?: RiskOriginContext | null;
   sources: Array<{ source: Source }>;
   controls: Control[];
   actions: Action[];
@@ -436,6 +454,8 @@ export const IMPLEMENTED_ANALYSIS_STAGES: AnalysisStage[] = [
 
 export type AnalysisStatus = 'DRAFT' | 'IN_PROGRESS' | 'OVERDUE' | 'COMPLETED' | 'ARCHIVED';
 
+export type AnalysisScope = 'LEGAL_ACTS' | 'ORG_MANAGEMENT' | 'BOTH';
+
 export type AnalysisDocumentCategory =
   | 'LAW'
   | 'INTERNAL_DOCUMENT'
@@ -516,6 +536,15 @@ export interface AnalysisDetail extends AnalysisListItem {
   reassessedAt?: string | null;
   createdById?: string | null;
   createdBy?: NamedRef | null;
+  orderBasis?: string | null;
+  orderNumber?: string | null;
+  orderDate?: string | null;
+  decisionMakerId?: string | null;
+  decisionMaker?: NamedRef | null;
+  analysisScope?: AnalysisScope | null;
+  coordinatorId?: string | null;
+  coordinator?: NamedRef | null;
+  extensionRequested: boolean;
   departments: AnalysisDepartmentLink[];
   workingGroup: AnalysisWorkingGroupMember[];
   planItems: AnalysisPlanItem[];
@@ -526,6 +555,71 @@ export interface AnalysisDetail extends AnalysisListItem {
   recommendations: AnalysisRecommendation[];
   actionItems: AnalysisActionItem[];
   comments: AnalysisComment[];
+  exposedPositions: AnalysisExposedPosition[];
+}
+
+// ------------------------------------------------------------------
+// ВАКР-навигатор: общий чек-лист вопросов + должности с коррупционными рисками
+// ------------------------------------------------------------------
+
+export type ChecklistAnswerStatus =
+  | 'VERIFIED'
+  | 'NOT_APPLICABLE'
+  | 'NEEDS_REVISION'
+  | 'REQUESTED'
+  | 'RECEIVED';
+
+export interface AnalysisChecklistAnswer {
+  id: string;
+  analysisId: string;
+  questionKey: string;
+  status?: string | null;
+  comment?: string | null;
+  responsibleDepartmentId?: string | null;
+  responsibleDepartment?: NamedRef | null;
+  dueDate?: string | null;
+  isCurrent?: boolean | null;
+  isReliable?: boolean | null;
+  linkedDocumentId?: string | null;
+  linkedFactorId?: string | null;
+  linkedRiskId?: string | null;
+  linkedRecommendationId?: string | null;
+  updatedAt: string;
+  updatedById?: string | null;
+  updatedBy?: NamedRef | null;
+}
+
+export interface AnalysisExposedPosition {
+  id: string;
+  analysisId: string;
+  positionTitle: string;
+  departmentId?: string | null;
+  department?: NamedRef | null;
+  authorities?: string | null;
+  linkedRiskId?: string | null;
+  linkedRisk?: { id: string; title: string } | null;
+  riskLevel?: string | null;
+  recommendedControls?: string | null;
+  trainingNeeded: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AnalysisCompletenessCheck {
+  hasOrderBasis: boolean;
+  hasObjectOfAnalysis: boolean;
+  hasAnalysisScope: boolean;
+  hasInformationSources: boolean;
+  hasProcesses: boolean;
+  hasFactors: boolean;
+  hasRisks: boolean;
+  risksAssessed: boolean;
+  hasRecommendations: boolean;
+  hasActionItems: boolean;
+  hasExposedPositions: boolean;
+  reportReady: boolean;
+  missingLabels: string[];
+  isComplete: boolean;
 }
 
 export interface AnalysisComment {
@@ -577,7 +671,17 @@ export type CorruptogenicFactorType =
   | 'FINANCIAL_OPERATIONS'
   | 'PROCUREMENT'
   | 'PERMITS'
-  | 'PROPERTY_USE';
+  | 'PROPERTY_USE'
+  | 'LEGAL_GAP'
+  | 'LEGAL_COLLISION'
+  | 'LINGUISTIC_UNCERTAINTY'
+  | 'RIGHT_INSTEAD_OF_DUTY'
+  | 'EXCESSIVE_REQUIREMENTS'
+  | 'ADMINISTRATIVE_BARRIERS'
+  | 'IMPROPER_FUNCTIONS_DEFINITION'
+  | 'NO_DEADLINES'
+  | 'NO_DECISION_GROUNDS'
+  | 'EXTERNAL_INTERACTION';
 
 export interface AnalysisProcessStep {
   id: string;

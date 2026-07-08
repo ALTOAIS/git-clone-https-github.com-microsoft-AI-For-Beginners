@@ -8,6 +8,12 @@ import { IncidentsService } from '../incidents/incidents.service';
 import { buildDocxReport } from '../reports/docx.util';
 import { buildPdfReport } from '../reports/pdf.util';
 import { ACTIVE_STATUSES } from '../risks/risks.constants';
+import {
+  ANALYSIS_SCOPE_LABELS,
+  CORRUPTOGENIC_FACTOR_LABELS,
+  RECOMMENDATION_TYPE_LABELS,
+  SOURCE_CHECKLIST_CATALOG,
+} from '../analyses/analyses.constants';
 import { RiskTemplatesService } from '../risk-templates/risk-templates.service';
 import { AnalyzeRiskDto } from './dto/analyze-risk.dto';
 import { ChatDto } from './dto/chat.dto';
@@ -328,27 +334,63 @@ export class AiService {
     user: RequestUser,
   ): Promise<AiReportResult & { disclaimer: string }> {
     const analysis = await this.findAnalysis(dto.analysisId);
-    const [processSteps, factors, risks, recommendations, actionItems] =
-      await Promise.all([
-        this.prisma.analysisProcessStep.findMany({
-          where: { analysisId: dto.analysisId },
-          include: { department: { select: { name: true } } },
-          orderBy: { order: 'asc' },
-        }),
-        this.prisma.analysisFactor.findMany({
-          where: { analysisId: dto.analysisId },
-        }),
-        this.prisma.analysisRisk.findMany({
-          where: { analysisId: dto.analysisId },
-        }),
-        this.prisma.analysisRecommendation.findMany({
-          where: { analysisId: dto.analysisId },
-        }),
-        this.prisma.analysisActionItem.findMany({
-          where: { analysisId: dto.analysisId },
-          include: { responsible: { select: { fullName: true } } },
-        }),
-      ]);
+    const [
+      processSteps,
+      factors,
+      risks,
+      recommendations,
+      actionItems,
+      workingGroup,
+      exposedPositions,
+      checklistAnswers,
+      decisionMaker,
+      coordinator,
+    ] = await Promise.all([
+      this.prisma.analysisProcessStep.findMany({
+        where: { analysisId: dto.analysisId },
+        include: { department: { select: { name: true } } },
+        orderBy: { order: 'asc' },
+      }),
+      this.prisma.analysisFactor.findMany({
+        where: { analysisId: dto.analysisId },
+      }),
+      this.prisma.analysisRisk.findMany({
+        where: { analysisId: dto.analysisId },
+      }),
+      this.prisma.analysisRecommendation.findMany({
+        where: { analysisId: dto.analysisId },
+      }),
+      this.prisma.analysisActionItem.findMany({
+        where: { analysisId: dto.analysisId },
+        include: { responsible: { select: { fullName: true } } },
+      }),
+      this.prisma.analysisWorkingGroupMember.findMany({
+        where: { analysisId: dto.analysisId },
+        include: { user: { select: { fullName: true } } },
+      }),
+      this.prisma.analysisExposedPosition.findMany({
+        where: { analysisId: dto.analysisId },
+        include: { department: { select: { name: true } } },
+      }),
+      this.prisma.analysisChecklistAnswer.findMany({
+        where: {
+          analysisId: dto.analysisId,
+          questionKey: { in: SOURCE_CHECKLIST_CATALOG.map((s) => s.key) },
+        },
+      }),
+      analysis.decisionMakerId
+        ? this.prisma.user.findUnique({
+            where: { id: analysis.decisionMakerId },
+            select: { fullName: true },
+          })
+        : null,
+      analysis.coordinatorId
+        ? this.prisma.user.findUnique({
+            where: { id: analysis.coordinatorId },
+            select: { fullName: true },
+          })
+        : null,
+    ]);
 
     const summary = await this.provider.generateExecutiveSummary({
       analysisName: analysis.name,
@@ -359,15 +401,65 @@ export class AiService {
       actionItemsCount: actionItems.length,
     });
 
+    const checklistByKey = new Map(
+      checklistAnswers.map((a) => [a.questionKey, a]),
+    );
+    const sourceStatusLabels: Record<string, string> = {
+      REQUESTED: 'запрошено',
+      RECEIVED: 'получено',
+      NOT_APPLICABLE: 'не применимо',
+    };
+
     const sections = [
       {
-        heading: 'Общие сведения',
+        heading: '1. Основание проведения',
         content:
-          `Анализ: ${analysis.name} (${analysis.code}).` +
-          (analysis.subject ? ` Предмет: ${analysis.subject}.` : '') +
-          (analysis.legalBasis
-            ? ` Нормативное основание: ${analysis.legalBasis}.`
-            : ''),
+          (analysis.orderBasis
+            ? `${analysis.orderBasis}.`
+            : analysis.legalBasis
+              ? `${analysis.legalBasis}.`
+              : 'Основание не указано.') +
+          (analysis.orderNumber || analysis.orderDate
+            ? ` Решение/приказ №${analysis.orderNumber ?? '—'} от ${analysis.orderDate ? analysis.orderDate.toISOString().slice(0, 10) : '—'}.`
+            : '') +
+          (decisionMaker ? ` Принято: ${decisionMaker.fullName}.` : ''),
+      },
+      {
+        heading: '2. Объект анализа',
+        content: analysis.subject || 'Объект анализа не указан.',
+      },
+      {
+        heading: '3. Период анализа',
+        content:
+          analysis.periodStart || analysis.periodEnd
+            ? `${analysis.periodStart ? analysis.periodStart.toISOString().slice(0, 10) : '—'} — ${analysis.periodEnd ? analysis.periodEnd.toISOString().slice(0, 10) : '—'}`
+            : 'Период анализа не указан.',
+      },
+      {
+        heading: '4. Состав рабочей группы / уполномоченное лицо',
+        content: workingGroup.length
+          ? workingGroup
+              .map((m) => `${m.user.fullName}${m.role ? ` — ${m.role}` : ''}`)
+              .join('\n')
+          : coordinator
+            ? `Уполномоченное лицо (координатор): ${coordinator.fullName}.`
+            : 'Состав рабочей группы не определён.',
+      },
+      {
+        heading: '5. Источники информации',
+        content: SOURCE_CHECKLIST_CATALOG.map((source) => {
+          const answer = checklistByKey.get(source.key);
+          const status = answer?.status
+            ? (sourceStatusLabels[answer.status] ?? answer.status)
+            : 'не отмечено';
+          return `${source.label}: ${status}`;
+        }).join('\n'),
+      },
+      {
+        heading: '6. Направления анализа',
+        content: analysis.analysisScope
+          ? ANALYSIS_SCOPE_LABELS[analysis.analysisScope]
+          : 'Направления анализа не выбраны.',
       },
       {
         heading: 'Карта бизнес-процессов',
@@ -381,37 +473,51 @@ export class AiService {
           : 'Процессные шаги не заполнены.',
       },
       {
-        heading: 'Коррупциогенные факторы',
+        heading: '7. Выявленные коррупциогенные факторы',
         content: factors.length
           ? factors
               .map(
                 (f) =>
-                  `${f.factorType}${f.description ? `: ${f.description}` : ''}`,
+                  `${CORRUPTOGENIC_FACTOR_LABELS[f.factorType] ?? f.factorType}${f.description ? `: ${f.description}` : ''}`,
               )
               .join('\n')
           : 'Коррупциогенные факторы не выявлены.',
       },
       {
-        heading: 'Выявленные риски',
+        heading: '8. Выявленные коррупционные риски',
         content: risks.length
           ? risks
               .map(
                 (r) =>
-                  `${r.title}${r.score != null ? ` — балл риска: ${r.score}` : ''}`,
+                  `${r.title}${r.score != null ? ` — балл риска: ${r.score}` : ''}${r.cause ? `. Причина: ${r.cause}` : ''}${r.consequences ? `. Последствия: ${r.consequences}` : ''}`,
               )
               .join('\n')
           : 'Риски не выявлены.',
       },
       {
-        heading: 'Рекомендации',
+        heading: '9. Должности, подверженные коррупционным рискам',
+        content: exposedPositions.length
+          ? exposedPositions
+              .map(
+                (p) =>
+                  `${p.positionTitle}${p.department ? ` (${p.department.name})` : ''}${p.riskLevel ? ` — уровень риска: ${p.riskLevel}` : ''}`,
+              )
+              .join('\n')
+          : 'Должности, подверженные коррупционным рискам, не определены.',
+      },
+      {
+        heading: '10. Рекомендации',
         content: recommendations.length
           ? recommendations
-              .map((r) => `[${r.type}] ${r.description}`)
+              .map(
+                (r) =>
+                  `[${RECOMMENDATION_TYPE_LABELS[r.type] ?? r.type}] ${r.description}`,
+              )
               .join('\n')
           : 'Рекомендации не сформированы.',
       },
       {
-        heading: 'План мероприятий',
+        heading: '11. План мероприятий',
         content: actionItems.length
           ? actionItems
               .map(
@@ -421,7 +527,7 @@ export class AiService {
               .join('\n')
           : 'Мероприятия плана действий не сформированы.',
       },
-      { heading: 'Заключение', content: summary },
+      { heading: '12. Вывод', content: summary },
     ];
 
     await this.logInteraction({

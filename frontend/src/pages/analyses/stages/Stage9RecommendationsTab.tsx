@@ -7,6 +7,8 @@ import { InfoTooltip } from '../../../components/InfoTooltip';
 import { useUsersList } from '../../../hooks/useReferenceData';
 import type { AnalysisDetail, AnalysisRecommendation } from '../../../types';
 import { ALL_RECOMMENDATION_TYPES, recommendationTypeLabel } from '../../../utils/analysisDisplay';
+import { AnalysisNavigatorPanel } from '../AnalysisNavigatorPanel';
+import { buildScopedQuestionKey, RECOMMENDATION_SUBQUESTIONS } from '../navigatorQuestions';
 
 interface Props {
   analysis: AnalysisDetail;
@@ -75,6 +77,18 @@ export function Stage9RecommendationsTab({ analysis, onUpdated }: Props) {
         dataSource={analysis.recommendations}
         pagination={false}
         locale={{ emptyText: t('analysisStage9.noRecommendationsYet') }}
+        expandable={{
+          expandedRowRender: (recommendation) => (
+            <AnalysisNavigatorPanel
+              analysisId={analysis.id}
+              title={t('analysisStage9.recommendationQuestionsTitle')}
+              questions={RECOMMENDATION_SUBQUESTIONS.map((q) => ({
+                key: buildScopedQuestionKey('rec', recommendation.id, q.key),
+                label: q.label,
+              }))}
+            />
+          ),
+        }}
         columns={[
           {
             title: (

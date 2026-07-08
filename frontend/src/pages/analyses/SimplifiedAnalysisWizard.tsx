@@ -1,5 +1,6 @@
 import { FilePdfOutlined, FileWordOutlined, MessageOutlined } from '@ant-design/icons';
-import { App, Badge, Button, Card, Descriptions, Drawer, List, Popconfirm, Result, Space, Steps, Tag, Typography } from 'antd';
+import { useQuery } from '@tanstack/react-query';
+import { Alert, App, Badge, Button, Card, Descriptions, Drawer, List, Popconfirm, Result, Space, Steps, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -47,6 +48,12 @@ export function SimplifiedAnalysisWizard({ analysis, onUpdated }: Props) {
   const [finishing, setFinishing] = useState(false);
 
   const isCompleted = analysis.status === 'COMPLETED';
+
+  const { data: completeness } = useQuery({
+    queryKey: ['analysis-completeness', analysis.id],
+    queryFn: () => analysesApi.getCompletenessCheck(analysis.id).then((r) => r.data),
+    enabled: !isCompleted,
+  });
 
   const handleGenerateReport = async () => {
     setLoadingReport(true);
@@ -101,6 +108,23 @@ export function SimplifiedAnalysisWizard({ analysis, onUpdated }: Props) {
     />
   ) : (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      {completeness && !completeness.isComplete && (
+        <Alert
+          type="warning"
+          showIcon
+          message={t('simplifiedAnalysis.finish.completenessWarningTitle')}
+          description={
+            <ul style={{ margin: 0, paddingLeft: 20 }}>
+              {completeness.missingLabels.map((label) => (
+                <li key={label}>{label}</li>
+              ))}
+            </ul>
+          }
+        />
+      )}
+      {completeness?.isComplete && (
+        <Alert type="success" showIcon message={t('simplifiedAnalysis.finish.completenessOkTitle')} />
+      )}
       <Descriptions bordered column={3} size="small">
         <Descriptions.Item label={t('simplifiedAnalysis.finish.risksCount')}>{analysis.risks.length}</Descriptions.Item>
         <Descriptions.Item label={t('simplifiedAnalysis.finish.recommendationsCount')}>
