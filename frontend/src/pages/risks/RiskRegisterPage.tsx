@@ -13,6 +13,7 @@ import { RiskLibraryPage } from '../RiskLibraryPage';
 import type { RiskListItem, RiskStatus } from '../../types';
 import { ALL_RISK_STATUSES, RISK_STATUS_COLORS, riskStatusLabel, SCORE_LEVEL_COLORS, scoreLevel } from '../../utils/riskDisplay';
 import { RiskFormModal } from './RiskFormModal';
+import { RiskTemplateLibraryPage } from './RiskTemplateLibraryPage';
 
 export function RiskRegisterPage() {
   const { t } = useTranslation();
@@ -215,7 +216,8 @@ export function RiskRegisterPage() {
       <Tabs
         items={[
           { key: 'register', label: t('riskRegister.tabRegister'), children: registerTab },
-          { key: 'library', label: t('riskRegister.tabLibrary'), children: <RiskLibraryPage /> },
+          { key: 'templateLibrary', label: t('riskRegister.tabTemplateLibrary'), children: <RiskTemplateLibraryPage /> },
+          { key: 'categories', label: t('riskRegister.tabCategories'), children: <RiskLibraryPage /> },
           { key: 'controls', label: t('riskRegister.tabControls'), children: <ControlsPage /> },
         ]}
       />

@@ -28,6 +28,7 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
+import { seedRiskTemplates } from './seed-risk-templates';
 
 const prisma = new PrismaClient();
 const DEMO_PASSWORD = 'ChangeMe123!';
@@ -191,6 +192,47 @@ async function main() {
   const dataProtection = await upsertCategory('Защита персональных данных', esgCat.id);
 
   const regulatory = await upsertCategory('Регуляторные и правовые риски');
+
+  // Дополнительные категории для направлений Библиотеки типовых рисков,
+  // не покрытых деревом категорий выше (см. seed-risk-templates.ts).
+  const procurementCat = await upsertCategory('Закупочная деятельность');
+  const contractCat = await upsertCategory('Договорная работа');
+  const hrCat = await upsertCategory('Кадровые риски');
+  const financeCat = await upsertCategory('Финансовые риски');
+  const accountingCat = await upsertCategory('Бухгалтерский учёт и отчётность');
+  const charityCat = await upsertCategory('Благотворительность и спонсорство');
+  const governmentCat = await upsertCategory('Взаимодействие с государственными органами');
+  const affiliationCat = await upsertCategory('Аффилированность и связанные стороны');
+  const assetCat = await upsertCategory('Управление имуществом');
+  const constructionCat = await upsertCategory('Строительство и капитальные проекты');
+  const insiderCat = await upsertCategory('Инсайдерская информация');
+  const sanctionsCat = await upsertCategory('Санкционные риски');
+  const amlCat = await upsertCategory('ПОД/ФТ (легализация доходов)');
+  const corporateGovernanceCat = await upsertCategory('Корпоративное управление');
+  const trainingCultureCat = await upsertCategory('Обучение и комплаенс-культура');
+
+  await seedRiskTemplates(prisma, {
+    'Закупочная деятельность': procurementCat.id,
+    'Договорная работа': contractCat.id,
+    'Конфликт интересов': coi.id,
+    'Подарки и представительские расходы': gifts.id,
+    'Кадровые риски': hrCat.id,
+    'Финансовые риски': financeCat.id,
+    'Бухгалтерский учёт и отчётность': accountingCat.id,
+    'Благотворительность и спонсорство': charityCat.id,
+    'Взаимодействие с государственными органами': governmentCat.id,
+    'Комплаенс-проверка контрагентов': counterpartyDd.id,
+    'Аффилированность и связанные стороны': affiliationCat.id,
+    'Управление имуществом': assetCat.id,
+    'Строительство и капитальные проекты': constructionCat.id,
+    'Защита персональных данных': dataProtection.id,
+    'Инсайдерская информация': insiderCat.id,
+    'Санкционные риски': sanctionsCat.id,
+    'ПОД/ФТ (легализация доходов)': amlCat.id,
+    'Мошенничество': fraud.id,
+    'Корпоративное управление': corporateGovernanceCat.id,
+    'Обучение и комплаенс-культура': trainingCultureCat.id,
+  });
 
   // ---------------------------------------------------------------
   // Пользователи

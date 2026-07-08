@@ -6,12 +6,15 @@ import type {
   AiAnalyzeRiskResult,
   AiChatResult,
   AiCourseOutlineDraft,
+  AiImproveDescriptionResult,
   AiLessonContentResult,
   AiQuizQuestionsResult,
   AiReportResult,
   AiReviewResult,
   AiRiskIntelligenceDashboard,
   AiRiskRegisterEntryResult,
+  AiRiskTemplateDraft,
+  AiSuggestActionsResult,
   AiSuggestControlsResult,
   AnalysisDetail,
   AnalysisListItem,
@@ -39,6 +42,7 @@ import type {
   Paginated,
   RiskDetail,
   RiskListItem,
+  RiskTemplate,
   Source,
   SurveyDetail,
   SurveyListItem,
@@ -149,6 +153,33 @@ export const risksApi = {
     apiClient.patch<RiskDetail>(`/risks/${id}/status`, { status, note }),
   archive: (id: string) => apiClient.patch<RiskDetail>(`/risks/${id}/archive`),
   remove: (id: string) => apiClient.delete(`/risks/${id}`),
+};
+
+// ---------------------------------------------------------------------------
+// Библиотека типовых рисков
+// ---------------------------------------------------------------------------
+export interface RiskTemplateQuery {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  categoryId?: string;
+  direction?: string;
+  riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  tags?: string;
+  includeInactive?: boolean;
+}
+
+export const riskTemplatesApi = {
+  list: (params: RiskTemplateQuery) => apiClient.get<Paginated<RiskTemplate>>('/risk-templates', { params }),
+  listTags: () => apiClient.get<string[]>('/risk-templates/tags'),
+  similar: (id: string) => apiClient.get<RiskTemplate[]>(`/risk-templates/${id}/similar`),
+  get: (id: string) => apiClient.get<RiskTemplate>(`/risk-templates/${id}`),
+  create: (data: Record<string, unknown>) => apiClient.post<RiskTemplate>('/risk-templates', data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.patch<RiskTemplate>(`/risk-templates/${id}`, data),
+  duplicate: (id: string) => apiClient.post<RiskTemplate>(`/risk-templates/${id}/duplicate`),
+  remove: (id: string) => apiClient.delete(`/risk-templates/${id}`),
+  createRisk: (id: string, data: Record<string, unknown>) =>
+    apiClient.post<RiskDetail>(`/risk-templates/${id}/create-risk`, data),
 };
 
 // ---------------------------------------------------------------------------
@@ -487,4 +518,12 @@ export const aiApi = {
     apiClient.post<AiLessonContentResult>('/ai/generate-lesson-content', data),
   generateQuizQuestions: (data: { courseId: string; topic: string; questionCount?: number }) =>
     apiClient.post<AiQuizQuestionsResult>('/ai/generate-quiz-questions', data),
+  improveRiskTemplateDescription: (templateId: string) =>
+    apiClient.post<AiImproveDescriptionResult>('/ai/improve-risk-template-description', { templateId }),
+  suggestRiskTemplateControls: (templateId: string) =>
+    apiClient.post<AiSuggestControlsResult>('/ai/suggest-risk-template-controls', { templateId }),
+  suggestRiskTemplateActions: (templateId: string) =>
+    apiClient.post<AiSuggestActionsResult>('/ai/suggest-risk-template-actions', { templateId }),
+  generateRiskTemplateForProcess: (data: { processDescription: string; direction?: string }) =>
+    apiClient.post<AiRiskTemplateDraft>('/ai/generate-risk-template-for-process', data),
 };

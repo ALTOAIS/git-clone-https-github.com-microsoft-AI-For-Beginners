@@ -197,6 +197,76 @@ export interface RiskHistoryEntry {
   createdAt: string;
 }
 
+export type RiskTemplateDirection =
+  | 'PROCUREMENT'
+  | 'CONTRACT_MANAGEMENT'
+  | 'CONFLICT_OF_INTEREST'
+  | 'GIFTS_HOSPITALITY'
+  | 'HR_PERSONNEL'
+  | 'FINANCE_PAYMENTS'
+  | 'ACCOUNTING'
+  | 'CHARITY_SPONSORSHIP'
+  | 'GOVERNMENT_INTERACTION'
+  | 'THIRD_PARTY_DUE_DILIGENCE'
+  | 'AFFILIATION_RELATED_PARTIES'
+  | 'ASSET_MANAGEMENT'
+  | 'CONSTRUCTION_CAPITAL_PROJECTS'
+  | 'IT_DATA_ACCESS'
+  | 'INSIDER_INFORMATION'
+  | 'SANCTIONS'
+  | 'AML'
+  | 'FRAUD_THEFT'
+  | 'CORPORATE_GOVERNANCE'
+  | 'TRAINING_COMPLIANCE_CULTURE';
+
+export const ALL_RISK_TEMPLATE_DIRECTIONS: RiskTemplateDirection[] = [
+  'PROCUREMENT',
+  'CONTRACT_MANAGEMENT',
+  'CONFLICT_OF_INTEREST',
+  'GIFTS_HOSPITALITY',
+  'HR_PERSONNEL',
+  'FINANCE_PAYMENTS',
+  'ACCOUNTING',
+  'CHARITY_SPONSORSHIP',
+  'GOVERNMENT_INTERACTION',
+  'THIRD_PARTY_DUE_DILIGENCE',
+  'AFFILIATION_RELATED_PARTIES',
+  'ASSET_MANAGEMENT',
+  'CONSTRUCTION_CAPITAL_PROJECTS',
+  'IT_DATA_ACCESS',
+  'INSIDER_INFORMATION',
+  'SANCTIONS',
+  'AML',
+  'FRAUD_THEFT',
+  'CORPORATE_GOVERNANCE',
+  'TRAINING_COMPLIANCE_CULTURE',
+];
+
+export interface RiskTemplate {
+  id: string;
+  code: string;
+  title: string;
+  categoryId?: string | null;
+  category?: NamedRef | null;
+  direction: RiskTemplateDirection;
+  description: string;
+  corruptionScheme?: string | null;
+  causes?: string | null;
+  corruptionFactors?: string | null;
+  consequences?: string | null;
+  redFlags?: string | null;
+  typicalControls: string[];
+  recommendedActions: string[];
+  baseProbability: number;
+  baseImpact: number;
+  baseScore: number;
+  tags: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { risks: number; analysisRisks: number };
+}
+
 export interface RiskListItem {
   id: string;
   code: string;
@@ -526,6 +596,7 @@ export interface AnalysisRisk {
   residualImpact?: number | null;
   residualScore?: number | null;
   linkedRiskId?: string | null;
+  sourceTemplateId?: string | null;
 }
 
 // ------------------------------------------------------------------
@@ -994,6 +1065,32 @@ export interface AiAnalyzeRiskResult {
 
 export interface AiSuggestControlsResult {
   controls: AiControlSuggestion[];
+  disclaimer: string;
+}
+
+export interface AiImproveDescriptionResult {
+  improvedDescription: string;
+  disclaimer: string;
+}
+
+export interface AiSuggestActionsResult {
+  actions: string[];
+  disclaimer: string;
+}
+
+export interface AiRiskTemplateDraft {
+  title: string;
+  description: string;
+  causes: string;
+  corruptionScheme: string;
+  corruptionFactors: string;
+  consequences: string;
+  redFlags: string;
+  typicalControls: string[];
+  recommendedActions: string[];
+  tags: string[];
+  baseProbability: number;
+  baseImpact: number;
   disclaimer: string;
 }
 

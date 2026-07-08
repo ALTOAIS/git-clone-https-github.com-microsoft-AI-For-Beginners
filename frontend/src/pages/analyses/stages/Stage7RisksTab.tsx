@@ -5,8 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { analysesApi } from '../../../api/endpoints';
 import { InfoTooltip } from '../../../components/InfoTooltip';
 import { useCategories, useUsersList } from '../../../hooks/useReferenceData';
-import type { AnalysisDetail, AnalysisRisk, CorruptogenicFactorType } from '../../../types';
+import type { AnalysisDetail, AnalysisRisk, CorruptogenicFactorType, RiskTemplate } from '../../../types';
 import { corruptogenicFactorTypeLabel } from '../../../utils/analysisDisplay';
+import { RiskTemplatePickerModal } from './RiskTemplatePickerModal';
 
 interface Props {
   analysis: AnalysisDetail;
@@ -18,6 +19,8 @@ export function Stage7RisksTab({ analysis, onUpdated }: Props) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<AnalysisRisk | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [sourceTemplateId, setSourceTemplateId] = useState<string | undefined>();
   const [form] = Form.useForm();
 
   const { data: categories } = useCategories();
@@ -25,13 +28,39 @@ export function Stage7RisksTab({ analysis, onUpdated }: Props) {
 
   const openCreate = () => {
     setEditing(null);
+    setSourceTemplateId(undefined);
     form.resetFields();
     setOpen(true);
   };
 
   const openEdit = (risk: AnalysisRisk) => {
     setEditing(risk);
+    setSourceTemplateId(undefined);
     form.setFieldsValue(risk);
+    setOpen(true);
+  };
+
+  const handleSelectTemplate = (template: RiskTemplate) => {
+    setEditing(null);
+    setSourceTemplateId(template.id);
+    form.resetFields();
+    const existingControlsParts = [
+      ...template.typicalControls,
+      ...(template.recommendedActions.length
+        ? [`${t('riskTemplatePicker.recommendedActionsPrefix')}: ${template.recommendedActions.join('; ')}`]
+        : []),
+    ];
+    form.setFieldsValue({
+      title: template.title,
+      description: template.description,
+      categoryId: template.categoryId ?? undefined,
+      cause: template.causes ?? undefined,
+      conditions: template.corruptionFactors ?? undefined,
+      corruptionScheme: template.corruptionScheme ?? undefined,
+      consequences: template.consequences ?? undefined,
+      existingControls: existingControlsParts.join('\n'),
+    });
+    setPickerOpen(false);
     setOpen(true);
   };
 
@@ -43,10 +72,11 @@ export function Stage7RisksTab({ analysis, onUpdated }: Props) {
         await analysesApi.updateRisk(analysis.id, editing.id, values);
         message.success(t('analysisStage7.updated'));
       } else {
-        await analysesApi.addRisk(analysis.id, values);
+        await analysesApi.addRisk(analysis.id, { ...values, sourceTemplateId });
         message.success(t('analysisStage7.added'));
       }
       setOpen(false);
+      setSourceTemplateId(undefined);
       onUpdated();
     } finally {
       setSaving(false);
@@ -66,9 +96,12 @@ export function Stage7RisksTab({ analysis, onUpdated }: Props) {
           {t('analysisStage7.intro')}
           <InfoTooltip text={t('tooltips.analyses.risks')} />
         </span>
-        <Button icon={<PlusOutlined />} onClick={openCreate}>
-          {t('analysisStage7.addButton')}
-        </Button>
+        <Space>
+          <Button onClick={() => setPickerOpen(true)}>{t('analysisStage7.pickFromLibraryButton')}</Button>
+          <Button icon={<PlusOutlined />} onClick={openCreate}>
+            {t('analysisStage7.addButton')}
+          </Button>
+        </Space>
       </Space>
 
       <Table
@@ -165,6 +198,8 @@ export function Stage7RisksTab({ analysis, onUpdated }: Props) {
           </Form.Item>
         </Form>
       </Modal>
+
+      <RiskTemplatePickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={handleSelectTemplate} />
     </div>
   );
 }

@@ -110,6 +110,38 @@ export interface QuizQuestionDraft {
   correctAnswerText?: string;
 }
 
+export interface ImproveDescriptionContext {
+  title: string;
+  description: string;
+}
+
+export interface SuggestRiskActionsContext {
+  riskTitle: string;
+  riskDescription?: string;
+  corruptionScheme?: string;
+  existingActions?: string;
+}
+
+export interface GenerateRiskForProcessContext {
+  processDescription: string;
+  directionHint?: string;
+}
+
+export interface RiskTemplateDraft {
+  title: string;
+  description: string;
+  causes: string;
+  corruptionScheme: string;
+  corruptionFactors: string;
+  consequences: string;
+  redFlags: string;
+  typicalControls: string[];
+  recommendedActions: string[];
+  tags: string[];
+  baseProbability: number;
+  baseImpact: number;
+}
+
 /**
  * Abstraction over the underlying AI backend. Phase 1 ships `MockAiProvider`
  * only — the interface is designed so a real LLM-backed provider (Phase 2)
@@ -142,6 +174,9 @@ export interface AiProvider {
   generateQuizQuestions(
     ctx: QuizQuestionsContext,
   ): Promise<QuizQuestionDraft[]>;
+  improveRiskDescription(ctx: ImproveDescriptionContext): Promise<{ improvedDescription: string }>;
+  suggestRiskActions(ctx: SuggestRiskActionsContext): Promise<string[]>;
+  generateRiskForProcess(ctx: GenerateRiskForProcessContext): Promise<RiskTemplateDraft>;
 }
 
 export const AI_PROVIDER = 'AI_PROVIDER';
