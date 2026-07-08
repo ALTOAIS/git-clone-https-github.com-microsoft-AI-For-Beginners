@@ -40,19 +40,16 @@
     "administration": "Администрирование",
     "academy": "Академия комплаенса",
     "aiAssistant": "ИИ-ассистент",
-    "riskSources": "Источники рисков",
-    "riskSourcesVakr": "ВАКР",
-    "riskSourcesIncidents": "Обращения",
-    "riskSourcesInspections": "Проверки",
-    "riskSourcesMonitoring": "Мониторинг",
-    "riskSourcesDueDiligence": "Due Diligence",
-    "reportsAnalytics": "Отчетность и аналитика"
+    "reportsAnalytics": "Отчеты"
   },
   "layout": {
     "notifications": "Уведомления",
     "noNotifications": "Нет уведомлений",
     "signOut": "Выйти из системы",
-    "language": "Язык"
+    "language": "Язык",
+    "myProfile": "Мой профиль",
+    "changePassword": "Смена пароля",
+    "systemSettings": "Настройки системы"
   },
   "auth": {
     "signInTitle": "Вход в систему",
@@ -342,6 +339,7 @@
     "dragText": "Нажмите или перетащите файл для загрузки",
     "dragHint": "PDF, Word, PowerPoint, изображения размером до 20 МБ",
     "noAttachmentsYet": "Материалы пока не загружены",
+    "view": "Просмотреть",
     "download": "Скачать",
     "delete": "Удалить",
     "uploadedByPrefix": "загрузил(а)",
@@ -501,14 +499,36 @@
     }
   },
   "administration": {
-    "title": "Администрирование",
+    "title": "Настройки системы",
     "tabs": {
-      "users": "Пользователи",
+      "users": "Пользователи и роли",
       "companies": "Компании",
       "departments": "Подразделения",
+      "businessProcesses": "Справочники",
+      "riskCategories": "Категории рисков",
+      "sources": "Источники рисков",
       "auditLog": "Журнал аудита",
       "settings": "Настройки"
     }
+  },
+  "businessProcessesAdmin": {
+    "newButton": "Новый бизнес-процесс",
+    "created": "Бизнес-процесс создан",
+    "updated": "Бизнес-процесс обновлён",
+    "deactivated": "Бизнес-процесс деактивирован",
+    "columns": {
+      "name": "Наименование",
+      "department": "Подразделение",
+      "active": "Статус",
+      "actions": "Действия"
+    },
+    "editLink": "Изменить",
+    "deactivateLink": "Деактивировать",
+    "deactivateConfirm": "Деактивировать бизнес-процесс?",
+    "modalTitleNew": "Новый бизнес-процесс",
+    "modalTitleEdit": "Изменить бизнес-процесс",
+    "nameLabel": "Наименование",
+    "departmentLabel": "Подразделение"
   },
   "usersAdmin": {
     "newButton": "Новый пользователь",
@@ -907,14 +927,13 @@
     "stageComingSoon": "Этап появится в следующих версиях модуля",
     "advanceButton": "Перейти к этапу «{{stage}}»",
     "advancedModeLink": "Расширенный режим (14 этапов)",
-    "simpleModeLink": "Простой режим (6 шагов)"
+    "simpleModeLink": "Простой режим (5 шагов)"
   },
   "simplifiedAnalysis": {
     "steps": {
       "card": "Карточка анализа",
       "documents": "Документы и объект",
-      "processes": "Процессы и факторы",
-      "risks": "Риски и оценка",
+      "processesAndRisks": "Процессы, факторы и риски",
       "recommendations": "Рекомендации и мероприятия",
       "report": "Отчёт и завершение"
     },
@@ -1654,6 +1673,10 @@
     "errorGeneric": "Не удалось выполнить запрос к ИИ-ассистенту",
     "disclaimer": "Результат сформирован ИИ и носит рекомендательный характер. Проверьте и отредактируйте содержание перед добавлением в курс."
   },
+  "attachmentViewer": {
+    "unsupportedType": "Предпросмотр недоступен для этого типа файла. Скачайте файл, чтобы открыть его.",
+    "download": "Скачать"
+  },
   "coursePreview": {
     "title": "Просмотр курса",
     "subtitle": "Так курс будет выглядеть для обучаемого работника",
@@ -1661,6 +1684,7 @@
     "previewModeNotice": "Режим предпросмотра — здесь отображается материал курса без возможности редактирования и без учёта прогресса прохождения.",
     "noModulesYet": "В курсе пока нет модулей",
     "attachmentsTitle": "Материалы",
+    "view": "Просмотреть",
     "download": "Скачать",
     "watchVideo": "Смотреть видео",
     "joinLink": "Перейти по ссылке",

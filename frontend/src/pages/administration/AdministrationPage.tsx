@@ -2,7 +2,10 @@ import { Space, Tabs, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
+import { RiskLibraryPage } from '../RiskLibraryPage';
+import { SourcesPage } from '../SourcesPage';
 import { AuditLogTab } from './AuditLogTab';
+import { BusinessProcessesAdminTab } from './BusinessProcessesAdminTab';
 import { CompaniesAdminTab } from './CompaniesAdminTab';
 import { DepartmentsAdminTab } from './DepartmentsAdminTab';
 import { SettingsTab } from './SettingsTab';
@@ -39,6 +42,13 @@ export function AdministrationPage() {
             ),
             children: <DepartmentsAdminTab />,
           },
+          {
+            key: 'business-processes',
+            label: t('administration.tabs.businessProcesses'),
+            children: <BusinessProcessesAdminTab />,
+          },
+          { key: 'risk-categories', label: t('administration.tabs.riskCategories'), children: <RiskLibraryPage /> },
+          { key: 'sources', label: t('administration.tabs.sources'), children: <SourcesPage /> },
           { key: 'audit-log', label: t('administration.tabs.auditLog'), children: <AuditLogTab /> },
           { key: 'settings', label: t('administration.tabs.settings'), children: <SettingsTab /> },
         ]}

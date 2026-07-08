@@ -23,7 +23,7 @@ interface Props {
   onUpdated: () => void;
 }
 
-const SIMPLE_STEPS = ['card', 'documents', 'processes', 'risks', 'recommendations', 'report'] as const;
+const SIMPLE_STEPS = ['card', 'documents', 'processesAndRisks', 'recommendations', 'report'] as const;
 
 function ScoreTag({ value }: { value: number | null | undefined }) {
   if (value === null || value === undefined) return <Typography.Text type="secondary">—</Typography.Text>;
@@ -193,11 +193,9 @@ export function SimplifiedAnalysisWizard({ analysis, onUpdated }: Props) {
       </Card>
       <Stage4DocumentsTab analysis={analysis} onUpdated={onUpdated} />
     </Space>,
-    <Space key="processes" direction="vertical" size="large" style={{ width: '100%' }}>
+    <Space key="processesAndRisks" direction="vertical" size="large" style={{ width: '100%' }}>
       <Stage5ProcessMapTab analysis={analysis} onUpdated={onUpdated} />
       <Stage6FactorsTab analysis={analysis} onUpdated={onUpdated} />
-    </Space>,
-    <Space key="risks" direction="vertical" size="large" style={{ width: '100%' }}>
       <Stage7RisksTab analysis={analysis} onUpdated={onUpdated} />
       <Stage8AssessmentTab analysis={analysis} onUpdated={onUpdated} />
     </Space>,

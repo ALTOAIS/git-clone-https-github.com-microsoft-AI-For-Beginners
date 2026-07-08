@@ -96,6 +96,7 @@ export interface BusinessProcess {
   name: string;
   departmentId: string;
   isActive: boolean;
+  department?: NamedRef;
 }
 
 export interface Category {

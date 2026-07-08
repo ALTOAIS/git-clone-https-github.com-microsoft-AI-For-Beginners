@@ -1,8 +1,10 @@
 import { FileOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { List, Space, Tag, Typography } from 'antd';
 import ReactMarkdown from 'react-markdown';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { attachmentsApi } from '../../api/endpoints';
+import { AttachmentViewerModal, type ViewableAttachment } from '../../components/AttachmentViewerModal';
 import type { CourseLesson } from '../../types';
 import { downloadViaApi } from '../../utils/download';
 import { lessonContentTypeLabel } from '../../utils/academyDisplay';
@@ -20,6 +22,7 @@ interface Props {
 
 export function LessonContentView({ lesson, footer }: Props) {
   const { t } = useTranslation();
+  const [viewing, setViewing] = useState<ViewableAttachment | null>(null);
   return (
     <div>
       <Space wrap style={{ marginBottom: 12 }}>
@@ -61,10 +64,10 @@ export function LessonContentView({ lesson, footer }: Props) {
           renderItem={(attachment) => (
             <List.Item
               actions={[
-                <a
-                  key="download"
-                  onClick={() => downloadViaApi(attachmentsApi.downloadPath(attachment.id), attachment.fileName)}
-                >
+                <a key="view" onClick={() => setViewing(attachment)}>
+                  {t('coursePreview.view')}
+                </a>,
+                <a key="download" onClick={() => downloadViaApi(attachmentsApi.downloadPath(attachment.id), attachment.fileName)}>
                   {t('coursePreview.download')}
                 </a>,
               ]}
@@ -82,6 +85,7 @@ export function LessonContentView({ lesson, footer }: Props) {
         <Typography.Text type="secondary">{t('coursePreview.noContent')}</Typography.Text>
       )}
       {footer}
+      <AttachmentViewerModal attachment={viewing} downloadPath={attachmentsApi.downloadPath} onClose={() => setViewing(null)} />
     </div>
   );
 }
