@@ -8,7 +8,6 @@ import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import type { CalendarDeadline, CalendarEvent } from '../../types';
 import { COURSE_ASSIGNMENT_STATUS_COLORS, courseAssignmentStatusLabel, lessonContentTypeLabel } from '../../utils/academyDisplay';
-import { AcademySubNav } from './AcademySubNav';
 
 export function AcademyCalendarPage() {
   const { t } = useTranslation();
@@ -43,7 +42,6 @@ export function AcademyCalendarPage() {
 
   return (
     <div>
-      <AcademySubNav />
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 0 }} align="center">
         <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 0 }}>
           {t('academyCalendar.title')}

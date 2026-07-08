@@ -538,23 +538,109 @@ export class AcademyService {
 
   async summary() {
     const now = new Date();
-    const [totalCourses, totalAssigned, completed, overdue, avgProgress] =
-      await Promise.all([
-        this.prisma.course.count(),
-        this.prisma.courseAssignment.count(),
-        this.prisma.courseAssignment.count({
-          where: { status: CourseAssignmentStatus.COMPLETED },
-        }),
-        this.prisma.courseAssignment.count({
-          where: {
-            status: { not: CourseAssignmentStatus.COMPLETED },
-            dueDate: { lt: now },
+    const [
+      totalCourses,
+      totalAssigned,
+      completed,
+      overdue,
+      avgProgress,
+      certificatesIssued,
+      activeCampaignsCount,
+      assignmentsByCourse,
+      attemptsByTest,
+    ] = await Promise.all([
+      this.prisma.course.count(),
+      this.prisma.courseAssignment.count(),
+      this.prisma.courseAssignment.count({
+        where: { status: CourseAssignmentStatus.COMPLETED },
+      }),
+      this.prisma.courseAssignment.count({
+        where: {
+          status: { not: CourseAssignmentStatus.COMPLETED },
+          dueDate: { lt: now },
+        },
+      }),
+      this.prisma.courseAssignment.aggregate({
+        _avg: { progressPercent: true },
+      }),
+      this.prisma.certificate.count(),
+      this.prisma.campaign.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.courseAssignment.groupBy({
+        by: ['courseId', 'status'],
+        _count: { _all: true },
+      }),
+      this.prisma.testAttempt.groupBy({
+        by: ['testId'],
+        _avg: { scorePercent: true },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const courseTotals = new Map<string, { assigned: number; completed: number }>();
+    for (const row of assignmentsByCourse) {
+      const entry = courseTotals.get(row.courseId) ?? { assigned: 0, completed: 0 };
+      entry.assigned += row._count._all;
+      if (row.status === CourseAssignmentStatus.COMPLETED) entry.completed += row._count._all;
+      courseTotals.set(row.courseId, entry);
+    }
+    const lowCompletionCourseIds = [...courseTotals.entries()]
+      .filter(([, v]) => v.assigned >= 3 && v.completed / v.assigned < 0.5)
+      .map(([courseId]) => courseId);
+    const lowCompletionCoursesData = lowCompletionCourseIds.length
+      ? await this.prisma.course.findMany({
+          where: { id: { in: lowCompletionCourseIds } },
+          select: { id: true, title: true },
+        })
+      : [];
+    const lowCompletionCourses = lowCompletionCoursesData
+      .map((c) => {
+        const t = courseTotals.get(c.id)!;
+        return {
+          id: c.id,
+          title: c.title,
+          completionPercent: Math.round((t.completed / t.assigned) * 100),
+        };
+      })
+      .sort((a, b) => a.completionPercent - b.completionPercent)
+      .slice(0, 5);
+
+    const lowScoreTestIds = attemptsByTest
+      .filter((row) => row._count._all >= 1 && (row._avg.scorePercent ?? 0) < 60)
+      .map((row) => row.testId);
+    const lowScoreTestsData = lowScoreTestIds.length
+      ? await this.prisma.test.findMany({
+          where: { id: { in: lowScoreTestIds } },
+          select: {
+            id: true,
+            title: true,
+            course: { select: { id: true, title: true } },
+            lesson: {
+              select: {
+                title: true,
+                module: { select: { course: { select: { id: true } } } },
+              },
+            },
           },
-        }),
-        this.prisma.courseAssignment.aggregate({
-          _avg: { progressPercent: true },
-        }),
-      ]);
+        })
+      : [];
+    const attemptStatsByTestId = new Map(
+      attemptsByTest.map((row) => [row.testId, row]),
+    );
+    const lowScoreTests = lowScoreTestsData
+      .map((test) => {
+        const stats = attemptStatsByTestId.get(test.id)!;
+        return {
+          id: test.id,
+          title: test.title,
+          courseId: test.course?.id ?? test.lesson?.module.course.id ?? null,
+          courseTitle: test.course?.title ?? test.lesson?.title ?? null,
+          averageScore: Math.round(stats._avg.scorePercent ?? 0),
+          attemptsCount: stats._count._all,
+        };
+      })
+      .sort((a, b) => a.averageScore - b.averageScore)
+      .slice(0, 5);
+
     return {
       totalCourses,
       totalAssigned,
@@ -563,6 +649,10 @@ export class AcademyService {
       completionPercent:
         totalAssigned > 0 ? Math.round((completed / totalAssigned) * 100) : 0,
       averageProgress: Math.round(avgProgress._avg.progressPercent ?? 0),
+      certificatesIssued,
+      activeCampaignsCount,
+      lowCompletionCourses,
+      lowScoreTests,
     };
   }
 

@@ -1455,25 +1455,41 @@
     "OTHER": "Иное"
   },
   "academySubNav": {
-    "dashboard": "Дашборд",
     "myAcademy": "Моя академия",
-    "courses": "Конструктор курсов",
-    "calendar": "Календарь",
-    "matrix": "Матрица обучения",
-    "surveys": "Опросы",
-    "campaigns": "Комплаенс-кампании",
-    "trainingPlan": "Годовой план",
-    "certificates": "Сертификаты"
+    "coursesAndMaterials": "Курсы и материалы",
+    "testsAndSurveys": "Тесты и опросы",
+    "management": "Управление обучением"
   },
   "academyDashboard": {
-    "title": "Академия комплаенса",
+    "title": "Обзор",
     "description": "Обучение работников по вопросам противодействия коррупции, этики и корпоративного управления.",
     "totalCourses": "Всего курсов",
     "totalAssigned": "Назначено обучений",
     "completed": "Завершено",
     "overdue": "Просрочено",
+    "certificatesIssued": "Выдано сертификатов",
     "completionCardTitle": "Процент завершения обучения",
-    "averageProgressCardTitle": "Средний прогресс прохождения"
+    "averageProgressCardTitle": "Средний прогресс прохождения",
+    "summaryTitle": "Общая сводка",
+    "activeCampaignsTag": "Кампаний в работе: {{count}}",
+    "attention": {
+      "title": "Что требует внимания",
+      "none": "Всё в порядке — нет просрочек и проблемных показателей",
+      "openLink": "Открыть",
+      "overdue": "Просроченное обучение: {{count}} назначений",
+      "lowCompletionCourse": "Курс «{{title}}» — низкое прохождение: {{percent}}%",
+      "lowScoreTest": "Тест «{{title}}» (курс: {{course}}) — средний балл {{percent}}%, попыток: {{count}}",
+      "activeCampaigns": "Кампаний в работе: {{count}}"
+    },
+    "quickActions": {
+      "title": "Быстрые действия",
+      "createCourse": "Создать курс",
+      "assignTraining": "Назначить обучение",
+      "createTest": "Создать тест",
+      "createSurvey": "Создать опрос",
+      "launchCampaign": "Запустить кампанию",
+      "openCalendar": "Открыть календарь"
+    }
   },
   "myAcademy": {
     "title": "Моя академия",
@@ -1489,11 +1505,46 @@
       "dueDate": "Срок",
       "actions": "Действия"
     },
-    "takeTestLink": "Пройти тест"
+    "takeTestLink": "Пройти тест",
+    "cards": {
+      "continue": "Продолжить обучение",
+      "assigned": "Назначено мне",
+      "overdue": "Просрочено",
+      "certificates": "Мои сертификаты"
+    },
+    "recommendedTitle": "Рекомендованные материалы",
+    "noRecommendations": "Пока нет дополнительных рекомендованных курсов",
+    "previewLink": "Просмотреть"
+  },
+  "academyManagement": {
+    "accessDeniedTitle": "Раздел недоступен",
+    "accessDeniedSubtitle": "«Управление обучением» доступно только администраторам и сотрудникам комплаенс-функции.",
+    "tabs": {
+      "overview": "Обзор",
+      "courseBuilder": "Конструктор курсов",
+      "assignments": "Назначения обучения",
+      "calendar": "Календарь обучения",
+      "campaigns": "Комплаенс-кампании",
+      "trainingPlan": "Годовой план",
+      "certificates": "Сертификаты"
+    }
+  },
+  "testsAndSurveys": {
+    "title": "Тесты и опросы",
+    "description": "Прохождение тестов по назначенным курсам и участие в опросах — всё внутри платформы.",
+    "tabs": {
+      "myTests": "Мои тесты",
+      "surveys": "Опросы"
+    }
+  },
+  "myTests": {
+    "description": "Тесты по курсам, назначенным лично вам.",
+    "noAssignments": "Вам пока не назначено ни одного курса с тестом",
+    "takeTestButton": "Пройти тест"
   },
   "coursesPage": {
-    "title": "Конструктор курсов",
-    "description": "Создание и редактирование учебных курсов Академии комплаенса: модули, уроки и назначение работникам.",
+    "title": "Курсы и материалы",
+    "description": "Курсы, уроки и учебные материалы: статьи, презентации, видео, памятки и инструкции. Создание и назначение обучения — для комплаенс-функции.",
     "createButton": "Создать курс",
     "statusPlaceholder": "Статус",
     "mandatoryYes": "Да",

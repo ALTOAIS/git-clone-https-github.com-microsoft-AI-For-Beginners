@@ -15,7 +15,9 @@ import { ReportsAnalyticsPage } from './pages/ReportsAnalyticsPage';
 import { AdministrationPage } from './pages/administration/AdministrationPage';
 import { AnalysesListPage } from './pages/analyses/AnalysesListPage';
 import { AnalysisWizardPage } from './pages/analyses/AnalysisWizardPage';
-import { AcademyDashboardPage } from './pages/academy/AcademyDashboardPage';
+import { AcademyLayout } from './pages/academy/AcademyLayout';
+import { AcademyManagementPage } from './pages/academy/AcademyManagementPage';
+import { TestsAndSurveysPage } from './pages/academy/TestsAndSurveysPage';
 import { MyAcademyPage } from './pages/academy/MyAcademyPage';
 import { CoursePlayerPage } from './pages/academy/CoursePlayerPage';
 import { CoursesListPage } from './pages/academy/CoursesListPage';
@@ -45,23 +47,27 @@ function App() {
           <Route path="/analyses" element={<AnalysesListPage />} />
           <Route path="/analyses/:id" element={<AnalysisWizardPage />} />
           <Route path="/ai-assistant" element={<AiAssistantPage />} />
-          <Route path="/academy" element={<AcademyDashboardPage />} />
-          <Route path="/academy/my" element={<MyAcademyPage />} />
-          <Route path="/academy/learn/:id" element={<CoursePlayerPage />} />
-          <Route path="/academy/courses" element={<CoursesListPage />} />
-          <Route path="/academy/courses/:id" element={<CourseEditorPage />} />
-          <Route path="/academy/courses/:id/preview" element={<CoursePreviewPage />} />
-          <Route path="/academy/calendar" element={<AcademyCalendarPage />} />
-          <Route path="/academy/matrix" element={<TrainingMatrixPage />} />
-          <Route path="/academy/take-test/:courseId" element={<TakeTestPage />} />
-          <Route path="/academy/surveys" element={<SurveysListPage />} />
-          <Route path="/academy/surveys/:id" element={<SurveyEditorPage />} />
-          <Route path="/academy/surveys/:id/respond" element={<RespondSurveyPage />} />
-          <Route path="/academy/surveys/:id/results" element={<SurveyResultsPage />} />
-          <Route path="/academy/campaigns" element={<CampaignsListPage />} />
-          <Route path="/academy/campaigns/:id" element={<CampaignDetailPage />} />
-          <Route path="/academy/training-plan" element={<TrainingPlanPage />} />
-          <Route path="/academy/certificates" element={<CertificatesPage />} />
+          <Route path="/academy" element={<AcademyLayout />}>
+            <Route index element={<Navigate to="/academy/my" replace />} />
+            <Route path="my" element={<MyAcademyPage />} />
+            <Route path="learn/:id" element={<CoursePlayerPage />} />
+            <Route path="courses" element={<CoursesListPage />} />
+            <Route path="courses/:id" element={<CourseEditorPage />} />
+            <Route path="courses/:id/preview" element={<CoursePreviewPage />} />
+            <Route path="tests" element={<TestsAndSurveysPage />} />
+            <Route path="take-test/:courseId" element={<TakeTestPage />} />
+            <Route path="surveys" element={<SurveysListPage />} />
+            <Route path="surveys/:id" element={<SurveyEditorPage />} />
+            <Route path="surveys/:id/respond" element={<RespondSurveyPage />} />
+            <Route path="surveys/:id/results" element={<SurveyResultsPage />} />
+            <Route path="management" element={<AcademyManagementPage />} />
+            <Route path="calendar" element={<AcademyCalendarPage />} />
+            <Route path="matrix" element={<TrainingMatrixPage />} />
+            <Route path="campaigns" element={<CampaignsListPage />} />
+            <Route path="campaigns/:id" element={<CampaignDetailPage />} />
+            <Route path="training-plan" element={<TrainingPlanPage />} />
+            <Route path="certificates" element={<CertificatesPage />} />
+          </Route>
           <Route path="/risks" element={<RiskRegisterPage />} />
           <Route path="/risks/:id" element={<RiskCardPage />} />
           <Route path="/risk-library" element={<RiskLibraryPage />} />
