@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Res,
   UploadedFile,
@@ -32,6 +33,7 @@ import { CreateActionItemDto } from './dto/create-action-item.dto';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
 import { CreateAnalysisRiskDto } from './dto/create-analysis-risk.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { CreateExposedPositionDto } from './dto/create-exposed-position.dto';
 import { CreateFactorDto } from './dto/create-factor.dto';
 import { CreatePlanItemDto } from './dto/create-plan-item.dto';
 import { CreateProcessStepDto } from './dto/create-process-step.dto';
@@ -40,11 +42,13 @@ import { CreateWorkingGroupMemberDto } from './dto/create-working-group-member.d
 import { UpdateActionItemDto } from './dto/update-action-item.dto';
 import { UpdateAnalysisDto } from './dto/update-analysis.dto';
 import { UpdateAnalysisRiskDto } from './dto/update-analysis-risk.dto';
+import { UpdateExposedPositionDto } from './dto/update-exposed-position.dto';
 import { UpdateFactorDto } from './dto/update-factor.dto';
 import { UpdateProcessStepDto } from './dto/update-process-step.dto';
 import { UpdateReassessmentDto } from './dto/update-reassessment.dto';
 import { UpdateRecommendationDto } from './dto/update-recommendation.dto';
 import { UpdateWorkingGroupMemberDto } from './dto/update-working-group-member.dto';
+import { UpsertChecklistAnswerDto } from './dto/upsert-checklist-answer.dto';
 
 const MANAGE_ROLES = [
   Role.ADMINISTRATOR,
@@ -282,6 +286,65 @@ export class AnalysesController {
     @Body() dto: AssessAnalysisRiskDto,
   ) {
     return this.analysesService.assessRisk(id, riskId, dto);
+  }
+
+  @Get(':id/checklist')
+  getChecklist(@Param('id') id: string) {
+    return this.analysesService.getChecklist(id);
+  }
+
+  @Put(':id/checklist/:questionKey')
+  @Roles(...MANAGE_ROLES)
+  upsertChecklistAnswer(
+    @Param('id') id: string,
+    @Param('questionKey') questionKey: string,
+    @Body() dto: UpsertChecklistAnswerDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.analysesService.upsertChecklistAnswer(
+      id,
+      questionKey,
+      dto,
+      user.id,
+    );
+  }
+
+  @Get(':id/exposed-positions')
+  listExposedPositions(@Param('id') id: string) {
+    return this.analysesService.listExposedPositions(id);
+  }
+
+  @Post(':id/exposed-positions')
+  @Roles(...MANAGE_ROLES)
+  addExposedPosition(
+    @Param('id') id: string,
+    @Body() dto: CreateExposedPositionDto,
+  ) {
+    return this.analysesService.addExposedPosition(id, dto);
+  }
+
+  @Patch(':id/exposed-positions/:positionId')
+  @Roles(...MANAGE_ROLES)
+  updateExposedPosition(
+    @Param('id') id: string,
+    @Param('positionId') positionId: string,
+    @Body() dto: UpdateExposedPositionDto,
+  ) {
+    return this.analysesService.updateExposedPosition(id, positionId, dto);
+  }
+
+  @Delete(':id/exposed-positions/:positionId')
+  @Roles(...MANAGE_ROLES)
+  removeExposedPosition(
+    @Param('id') id: string,
+    @Param('positionId') positionId: string,
+  ) {
+    return this.analysesService.removeExposedPosition(id, positionId);
+  }
+
+  @Get(':id/completeness')
+  getCompletenessCheck(@Param('id') id: string) {
+    return this.analysesService.getCompletenessCheck(id);
   }
 
   @Post(':id/recommendations')

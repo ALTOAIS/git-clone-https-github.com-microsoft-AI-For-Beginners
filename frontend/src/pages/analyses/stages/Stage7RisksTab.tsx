@@ -1,5 +1,5 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, message, Modal, Popconfirm, Select, Space, Table } from 'antd';
+import { Button, Form, Input, message, Modal, Popconfirm, Select, Space, Table, Typography } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { analysesApi } from '../../../api/endpoints';
@@ -7,6 +7,7 @@ import { InfoTooltip } from '../../../components/InfoTooltip';
 import { useCategories, useUsersList } from '../../../hooks/useReferenceData';
 import type { AnalysisDetail, AnalysisRisk, CorruptogenicFactorType, RiskTemplate } from '../../../types';
 import { corruptogenicFactorTypeLabel } from '../../../utils/analysisDisplay';
+import { ExposedPositionsPanel } from '../ExposedPositionsPanel';
 import { RiskTemplatePickerModal } from './RiskTemplatePickerModal';
 
 interface Props {
@@ -21,7 +22,9 @@ export function Stage7RisksTab({ analysis, onUpdated }: Props) {
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [sourceTemplateId, setSourceTemplateId] = useState<string | undefined>();
+  const [formulaOpen, setFormulaOpen] = useState(false);
   const [form] = Form.useForm();
+  const [formulaForm] = Form.useForm();
 
   const { data: categories } = useCategories();
   const { data: users } = useUsersList();
@@ -89,6 +92,21 @@ export function Stage7RisksTab({ analysis, onUpdated }: Props) {
     onUpdated();
   };
 
+  const handleFormulaApply = async () => {
+    const { cause, event, consequence } = await formulaForm.validateFields();
+    setEditing(null);
+    setSourceTemplateId(undefined);
+    form.resetFields();
+    form.setFieldsValue({
+      title: `${t('analysisStage7.formula.event')}: ${event}`.slice(0, 200),
+      description: `${t('analysisStage7.formula.prefix')} ${cause}, ${t('analysisStage7.formula.middle')} ${event}, ${t('analysisStage7.formula.suffix')} ${consequence}.`,
+      cause,
+      consequences: consequence,
+    });
+    setFormulaOpen(false);
+    setOpen(true);
+  };
+
   return (
     <div>
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
@@ -98,6 +116,7 @@ export function Stage7RisksTab({ analysis, onUpdated }: Props) {
         </span>
         <Space>
           <Button onClick={() => setPickerOpen(true)}>{t('analysisStage7.pickFromLibraryButton')}</Button>
+          <Button onClick={() => setFormulaOpen(true)}>{t('analysisStage7.formulaButton')}</Button>
           <Button icon={<PlusOutlined />} onClick={openCreate}>
             {t('analysisStage7.addButton')}
           </Button>
@@ -200,6 +219,29 @@ export function Stage7RisksTab({ analysis, onUpdated }: Props) {
       </Modal>
 
       <RiskTemplatePickerModal open={pickerOpen} onClose={() => setPickerOpen(false)} onSelect={handleSelectTemplate} />
+
+      <Modal
+        title={t('analysisStage7.formulaModalTitle')}
+        open={formulaOpen}
+        onCancel={() => setFormulaOpen(false)}
+        onOk={handleFormulaApply}
+        destroyOnHidden
+      >
+        <Typography.Paragraph type="secondary">{t('analysisStage7.formulaHint')}</Typography.Paragraph>
+        <Form form={formulaForm} layout="vertical">
+          <Form.Item name="cause" label={t('analysisStage7.formula.causeLabel')} rules={[{ required: true }]}>
+            <Input.TextArea rows={2} placeholder={t('analysisStage7.formula.causePlaceholder')} />
+          </Form.Item>
+          <Form.Item name="event" label={t('analysisStage7.formula.eventLabel')} rules={[{ required: true }]}>
+            <Input.TextArea rows={2} placeholder={t('analysisStage7.formula.eventPlaceholder')} />
+          </Form.Item>
+          <Form.Item name="consequence" label={t('analysisStage7.formula.consequenceLabel')} rules={[{ required: true }]}>
+            <Input.TextArea rows={2} placeholder={t('analysisStage7.formula.consequencePlaceholder')} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <ExposedPositionsPanel analysis={analysis} />
     </div>
   );
 }

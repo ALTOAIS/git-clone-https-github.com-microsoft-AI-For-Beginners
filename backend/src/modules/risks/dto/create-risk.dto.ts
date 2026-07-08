@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsArray,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Max,
@@ -71,4 +72,21 @@ export class CreateRiskDto {
   @IsOptional()
   @IsString()
   sourceTemplateId?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Анализ ВАКР, из которого создан этот риск',
+  })
+  @IsOptional()
+  @IsString()
+  sourceAnalysisId?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Снимок контекста происхождения риска из ВАКР (процесс, фактор, причина, последствия и т.д.)',
+  })
+  @IsOptional()
+  @IsObject()
+  originContext?: Record<string, unknown>;
 }

@@ -8,6 +8,7 @@ import { InfoTooltip } from '../../../components/InfoTooltip';
 import type { AnalysisDetail, AnalysisDocument } from '../../../types';
 import { ALL_ANALYSIS_DOCUMENT_CATEGORIES, analysisDocumentCategoryLabel } from '../../../utils/analysisDisplay';
 import { downloadViaApi } from '../../../utils/download';
+import { SourceInformationChecklistPanel } from '../SourceInformationChecklistPanel';
 
 interface Props {
   analysis: AnalysisDetail;
@@ -53,6 +54,8 @@ export function Stage4DocumentsTab({ analysis, onUpdated }: Props) {
 
   return (
     <div>
+      <SourceInformationChecklistPanel analysis={analysis} />
+
       <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
         <span style={{ color: '#8c8c8c' }}>
           {t('analysisStage4.intro')}

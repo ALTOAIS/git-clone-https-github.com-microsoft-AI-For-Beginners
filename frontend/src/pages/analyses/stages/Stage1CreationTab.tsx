@@ -1,4 +1,4 @@
-import { Button, DatePicker, Descriptions, Form, Input, message, Select, Space } from 'antd';
+import { Button, Checkbox, DatePicker, Descriptions, Form, Input, message, Select, Space } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,6 +6,9 @@ import { analysesApi } from '../../../api/endpoints';
 import { InfoTooltip } from '../../../components/InfoTooltip';
 import { useCompanies, useDepartments, useUsersList } from '../../../hooks/useReferenceData';
 import type { AnalysisDetail } from '../../../types';
+import { ANALYSIS_SCOPE_VALUES, analysisScopeLabel } from '../../../utils/analysisDisplay';
+import { AnalysisNavigatorPanel } from '../AnalysisNavigatorPanel';
+import { CARD_NAVIGATOR_QUESTIONS } from '../navigatorQuestions';
 
 interface Props {
   analysis: AnalysisDetail;
@@ -34,6 +37,13 @@ export function Stage1CreationTab({ analysis, onUpdated }: Props) {
       deadline: analysis.deadline ? dayjs(analysis.deadline) : undefined,
       leadId: analysis.leadId,
       departmentIds: analysis.departments.map((d) => d.departmentId),
+      orderBasis: analysis.orderBasis,
+      orderNumber: analysis.orderNumber,
+      orderDate: analysis.orderDate ? dayjs(analysis.orderDate) : undefined,
+      decisionMakerId: analysis.decisionMakerId,
+      analysisScope: analysis.analysisScope,
+      coordinatorId: analysis.coordinatorId,
+      extensionRequested: analysis.extensionRequested,
     });
   }, [analysis, form]);
 
@@ -46,6 +56,7 @@ export function Stage1CreationTab({ analysis, onUpdated }: Props) {
         periodStart: values.periodStart?.toISOString(),
         periodEnd: values.periodEnd?.toISOString(),
         deadline: values.deadline?.toISOString(),
+        orderDate: values.orderDate?.toISOString(),
       });
       message.success(t('analysisStage1.updated'));
       setEditing(false);
@@ -102,10 +113,35 @@ export function Stage1CreationTab({ analysis, onUpdated }: Props) {
           >
             {analysis.legalBasis || <span style={{ color: '#999' }}>{t('common.notSet')}</span>}
           </Descriptions.Item>
+          <Descriptions.Item label={t('analysisStage1.orderBasis')} span={2}>
+            {analysis.orderBasis || <span style={{ color: '#999' }}>{t('common.notSet')}</span>}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('analysisStage1.orderNumberDate')}>
+            {analysis.orderNumber || analysis.orderDate
+              ? `${analysis.orderNumber ?? '—'} ${analysis.orderDate ? `от ${analysis.orderDate.slice(0, 10)}` : ''}`
+              : <span style={{ color: '#999' }}>{t('common.notSet')}</span>}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('analysisStage1.decisionMaker')}>
+            {analysis.decisionMaker?.fullName ?? <span style={{ color: '#999' }}>{t('common.notSet')}</span>}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('analysisStage1.analysisScope')}>
+            {analysis.analysisScope ? analysisScopeLabel(analysis.analysisScope) : <span style={{ color: '#999' }}>{t('common.notSet')}</span>}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('analysisStage1.coordinator')}>
+            {analysis.coordinator?.fullName ?? <span style={{ color: '#999' }}>{t('common.notSet')}</span>}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('analysisStage1.extensionRequested')}>
+            {analysis.extensionRequested ? t('common.yes') : t('common.no')}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('analysisStage1.analysisForm')}>
+            {analysis.workingGroup.length > 0 ? t('analysisStage1.analysisFormGroup') : t('analysisStage1.analysisFormSingle')}
+          </Descriptions.Item>
         </Descriptions>
         <Button style={{ marginTop: 16 }} onClick={() => setEditing(true)}>
           {t('analysisStage1.edit')}
         </Button>
+
+        <AnalysisNavigatorPanel analysisId={analysis.id} questions={CARD_NAVIGATOR_QUESTIONS} />
       </div>
     );
   }
@@ -145,6 +181,42 @@ export function Stage1CreationTab({ analysis, onUpdated }: Props) {
       </Form.Item>
       <Form.Item name="legalBasis" label={t('analysisStage1.legalBasisLabel')}>
         <Input.TextArea rows={2} />
+      </Form.Item>
+      <Form.Item name="orderBasis" label={t('analysisStage1.orderBasisLabel')}>
+        <Input.TextArea rows={2} placeholder={t('analysisStage1.orderBasisPlaceholder')} />
+      </Form.Item>
+      <Space size="large" style={{ width: '100%' }}>
+        <Form.Item name="orderNumber" label={t('analysisStage1.orderNumberLabel')}>
+          <Input style={{ width: 200 }} />
+        </Form.Item>
+        <Form.Item name="orderDate" label={t('analysisStage1.orderDateLabel')}>
+          <DatePicker />
+        </Form.Item>
+      </Space>
+      <Form.Item name="decisionMakerId" label={t('analysisStage1.decisionMakerLabel')}>
+        <Select
+          allowClear
+          showSearch
+          optionFilterProp="label"
+          options={users?.items.map((u) => ({ value: u.id, label: `${u.fullName} (${u.email})` }))}
+        />
+      </Form.Item>
+      <Form.Item name="analysisScope" label={t('analysisStage1.analysisScopeLabel')}>
+        <Select
+          allowClear
+          options={ANALYSIS_SCOPE_VALUES.map((s) => ({ value: s.value, label: analysisScopeLabel(s.value) }))}
+        />
+      </Form.Item>
+      <Form.Item name="coordinatorId" label={t('analysisStage1.coordinatorLabel')}>
+        <Select
+          allowClear
+          showSearch
+          optionFilterProp="label"
+          options={users?.items.map((u) => ({ value: u.id, label: `${u.fullName} (${u.email})` }))}
+        />
+      </Form.Item>
+      <Form.Item name="extensionRequested" valuePropName="checked">
+        <Checkbox>{t('analysisStage1.extensionRequestedLabel')}</Checkbox>
       </Form.Item>
       <Space>
         <Button type="primary" onClick={handleSave} loading={saving}>

@@ -20,6 +20,8 @@ const DETAIL_INCLUDE = {
   businessProcess: true,
   owner: { select: { id: true, fullName: true, email: true, role: true } },
   createdBy: { select: { id: true, fullName: true, email: true } },
+  sourceTemplate: { select: { id: true, code: true, title: true } },
+  sourceAnalysis: { select: { id: true, code: true, name: true } },
   sources: { include: { source: true } },
   controls: { include: { owner: { select: { id: true, fullName: true } } } },
   actions: { include: { owner: { select: { id: true, fullName: true } } } },
@@ -116,6 +118,8 @@ export class RisksService {
         inherentScore,
         status: RiskStatus.DRAFT,
         sourceTemplateId: dto.sourceTemplateId,
+        sourceAnalysisId: dto.sourceAnalysisId,
+        originContext: dto.originContext as Prisma.InputJsonValue | undefined,
         sources: dto.sourceIds
           ? { create: dto.sourceIds.map((sourceId) => ({ sourceId })) }
           : undefined,

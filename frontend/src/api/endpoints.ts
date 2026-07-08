@@ -16,7 +16,10 @@ import type {
   AiRiskTemplateDraft,
   AiSuggestActionsResult,
   AiSuggestControlsResult,
+  AnalysisChecklistAnswer,
+  AnalysisCompletenessCheck,
   AnalysisDetail,
+  AnalysisExposedPosition,
   AnalysisListItem,
   AppNotification,
   Attachment,
@@ -343,6 +346,29 @@ export const analysesApi = {
   approve: (analysisId: string) => apiClient.post<AnalysisDetail>(`/analyses/${analysisId}/approve`),
   updateReassessment: (analysisId: string, reassessmentNotes: string) =>
     apiClient.patch<AnalysisDetail>(`/analyses/${analysisId}/reassessment`, { reassessmentNotes }),
+
+  getChecklist: (analysisId: string) =>
+    apiClient.get<AnalysisChecklistAnswer[]>(`/analyses/${analysisId}/checklist`),
+  upsertChecklistAnswer: (analysisId: string, questionKey: string, data: Record<string, unknown>) =>
+    apiClient.put<AnalysisChecklistAnswer>(
+      `/analyses/${analysisId}/checklist/${encodeURIComponent(questionKey)}`,
+      data,
+    ),
+
+  listExposedPositions: (analysisId: string) =>
+    apiClient.get<AnalysisExposedPosition[]>(`/analyses/${analysisId}/exposed-positions`),
+  addExposedPosition: (analysisId: string, data: Record<string, unknown>) =>
+    apiClient.post<AnalysisExposedPosition>(`/analyses/${analysisId}/exposed-positions`, data),
+  updateExposedPosition: (analysisId: string, positionId: string, data: Record<string, unknown>) =>
+    apiClient.patch<AnalysisExposedPosition>(
+      `/analyses/${analysisId}/exposed-positions/${positionId}`,
+      data,
+    ),
+  removeExposedPosition: (analysisId: string, positionId: string) =>
+    apiClient.delete(`/analyses/${analysisId}/exposed-positions/${positionId}`),
+
+  getCompletenessCheck: (analysisId: string) =>
+    apiClient.get<AnalysisCompletenessCheck>(`/analyses/${analysisId}/completeness`),
 };
 
 // ---------------------------------------------------------------------------

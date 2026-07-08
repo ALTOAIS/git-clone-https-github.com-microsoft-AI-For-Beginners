@@ -190,7 +190,10 @@ enum ProcessControlPointType {
   CONTROL_MEASURES
 }
 
-/// Stage 6 "Выявление коррупциогенных факторов"
+/// Stage 6 "Выявление коррупциогенных факторов".
+/// Дополнено значениями из справочника коррупциогенных факторов по Методическим
+/// рекомендациям уполномоченного органа (LEGAL_GAP..EXTERNAL_INTERACTION) —
+/// существующие значения сохранены без изменений.
 enum CorruptogenicFactorType {
   DISCRETION
   CONFLICT_OF_INTEREST
@@ -205,6 +208,16 @@ enum CorruptogenicFactorType {
   PROCUREMENT
   PERMITS
   PROPERTY_USE
+  LEGAL_GAP
+  LEGAL_COLLISION
+  LINGUISTIC_UNCERTAINTY
+  RIGHT_INSTEAD_OF_DUTY
+  EXCESSIVE_REQUIREMENTS
+  ADMINISTRATIVE_BARRIERS
+  IMPROPER_FUNCTIONS_DEFINITION
+  NO_DEADLINES
+  NO_DECISION_GROUNDS
+  EXTERNAL_INTERACTION
 }
 
 /// Stage 9 "Формирование рекомендаций"
@@ -311,7 +324,9 @@ model Department {
   planItems         AnalysisPlanItem[]
   processSteps      AnalysisProcessStep[]
   actionItems       AnalysisActionItem[]
-  applicableCourses Course[]              @relation("CourseApplicableDepartments")
+  applicableCourses Course[]                  @relation("CourseApplicableDepartments")
+  checklistAnswers  AnalysisChecklistAnswer[]
+  exposedPositions  AnalysisExposedPosition[]
 
   @@unique([companyId, name])
   @@map("departments")
@@ -420,6 +435,9 @@ model User {
   refreshTokens                 RefreshToken[]
   ledAnalyses                   CorruptionAnalysis[]         @relation("AnalysisLead")
   createdAnalyses               CorruptionAnalysis[]         @relation("AnalysisCreatedBy")
+  decidedAnalyses               CorruptionAnalysis[]         @relation("AnalysisDecisionMaker")
+  coordinatedAnalyses           CorruptionAnalysis[]         @relation("AnalysisCoordinator")
+  updatedChecklistAnswers       AnalysisChecklistAnswer[]    @relation("ChecklistAnswerUpdatedBy")
   analysisMemberships           AnalysisWorkingGroupMember[]
   ownedPlanItems                AnalysisPlanItem[]           @relation("AnalysisPlanItemOwner")
   uploadedAnalysisDocs          AnalysisDocument[]
@@ -505,6 +523,14 @@ model Risk {
 
   sourceTemplateId String?
   sourceTemplate   RiskTemplate? @relation(fields: [sourceTemplateId], references: [id], onDelete: SetNull)
+
+  /// Происхождение риска из ВАКР (шаг "Утверждение"/approve()). originContext — снимок
+  /// контекста на момент создания (объект/направление анализа, процесс, фактор,
+  /// источник информации, причина, последствия, рекомендация) — историческая справка,
+  /// не предназначен для реляционных запросов.
+  sourceAnalysisId String?
+  sourceAnalysis   CorruptionAnalysis? @relation("RiskSourceAnalysis", fields: [sourceAnalysisId], references: [id], onDelete: SetNull)
+  originContext    Json?
 
   companyId         String?
   company           Company?         @relation(fields: [companyId], references: [id], onDelete: SetNull)
@@ -722,21 +748,43 @@ model CorruptionAnalysis {
   completedAt       DateTime?
   reassessmentNotes String?
   reassessedAt      DateTime?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
 
-  departments     AnalysisDepartment[]
-  workingGroup    AnalysisWorkingGroupMember[]
-  planItems       AnalysisPlanItem[]
-  documents       AnalysisDocument[]
-  processSteps    AnalysisProcessStep[]
-  factors         AnalysisFactor[]
-  risks           AnalysisRisk[]
-  recommendations AnalysisRecommendation[]
-  actionItems     AnalysisActionItem[]
-  comments        AnalysisComment[]
+  /// Методологические поля шага "Карточка анализа" (основание/направления ВАКР)
+  orderBasis         String?
+  orderNumber        String?
+  orderDate          DateTime?
+  decisionMakerId    String?
+  decisionMaker      User?          @relation("AnalysisDecisionMaker", fields: [decisionMakerId], references: [id], onDelete: SetNull)
+  analysisScope      AnalysisScope?
+  coordinatorId      String?
+  coordinator        User?          @relation("AnalysisCoordinator", fields: [coordinatorId], references: [id], onDelete: SetNull)
+  extensionRequested Boolean        @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  departments      AnalysisDepartment[]
+  workingGroup     AnalysisWorkingGroupMember[]
+  planItems        AnalysisPlanItem[]
+  documents        AnalysisDocument[]
+  processSteps     AnalysisProcessStep[]
+  factors          AnalysisFactor[]
+  risks            AnalysisRisk[]
+  recommendations  AnalysisRecommendation[]
+  actionItems      AnalysisActionItem[]
+  comments         AnalysisComment[]
+  checklistAnswers AnalysisChecklistAnswer[]
+  exposedPositions AnalysisExposedPosition[]
+  createdRisks     Risk[]                       @relation("RiskSourceAnalysis")
 
   @@map("corruption_analyses")
+}
+
+/// Направления анализа ВАКР — шаг "Карточка анализа"
+enum AnalysisScope {
+  LEGAL_ACTS
+  ORG_MANAGEMENT
+  BOTH
 }
 
 /// Many-to-many: an analysis can cover any number of departments
@@ -801,6 +849,8 @@ model AnalysisDocument {
   uploadedBy   User?                    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
   createdAt    DateTime                 @default(now())
 
+  checklistAnswers AnalysisChecklistAnswer[]
+
   @@map("analysis_documents")
 }
 
@@ -839,7 +889,8 @@ model AnalysisFactor {
   description   String?
   createdAt     DateTime                @default(now())
 
-  risks AnalysisRisk[]
+  risks            AnalysisRisk[]
+  checklistAnswers AnalysisChecklistAnswer[]
 
   @@map("analysis_factors")
 }
@@ -880,7 +931,9 @@ model AnalysisRisk {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  recommendations AnalysisRecommendation[]
+  recommendations  AnalysisRecommendation[]
+  checklistAnswers AnalysisChecklistAnswer[]
+  exposedPositions AnalysisExposedPosition[]
 
   /// Set when this analysis risk is migrated into the main Risk Register on approval (stage 12)
   linkedRiskId String? @unique
@@ -902,7 +955,8 @@ model AnalysisRecommendation {
   responsible   User?              @relation("RecommendationResponsible", fields: [responsibleId], references: [id], onDelete: SetNull)
   createdAt     DateTime           @default(now())
 
-  actionItems AnalysisActionItem[]
+  actionItems      AnalysisActionItem[]
+  checklistAnswers AnalysisChecklistAnswer[]
 
   @@map("analysis_recommendations")
 }
@@ -946,6 +1000,65 @@ model AnalysisComment {
   createdAt  DateTime           @default(now())
 
   @@map("analysis_comments")
+}
+
+/// "ВАКР-навигатор" — универсальный ответ на вопрос чек-листа/навигатора,
+/// переиспользуется во всех шагах упрощённого ВАКР (карточка анализа, источники
+/// информации, вопросы по процессам/факторам, вопросы по рекомендациям).
+/// Конкретный набор вопросов (questionKey, текст, допустимые статусы) — статичный
+/// справочник на фронтенде, здесь хранится только ответ пользователя.
+model AnalysisChecklistAnswer {
+  id          String             @id @default(uuid())
+  analysisId  String
+  analysis    CorruptionAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  questionKey String
+
+  /// Смысл статуса зависит от вопроса: для навигатора — "проверено/не применимо/
+  /// требует доработки", для источников информации — "запрошено/получено/не применимо".
+  status  String?
+  comment String?
+
+  responsibleDepartmentId String?
+  responsibleDepartment   Department? @relation(fields: [responsibleDepartmentId], references: [id], onDelete: SetNull)
+  dueDate                 DateTime?
+  isCurrent               Boolean?
+  isReliable              Boolean?
+
+  linkedDocumentId       String?
+  linkedDocument         AnalysisDocument?       @relation(fields: [linkedDocumentId], references: [id], onDelete: SetNull)
+  linkedFactorId         String?
+  linkedFactor           AnalysisFactor?         @relation(fields: [linkedFactorId], references: [id], onDelete: SetNull)
+  linkedRiskId           String?
+  linkedRisk             AnalysisRisk?           @relation(fields: [linkedRiskId], references: [id], onDelete: SetNull)
+  linkedRecommendationId String?
+  linkedRecommendation   AnalysisRecommendation? @relation(fields: [linkedRecommendationId], references: [id], onDelete: SetNull)
+
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+  updatedBy   User?    @relation("ChecklistAnswerUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@unique([analysisId, questionKey])
+  @@map("analysis_checklist_answers")
+}
+
+/// Блок "Должности, подверженные коррупционным рискам" — шаг "Процессы, факторы и риски"
+model AnalysisExposedPosition {
+  id                  String             @id @default(uuid())
+  analysisId          String
+  analysis            CorruptionAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  positionTitle       String
+  departmentId        String?
+  department          Department?        @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  authorities         String?
+  linkedRiskId        String?
+  linkedRisk          AnalysisRisk?      @relation(fields: [linkedRiskId], references: [id], onDelete: SetNull)
+  riskLevel           String?
+  recommendedControls String?
+  trainingNeeded      Boolean            @default(false)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@map("analysis_exposed_positions")
 }
 
 // ------------------------------------------------------------------
