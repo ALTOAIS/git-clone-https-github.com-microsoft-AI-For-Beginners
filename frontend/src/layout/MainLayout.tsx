@@ -1,15 +1,51 @@
 import { BellOutlined, LogoutOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
 import { Avatar, Badge, Dropdown, Layout, Menu, Popover, Space, Typography, List, Empty } from 'antd';
+import type { MenuProps } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { notificationsApi } from '../api/endpoints';
 import { useAuthStore } from '../auth/authStore';
 import { roleLabel } from '../auth/roles';
-import type { AppNotification } from '../types';
-import { NAV_ITEMS } from './navConfig';
+import type { AppNotification, Role } from '../types';
+import { NAV_ITEMS, type NavItem } from './navConfig';
 
 const { Header, Sider, Content } = Layout;
+
+function filterByRole(items: NavItem[], role: Role | undefined): NavItem[] {
+  return items
+    .filter((item) => !item.roles || (role && item.roles.includes(role)))
+    .map((item) => (item.children ? { ...item, children: filterByRole(item.children, role) } : item));
+}
+
+function flattenLeaves(items: NavItem[]): NavItem[] {
+  return items.flatMap((item) => (item.children && item.children.length > 0 ? flattenLeaves(item.children) : [item]));
+}
+
+function matchesLocation(item: NavItem, pathname: string, search: string): boolean {
+  const [itemPath, itemQuery] = item.path.split('?');
+  if (itemQuery) {
+    return pathname === itemPath && search.replace(/^\?/, '') === itemQuery;
+  }
+  return pathname.startsWith(itemPath);
+}
+
+function toMenuItems(items: NavItem[], t: (key: string) => string): MenuProps['items'] {
+  return items.map((item) =>
+    item.children && item.children.length > 0
+      ? {
+          key: item.key,
+          icon: <item.icon />,
+          label: t(item.labelKey),
+          children: toMenuItems(item.children, t),
+        }
+      : {
+          key: item.key,
+          icon: <item.icon />,
+          label: <Link to={item.path}>{t(item.labelKey)}</Link>,
+        },
+  );
+}
 
 export function MainLayout() {
   const { t } = useTranslation();
@@ -17,16 +53,22 @@ export function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
 
-  const visibleNavItems = useMemo(
-    () => NAV_ITEMS.filter((item) => !item.roles || (user && item.roles.includes(user.role))),
-    [user],
-  );
+  const visibleNavItems = useMemo(() => filterByRole(NAV_ITEMS, user?.role), [user]);
+  const leafItems = useMemo(() => flattenLeaves(visibleNavItems), [visibleNavItems]);
 
   const selectedKey = useMemo(() => {
-    const match = visibleNavItems.find((item) => location.pathname.startsWith(item.path));
+    const match = leafItems.find((item) => matchesLocation(item, location.pathname, location.search));
     return match?.key ?? 'dashboard';
-  }, [location.pathname, visibleNavItems]);
+  }, [location.pathname, location.search, leafItems]);
+
+  useEffect(() => {
+    const parent = visibleNavItems.find((item) => item.children?.some((child) => child.key === selectedKey));
+    if (parent) {
+      setOpenKeys((prev) => (prev.includes(parent.key) ? prev : [...prev, parent.key]));
+    }
+  }, [selectedKey, visibleNavItems]);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,11 +143,9 @@ export function MainLayout() {
           theme="dark"
           mode="inline"
           selectedKeys={[selectedKey]}
-          items={visibleNavItems.map((item) => ({
-            key: item.key,
-            icon: <item.icon />,
-            label: <Link to={item.path}>{t(item.labelKey)}</Link>,
-          }))}
+          openKeys={openKeys}
+          onOpenChange={(keys) => setOpenKeys(keys as string[])}
+          items={toMenuItems(visibleNavItems, t)}
         />
       </Sider>
       <Layout>

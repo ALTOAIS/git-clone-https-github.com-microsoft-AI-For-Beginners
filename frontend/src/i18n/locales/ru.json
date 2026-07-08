@@ -33,13 +33,20 @@
     "riskLibrary": "Библиотека рисков",
     "sources": "Источники рисков",
     "controls": "Контрольные мероприятия",
-    "actionPlans": "Планы мероприятий",
+    "actionPlans": "Мероприятия",
     "incidents": "Инциденты",
     "analytics": "Аналитика",
     "reports": "Отчетность",
     "administration": "Администрирование",
     "academy": "Академия комплаенса",
-    "aiAssistant": "ИИ-ассистент"
+    "aiAssistant": "ИИ-ассистент",
+    "riskSources": "Источники рисков",
+    "riskSourcesVakr": "ВАКР",
+    "riskSourcesIncidents": "Обращения",
+    "riskSourcesInspections": "Проверки",
+    "riskSourcesMonitoring": "Мониторинг",
+    "riskSourcesDueDiligence": "Due Diligence",
+    "reportsAnalytics": "Отчетность и аналитика"
   },
   "layout": {
     "notifications": "Уведомления",
@@ -165,6 +172,9 @@
   "riskRegister": {
     "title": "Реестр комплаенс-рисков",
     "registerButton": "Зарегистрировать риск",
+    "tabRegister": "Реестр",
+    "tabLibrary": "Библиотека типовых рисков",
+    "tabControls": "Контроли",
     "searchPlaceholder": "Поиск по названию, коду, описанию",
     "statusPlaceholder": "Статус",
     "categoryPlaceholder": "Категория",
@@ -895,7 +905,54 @@
     "advanceFailed": "Не удалось перевести анализ на следующий этап",
     "stageNotImplemented": "Этот этап пока в разработке",
     "stageComingSoon": "Этап появится в следующих версиях модуля",
-    "advanceButton": "Перейти к этапу «{{stage}}»"
+    "advanceButton": "Перейти к этапу «{{stage}}»",
+    "advancedModeLink": "Расширенный режим (14 этапов)",
+    "simpleModeLink": "Простой режим (6 шагов)"
+  },
+  "simplifiedAnalysis": {
+    "steps": {
+      "card": "Карточка анализа",
+      "documents": "Документы и объект",
+      "processes": "Процессы и факторы",
+      "risks": "Риски и оценка",
+      "recommendations": "Рекомендации и мероприятия",
+      "report": "Отчёт и завершение"
+    },
+    "commentsButton": "Комментарии",
+    "commentsDrawerTitle": "Комментарии по анализу",
+    "step2": {
+      "contextTitle": "Объект анализа",
+      "departments": "Подразделения",
+      "subject": "Описание объекта анализа"
+    },
+    "reportFailed": "Не удалось сформировать отчёт",
+    "finish": {
+      "risksCount": "Рисков выявлено",
+      "recommendationsCount": "Рекомендаций",
+      "actionsCount": "Мероприятий",
+      "risksTitle": "Выявленные риски",
+      "noRisks": "Риски пока не добавлены",
+      "recommendationsTitle": "Рекомендации",
+      "noRecommendations": "Рекомендации пока не добавлены",
+      "actionsTitle": "План мероприятий",
+      "noActions": "Мероприятия пока не добавлены",
+      "generateReportButton": "Сформировать отчёт ВАКР",
+      "finishButton": "Завершить анализ",
+      "confirmTitle": "Завершить анализ?",
+      "confirmDescription": "Все выявленные риски будут перенесены в реестр комплаенс-рисков, а мероприятия — в общий план мероприятий. Действие нельзя отменить.",
+      "confirmOk": "Завершить",
+      "completedTitle": "Анализ завершён",
+      "completedOn": "Дата завершения",
+      "goToRisks": "Перейти в реестр рисков",
+      "goToActions": "Перейти к мероприятиям"
+    },
+    "finished": "Анализ завершён: риски и мероприятия перенесены в общие реестры",
+    "finishFailed": "Не удалось завершить анализ"
+  },
+  "reportsAnalytics": {
+    "tabReports": "Отчёты",
+    "tabAnalytics": "Аналитика",
+    "tabAi": "ИИ-аналитика"
   },
   "aiAssistant": {
     "title": "ИИ-ассистент по комплаенсу",

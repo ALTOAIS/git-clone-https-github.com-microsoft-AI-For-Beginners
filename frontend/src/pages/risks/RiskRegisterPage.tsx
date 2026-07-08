@@ -1,6 +1,6 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
-import { Button, Input, Select, Space, Table, Tag, Typography } from 'antd';
+import { Button, Input, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,8 @@ import { risksApi } from '../../api/endpoints';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import { useCategories, useCompanies, useDepartments } from '../../hooks/useReferenceData';
+import { ControlsPage } from '../ControlsPage';
+import { RiskLibraryPage } from '../RiskLibraryPage';
 import type { RiskListItem, RiskStatus } from '../../types';
 import { ALL_RISK_STATUSES, RISK_STATUS_COLORS, riskStatusLabel, SCORE_LEVEL_COLORS, scoreLevel } from '../../utils/riskDisplay';
 import { RiskFormModal } from './RiskFormModal';
@@ -106,21 +108,8 @@ export function RiskRegisterPage() {
     [navigate, t],
   );
 
-  return (
+  const registerTab = (
     <div>
-      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
-        <Typography.Title level={3} style={{ margin: 0 }}>
-          {t('riskRegister.title')}
-          <InfoTooltip text={t('tooltips.riskRegister.complianceRisk')} />
-        </Typography.Title>
-        <Space>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-            {t('riskRegister.registerButton')}
-          </Button>
-          <ModuleHelpButton moduleKey="riskRegister" />
-        </Space>
-      </Space>
-
       <Space style={{ marginBottom: 16 }} wrap>
         <Input.Search
           placeholder={t('riskRegister.searchPlaceholder')}
@@ -204,6 +193,31 @@ export function RiskRegisterPage() {
           refetch();
           navigate(`/risks/${riskId}`);
         }}
+      />
+    </div>
+  );
+
+  return (
+    <div>
+      <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} wrap>
+        <Typography.Title level={3} style={{ margin: 0 }}>
+          {t('riskRegister.title')}
+          <InfoTooltip text={t('tooltips.riskRegister.complianceRisk')} />
+        </Typography.Title>
+        <Space>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+            {t('riskRegister.registerButton')}
+          </Button>
+          <ModuleHelpButton moduleKey="riskRegister" />
+        </Space>
+      </Space>
+
+      <Tabs
+        items={[
+          { key: 'register', label: t('riskRegister.tabRegister'), children: registerTab },
+          { key: 'library', label: t('riskRegister.tabLibrary'), children: <RiskLibraryPage /> },
+          { key: 'controls', label: t('riskRegister.tabControls'), children: <ControlsPage /> },
+        ]}
       />
     </div>
   );

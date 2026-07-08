@@ -11,7 +11,7 @@ import { ControlsPage } from './pages/ControlsPage';
 import { ActionPlansPage } from './pages/ActionPlansPage';
 import { IncidentsPage } from './pages/IncidentsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
-import { ReportsPage } from './pages/ReportsPage';
+import { ReportsAnalyticsPage } from './pages/ReportsAnalyticsPage';
 import { AdministrationPage } from './pages/administration/AdministrationPage';
 import { AnalysesListPage } from './pages/analyses/AnalysesListPage';
 import { AnalysisWizardPage } from './pages/analyses/AnalysisWizardPage';
@@ -70,7 +70,7 @@ function App() {
           <Route path="/actions" element={<ActionPlansPage />} />
           <Route path="/incidents" element={<IncidentsPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/reports" element={<ReportsAnalyticsPage />} />
           <Route path="/administration/*" element={<AdministrationPage />} />
         </Route>
       </Route>
