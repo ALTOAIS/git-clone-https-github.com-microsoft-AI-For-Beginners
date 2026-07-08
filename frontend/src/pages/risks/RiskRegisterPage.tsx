@@ -1,9 +1,9 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Input, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { risksApi } from '../../api/endpoints';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
@@ -18,6 +18,7 @@ import { RiskTemplateLibraryPage } from './RiskTemplateLibraryPage';
 export function RiskRegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState('');
@@ -26,6 +27,16 @@ export function RiskRegisterPage() {
   const [companyId, setCompanyId] = useState<string | undefined>();
   const [departmentId, setDepartmentId] = useState<string | undefined>();
   const [createOpen, setCreateOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('create') === '1') {
+      setCreateOpen(true);
+      setSearchParams((prev) => {
+        prev.delete('create');
+        return prev;
+      });
+    }
+  }, [searchParams, setSearchParams]);
 
   const { data: categories } = useCategories();
   const { data: companies } = useCompanies();

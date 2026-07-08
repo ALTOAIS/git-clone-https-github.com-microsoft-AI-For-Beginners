@@ -159,7 +159,93 @@
     "analysesTotal": "Всего анализов",
     "analysesInProgress": "В работе",
     "analysesCompleted": "Завершено",
-    "analysesOverdue": "Просрочено"
+    "analysesOverdue": "Просрочено",
+    "events": {
+      "riskCreate": "Создан риск: {{title}}",
+      "riskUpdate": "Обновлён риск: {{title}}",
+      "riskAssess": "Оценён риск: {{title}}",
+      "riskStatusChange": "Изменён статус риска: {{title}}",
+      "riskCreateFromTemplate": "Создан риск из шаблона библиотеки: {{title}}",
+      "analysisCreate": "Создан анализ ВАКР: {{title}}",
+      "analysisUpdate": "Обновлён анализ ВАКР: {{title}}",
+      "analysisStageChange": "ВАКР перешёл на новый этап: {{title}}",
+      "analysisApprove": "ВАКР утверждён: {{title}}",
+      "actionCreate": "Создано мероприятие: {{title}}",
+      "actionUpdate": "Обновлено мероприятие: {{title}}",
+      "actionDelete": "Удалено мероприятие: {{title}}",
+      "courseCreate": "Создан курс: {{title}}",
+      "courseUpdate": "Обновлён курс: {{title}}",
+      "coursePublish": "Опубликован курс: {{title}}",
+      "courseUnpublish": "Снят с публикации курс: {{title}}",
+      "courseAssign": "Назначено обучение по курсу: {{title}}",
+      "courseComplete": "Завершено обучение по курсу: {{title}}",
+      "campaignCreate": "Создана комплаенс-кампания: {{title}}",
+      "campaignUpdate": "Обновлена комплаенс-кампания: {{title}}",
+      "surveyCreate": "Создан опрос: {{title}}",
+      "surveyUpdate": "Обновлён опрос: {{title}}",
+      "controlCreate": "Создано контрольное мероприятие: {{title}}",
+      "controlUpdate": "Обновлено контрольное мероприятие: {{title}}",
+      "controlDelete": "Удалено контрольное мероприятие: {{title}}",
+      "incidentCreate": "Зарегистрирован инцидент: {{title}}",
+      "incidentUpdate": "Обновлён инцидент: {{title}}",
+      "trainingPlanCreate": "Создан годовой план обучения: {{title}}",
+      "trainingPlanUpdate": "Обновлён годовой план обучения: {{title}}",
+      "generic": "{{entity}}: {{action}}"
+    }
+  },
+  "dashboardHome": {
+    "attention": {
+      "title": "Что требует внимания",
+      "criticalRisks": "Критические риски",
+      "highRisks": "Высокие риски",
+      "overdueActions": "Просроченные мероприятия",
+      "analysesInProgress": "ВАКР в работе",
+      "overdueTraining": "Просроченное обучение",
+      "risksWithoutActions": "Риски без мероприятий"
+    },
+    "processes": {
+      "title": "Основные процессы",
+      "openButton": "Открыть",
+      "risksTitle": "Реестр рисков",
+      "risksDescription": "Регистрация, оценка и мониторинг комплаенс-рисков организации.",
+      "risksTotal": "Всего рисков",
+      "risksCriticalHigh": "Критич./высокие",
+      "risksWithoutActions": "Без мероприятий",
+      "analysesTitle": "Анализ рисков",
+      "analysesDescription": "Внутренний анализ коррупционных рисков (ВАКР) по бизнес-процессам.",
+      "analysesTotal": "Всего ВАКР",
+      "analysesInProgress": "В работе",
+      "analysesCompleted": "Завершено",
+      "actionsTitle": "Планы мероприятий",
+      "actionsDescription": "Мероприятия по устранению и минимизации выявленных рисков.",
+      "actionsTotal": "Всего мероприятий",
+      "actionsInProgress": "В работе",
+      "actionsOverdue": "Просрочено",
+      "academyTitle": "Академия комплаенса",
+      "academyDescription": "Обучение, тестирование и повышение комплаенс-культуры сотрудников.",
+      "academyAssigned": "Назначено",
+      "academyCompleted": "Завершено",
+      "academyOverdue": "Просрочено"
+    },
+    "quickActions": {
+      "title": "Быстрые действия",
+      "createRisk": "Создать риск",
+      "startAnalysis": "Начать ВАКР",
+      "createAction": "Создать мероприятие",
+      "createCourse": "Создать курс",
+      "openTemplateLibrary": "Библиотека типовых рисков",
+      "generateReport": "Сформировать отчёт"
+    },
+    "recentEvents": {
+      "title": "Последние события",
+      "none": "Событий пока нет"
+    },
+    "compactAnalytics": {
+      "title": "Краткая аналитика",
+      "riskLevelDistribution": "Распределение рисков по уровню",
+      "actionDynamics": "Динамика мероприятий",
+      "trainingProgress": "Прогресс обучения"
+    }
   },
   "heatMap": {
     "likelihoodAxis": "Вероятность",
@@ -509,12 +595,22 @@
     "description": "Мероприятия по устранению и снижению рисков по всему реестру. Откройте риск, чтобы добавить или обновить его мероприятия.",
     "statusPlaceholder": "Статус",
     "overdueOnly": "Только просроченные",
+    "createButton": "Создать мероприятие",
+    "createModalTitle": "Новое мероприятие",
+    "created": "Мероприятие создано",
     "columns": {
       "risk": "Риск",
       "action": "Мероприятие",
       "owner": "Ответственный",
       "deadline": "Срок исполнения",
       "status": "Статус"
+    },
+    "form": {
+      "riskLabel": "Риск",
+      "titleLabel": "Наименование мероприятия",
+      "descriptionLabel": "Описание",
+      "ownerLabel": "Ответственный",
+      "deadlineLabel": "Срок исполнения"
     }
   },
   "incidentsPage": {
@@ -561,6 +657,7 @@
     "topCompanies": "Компании — лидеры",
     "topDepartments": "Подразделения — лидеры",
     "topSources": "Источники — лидеры",
+    "topCategories": "Категории — лидеры",
     "controlEffectivenessDist": "Распределение эффективности контрольных мероприятий",
     "residualReductionTitle": "Снижение остаточного риска",
     "avgInherentScore": "Средний неотъемлемый балл",

@@ -1,9 +1,9 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Form, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { analysesApi } from '../../api/endpoints';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
@@ -14,8 +14,11 @@ import { ALL_ANALYSIS_STATUSES, ANALYSIS_STATUS_COLORS, analysisStageLabel, anal
 export function AnalysesListPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(1);
-  const [status, setStatus] = useState<AnalysisStatus | undefined>();
+  const [status, setStatus] = useState<AnalysisStatus | undefined>(
+    (searchParams.get('status') as AnalysisStatus | null) ?? undefined,
+  );
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm();
   const companyId = Form.useWatch('companyId', form);
@@ -23,6 +26,16 @@ export function AnalysesListPage() {
   const { data: companies } = useCompanies();
   const { data: departments } = useDepartments(companyId);
   const { data: users } = useUsersList();
+
+  useEffect(() => {
+    if (searchParams.get('create') === '1') {
+      setOpen(true);
+      setSearchParams((prev) => {
+        prev.delete('create');
+        return prev;
+      });
+    }
+  }, [searchParams, setSearchParams]);
 
   const { data, isFetching, refetch } = useQuery({
     queryKey: ['analyses', { page, status }],

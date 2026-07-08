@@ -337,6 +337,37 @@ export interface DashboardSummary {
   heatMap: { grid: number[][] };
   trends: Array<{ month: string; created: number; closed: number }>;
   analyses: AnalysesSummary;
+
+  attention: {
+    criticalRisks: number;
+    highRisks: number;
+    overdueActions: number;
+    analysesInProgress: number;
+    overdueTraining: number;
+    risksWithoutActions: number;
+  };
+  processes: {
+    risks: { total: number; criticalHigh: number; withoutActions: number };
+    analyses: { total: number; inProgress: number; completed: number };
+    actions: { total: number; inProgress: number; overdue: number };
+    academy: { assigned: number; completed: number; overdue: number };
+  };
+  recentEvents: DashboardRecentEvent[];
+  analyticsCompact: {
+    riskLevelDistribution: { low: number; medium: number; high: number; critical: number };
+    actionTrends: Array<{ month: string; created: number; completed: number }>;
+    academyProgress: { completionPercent: number; averageProgress: number };
+  };
+}
+
+export interface DashboardRecentEvent {
+  id: string;
+  entityType: string;
+  entityId: string;
+  action: string;
+  createdAt: string;
+  userName: string | null;
+  title: string | null;
 }
 
 export interface AppNotification {

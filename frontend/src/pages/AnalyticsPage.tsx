@@ -42,6 +42,10 @@ export function AnalyticsPage() {
     queryKey: ['analytics-top-departments'],
     queryFn: () => analyticsApi.topDepartments(10).then((r) => r.data as Array<{ name?: string; count: number }>),
   });
+  const topCategories = useQuery({
+    queryKey: ['analytics-top-categories'],
+    queryFn: () => analyticsApi.topCategories(10).then((r) => r.data as Array<{ name?: string; count: number }>),
+  });
   const topSources = useQuery({
     queryKey: ['analytics-top-sources'],
     queryFn: () => analyticsApi.topSources(10).then((r) => r.data as Array<{ title?: string; count: number }>),
@@ -178,6 +182,17 @@ export function AnalyticsPage() {
                     <Column
                       data={topSources.data ?? []}
                       xField="title"
+                      yField="count"
+                      height={260}
+                      label={{ text: 'count', style: { fill: '#fff' } }}
+                    />
+                  </Card>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <Card title={t('analytics.topCategories')} loading={topCategories.isLoading}>
+                    <Column
+                      data={topCategories.data ?? []}
+                      xField="name"
                       yField="count"
                       height={260}
                       label={{ text: 'count', style: { fill: '#fff' } }}

@@ -195,6 +195,64 @@ export class AnalyticsService {
     return result;
   }
 
+  /** Count of active risks per inherent-score level bucket, for the compact home-dashboard widget. */
+  async riskLevelDistribution() {
+    const risks = await this.prisma.risk.findMany({
+      where: { status: { in: ACTIVE_STATUSES }, inherentScore: { not: null } },
+      select: { inherentScore: true },
+    });
+    const result = { low: 0, medium: 0, high: 0, critical: 0 };
+    for (const r of risks) {
+      const score = r.inherentScore ?? 0;
+      if (score >= 15) result.critical += 1;
+      else if (score >= 9) result.high += 1;
+      else if (score >= 5) result.medium += 1;
+      else result.low += 1;
+    }
+    return result;
+  }
+
+  /** Monthly count of action items created vs. completed, for the compact home-dashboard widget. */
+  async actionTrends(months = 6) {
+    const since = new Date();
+    since.setMonth(since.getMonth() - (months - 1));
+    since.setDate(1);
+    since.setHours(0, 0, 0, 0);
+
+    const [created, completed] = await Promise.all([
+      this.prisma.action.findMany({
+        where: { createdAt: { gte: since } },
+        select: { createdAt: true },
+      }),
+      this.prisma.action.findMany({
+        where: { completedAt: { gte: since } },
+        select: { completedAt: true },
+      }),
+    ]);
+
+    const buckets = new Map<
+      string,
+      { month: string; created: number; completed: number }
+    >();
+    for (let i = 0; i < months; i++) {
+      const d = new Date(since);
+      d.setMonth(d.getMonth() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      buckets.set(key, { month: key, created: 0, completed: 0 });
+    }
+    for (const a of created) {
+      const d = a.createdAt;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (buckets.has(key)) buckets.get(key)!.created += 1;
+    }
+    for (const a of completed) {
+      if (!a.completedAt) continue;
+      const key = `${a.completedAt.getFullYear()}-${String(a.completedAt.getMonth() + 1).padStart(2, '0')}`;
+      if (buckets.has(key)) buckets.get(key)!.completed += 1;
+    }
+    return Array.from(buckets.values());
+  }
+
   async residualRiskSummary() {
     const risks = await this.prisma.risk.findMany({
       where: {
