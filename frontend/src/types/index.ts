@@ -96,6 +96,7 @@ export interface BusinessProcess {
   name: string;
   departmentId: string;
   isActive: boolean;
+  department?: NamedRef;
 }
 
 export interface Category {
@@ -697,6 +698,17 @@ export interface AcademySummary {
   overdue: number;
   completionPercent: number;
   averageProgress: number;
+  certificatesIssued: number;
+  activeCampaignsCount: number;
+  lowCompletionCourses: { id: string; title: string; completionPercent: number }[];
+  lowScoreTests: {
+    id: string;
+    title: string;
+    courseId: string | null;
+    courseTitle: string | null;
+    averageScore: number;
+    attemptsCount: number;
+  }[];
 }
 
 export interface CalendarDeadline {

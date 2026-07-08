@@ -2,8 +2,10 @@ import { InboxOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App, List, Typography, Upload } from 'antd';
 import type { UploadProps } from 'antd';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { attachmentsApi } from '../../api/endpoints';
+import { AttachmentViewerModal, type ViewableAttachment } from '../../components/AttachmentViewerModal';
 import type { Attachment } from '../../types';
 import { downloadViaApi } from '../../utils/download';
 
@@ -22,6 +24,7 @@ export function LessonAttachmentsPanel({ lessonId, canEdit }: Props) {
   const { t } = useTranslation();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
+  const [viewing, setViewing] = useState<ViewableAttachment | null>(null);
 
   const queryKey = ['lesson-attachments', lessonId];
   const { data: attachments } = useQuery({
@@ -75,6 +78,9 @@ export function LessonAttachmentsPanel({ lessonId, canEdit }: Props) {
         renderItem={(attachment) => (
           <List.Item
             actions={[
+              <a key="view" onClick={() => setViewing(attachment)}>
+                {t('lessonAttachments.view')}
+              </a>,
               <a key="download" onClick={() => handleDownload(attachment)}>
                 {t('lessonAttachments.download')}
               </a>,
@@ -99,6 +105,7 @@ export function LessonAttachmentsPanel({ lessonId, canEdit }: Props) {
           </List.Item>
         )}
       />
+      <AttachmentViewerModal attachment={viewing} downloadPath={attachmentsApi.downloadPath} onClose={() => setViewing(null)} />
     </div>
   );
 }

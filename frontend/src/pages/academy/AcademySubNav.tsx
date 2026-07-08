@@ -1,33 +1,47 @@
 import { Menu } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../auth/authStore';
+
+const MANAGE_ROLES = ['ADMINISTRATOR', 'COMPLIANCE_MANAGER', 'COMPLIANCE_OFFICER'];
 
 const ITEMS = [
-  { key: '/academy', labelKey: 'academySubNav.dashboard' },
-  { key: '/academy/my', labelKey: 'academySubNav.myAcademy' },
-  { key: '/academy/courses', labelKey: 'academySubNav.courses' },
-  { key: '/academy/calendar', labelKey: 'academySubNav.calendar' },
-  { key: '/academy/matrix', labelKey: 'academySubNav.matrix' },
-  { key: '/academy/surveys', labelKey: 'academySubNav.surveys' },
-  { key: '/academy/campaigns', labelKey: 'academySubNav.campaigns' },
-  { key: '/academy/training-plan', labelKey: 'academySubNav.trainingPlan' },
-  { key: '/academy/certificates', labelKey: 'academySubNav.certificates' },
+  { key: '/academy/my', labelKey: 'academySubNav.myAcademy', prefixes: ['/academy/my', '/academy/learn', '/academy/take-test'] },
+  { key: '/academy/courses', labelKey: 'academySubNav.coursesAndMaterials', prefixes: ['/academy/courses'] },
+  { key: '/academy/tests', labelKey: 'academySubNav.testsAndSurveys', prefixes: ['/academy/tests', '/academy/surveys'] },
+  {
+    key: '/academy/management',
+    labelKey: 'academySubNav.management',
+    prefixes: [
+      '/academy/management',
+      '/academy/calendar',
+      '/academy/matrix',
+      '/academy/campaigns',
+      '/academy/training-plan',
+      '/academy/certificates',
+    ],
+    managerOnly: true,
+  },
 ];
 
 export function AcademySubNav() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const user = useAuthStore((s) => s.user);
+  const canManage = !!user && MANAGE_ROLES.includes(user.role);
+
+  const visibleItems = ITEMS.filter((item) => !item.managerOnly || canManage);
 
   const selectedKey =
-    ITEMS.find((item) => item.key !== '/academy' && location.pathname.startsWith(item.key))?.key ?? '/academy';
+    visibleItems.find((item) => item.prefixes.some((p) => location.pathname.startsWith(p)))?.key ?? '/academy/my';
 
   return (
     <Menu
       mode="horizontal"
       selectedKeys={[selectedKey]}
       onClick={({ key }) => navigate(key)}
-      items={ITEMS.map((item) => ({ key: item.key, label: t(item.labelKey) }))}
+      items={visibleItems.map((item) => ({ key: item.key, label: t(item.labelKey) }))}
       style={{ marginBottom: 16 }}
     />
   );

@@ -9,7 +9,6 @@ import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import type { Certificate } from '../../types';
 import { downloadViaApi } from '../../utils/download';
-import { AcademySubNav } from './AcademySubNav';
 
 const MANAGE_ROLES = ['ADMINISTRATOR', 'COMPLIANCE_MANAGER', 'COMPLIANCE_OFFICER'];
 
@@ -49,7 +48,6 @@ export function CertificatesPage() {
 
   return (
     <div>
-      <AcademySubNav />
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 0 }} align="center">
         <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 0 }}>
           {t('certificates.title')}

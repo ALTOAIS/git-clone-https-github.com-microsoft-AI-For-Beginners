@@ -35,7 +35,6 @@ import {
   trainingPlanItemStatusLabel,
   trainingPlanStatusLabel,
 } from '../../utils/trainingPlanDisplay';
-import { AcademySubNav } from './AcademySubNav';
 
 export function TrainingPlanPage() {
   const { t } = useTranslation();
@@ -128,7 +127,6 @@ export function TrainingPlanPage() {
 
   return (
     <div>
-      <AcademySubNav />
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 0 }} align="center">
         <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 0 }}>
           {t('trainingPlan.title')}

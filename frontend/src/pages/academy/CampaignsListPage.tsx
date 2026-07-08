@@ -2,9 +2,9 @@ import { PlusOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { App, Button, DatePicker, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { campaignsApi } from '../../api/endpoints';
 import { useAuthStore } from '../../auth/authStore';
 import { ALL_ROLES, roleLabel } from '../../auth/roles';
@@ -12,7 +12,6 @@ import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import type { CampaignListItem, CampaignStatus } from '../../types';
 import { ALL_CAMPAIGN_STATUSES, CAMPAIGN_STATUS_COLORS, campaignStatusLabel } from '../../utils/campaignDisplay';
-import { AcademySubNav } from './AcademySubNav';
 
 const MANAGE_ROLES = ['ADMINISTRATOR', 'COMPLIANCE_MANAGER', 'COMPLIANCE_OFFICER'];
 
@@ -23,11 +22,24 @@ export function CampaignsListPage() {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const canManage = !!user && MANAGE_ROLES.includes(user.role);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<CampaignStatus | undefined>();
   const [createOpen, setCreateOpen] = useState(false);
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    if (searchParams.get('create') === '1' && canManage) {
+      setCreateOpen(true);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('create');
+        return next;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, canManage]);
 
   const { data, isFetching } = useQuery({
     queryKey: ['campaigns', { page, status }],
@@ -57,7 +69,6 @@ export function CampaignsListPage() {
 
   return (
     <div>
-      <AcademySubNav />
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }}>
         <Typography.Title level={3} style={{ margin: 0 }}>
           {t('campaignsPage.title')}

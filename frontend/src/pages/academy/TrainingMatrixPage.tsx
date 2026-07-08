@@ -8,7 +8,6 @@ import { InfoTooltip } from '../../components/InfoTooltip';
 import { ModuleHelpButton } from '../../components/ModuleHelpButton';
 import type { TrainingMatrixCourse } from '../../types';
 import { courseStatusLabel } from '../../utils/academyDisplay';
-import { AcademySubNav } from './AcademySubNav';
 
 export function TrainingMatrixPage() {
   const { t } = useTranslation();
@@ -94,7 +93,6 @@ export function TrainingMatrixPage() {
 
   return (
     <div>
-      <AcademySubNav />
       <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 0 }} align="center">
         <Typography.Title level={3} style={{ marginTop: 0, marginBottom: 0 }}>
           {t('trainingMatrix.title')}

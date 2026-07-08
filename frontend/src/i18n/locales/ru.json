@@ -40,19 +40,16 @@
     "administration": "Администрирование",
     "academy": "Академия комплаенса",
     "aiAssistant": "ИИ-ассистент",
-    "riskSources": "Источники рисков",
-    "riskSourcesVakr": "ВАКР",
-    "riskSourcesIncidents": "Обращения",
-    "riskSourcesInspections": "Проверки",
-    "riskSourcesMonitoring": "Мониторинг",
-    "riskSourcesDueDiligence": "Due Diligence",
-    "reportsAnalytics": "Отчетность и аналитика"
+    "reportsAnalytics": "Отчеты"
   },
   "layout": {
     "notifications": "Уведомления",
     "noNotifications": "Нет уведомлений",
     "signOut": "Выйти из системы",
-    "language": "Язык"
+    "language": "Язык",
+    "myProfile": "Мой профиль",
+    "changePassword": "Смена пароля",
+    "systemSettings": "Настройки системы"
   },
   "auth": {
     "signInTitle": "Вход в систему",
@@ -342,6 +339,7 @@
     "dragText": "Нажмите или перетащите файл для загрузки",
     "dragHint": "PDF, Word, PowerPoint, изображения размером до 20 МБ",
     "noAttachmentsYet": "Материалы пока не загружены",
+    "view": "Просмотреть",
     "download": "Скачать",
     "delete": "Удалить",
     "uploadedByPrefix": "загрузил(а)",
@@ -501,14 +499,36 @@
     }
   },
   "administration": {
-    "title": "Администрирование",
+    "title": "Настройки системы",
     "tabs": {
-      "users": "Пользователи",
+      "users": "Пользователи и роли",
       "companies": "Компании",
       "departments": "Подразделения",
+      "businessProcesses": "Справочники",
+      "riskCategories": "Категории рисков",
+      "sources": "Источники рисков",
       "auditLog": "Журнал аудита",
       "settings": "Настройки"
     }
+  },
+  "businessProcessesAdmin": {
+    "newButton": "Новый бизнес-процесс",
+    "created": "Бизнес-процесс создан",
+    "updated": "Бизнес-процесс обновлён",
+    "deactivated": "Бизнес-процесс деактивирован",
+    "columns": {
+      "name": "Наименование",
+      "department": "Подразделение",
+      "active": "Статус",
+      "actions": "Действия"
+    },
+    "editLink": "Изменить",
+    "deactivateLink": "Деактивировать",
+    "deactivateConfirm": "Деактивировать бизнес-процесс?",
+    "modalTitleNew": "Новый бизнес-процесс",
+    "modalTitleEdit": "Изменить бизнес-процесс",
+    "nameLabel": "Наименование",
+    "departmentLabel": "Подразделение"
   },
   "usersAdmin": {
     "newButton": "Новый пользователь",
@@ -907,14 +927,13 @@
     "stageComingSoon": "Этап появится в следующих версиях модуля",
     "advanceButton": "Перейти к этапу «{{stage}}»",
     "advancedModeLink": "Расширенный режим (14 этапов)",
-    "simpleModeLink": "Простой режим (6 шагов)"
+    "simpleModeLink": "Простой режим (5 шагов)"
   },
   "simplifiedAnalysis": {
     "steps": {
       "card": "Карточка анализа",
       "documents": "Документы и объект",
-      "processes": "Процессы и факторы",
-      "risks": "Риски и оценка",
+      "processesAndRisks": "Процессы, факторы и риски",
       "recommendations": "Рекомендации и мероприятия",
       "report": "Отчёт и завершение"
     },
@@ -1436,25 +1455,41 @@
     "OTHER": "Иное"
   },
   "academySubNav": {
-    "dashboard": "Дашборд",
     "myAcademy": "Моя академия",
-    "courses": "Конструктор курсов",
-    "calendar": "Календарь",
-    "matrix": "Матрица обучения",
-    "surveys": "Опросы",
-    "campaigns": "Комплаенс-кампании",
-    "trainingPlan": "Годовой план",
-    "certificates": "Сертификаты"
+    "coursesAndMaterials": "Курсы и материалы",
+    "testsAndSurveys": "Тесты и опросы",
+    "management": "Управление обучением"
   },
   "academyDashboard": {
-    "title": "Академия комплаенса",
+    "title": "Обзор",
     "description": "Обучение работников по вопросам противодействия коррупции, этики и корпоративного управления.",
     "totalCourses": "Всего курсов",
     "totalAssigned": "Назначено обучений",
     "completed": "Завершено",
     "overdue": "Просрочено",
+    "certificatesIssued": "Выдано сертификатов",
     "completionCardTitle": "Процент завершения обучения",
-    "averageProgressCardTitle": "Средний прогресс прохождения"
+    "averageProgressCardTitle": "Средний прогресс прохождения",
+    "summaryTitle": "Общая сводка",
+    "activeCampaignsTag": "Кампаний в работе: {{count}}",
+    "attention": {
+      "title": "Что требует внимания",
+      "none": "Всё в порядке — нет просрочек и проблемных показателей",
+      "openLink": "Открыть",
+      "overdue": "Просроченное обучение: {{count}} назначений",
+      "lowCompletionCourse": "Курс «{{title}}» — низкое прохождение: {{percent}}%",
+      "lowScoreTest": "Тест «{{title}}» (курс: {{course}}) — средний балл {{percent}}%, попыток: {{count}}",
+      "activeCampaigns": "Кампаний в работе: {{count}}"
+    },
+    "quickActions": {
+      "title": "Быстрые действия",
+      "createCourse": "Создать курс",
+      "assignTraining": "Назначить обучение",
+      "createTest": "Создать тест",
+      "createSurvey": "Создать опрос",
+      "launchCampaign": "Запустить кампанию",
+      "openCalendar": "Открыть календарь"
+    }
   },
   "myAcademy": {
     "title": "Моя академия",
@@ -1470,11 +1505,46 @@
       "dueDate": "Срок",
       "actions": "Действия"
     },
-    "takeTestLink": "Пройти тест"
+    "takeTestLink": "Пройти тест",
+    "cards": {
+      "continue": "Продолжить обучение",
+      "assigned": "Назначено мне",
+      "overdue": "Просрочено",
+      "certificates": "Мои сертификаты"
+    },
+    "recommendedTitle": "Рекомендованные материалы",
+    "noRecommendations": "Пока нет дополнительных рекомендованных курсов",
+    "previewLink": "Просмотреть"
+  },
+  "academyManagement": {
+    "accessDeniedTitle": "Раздел недоступен",
+    "accessDeniedSubtitle": "«Управление обучением» доступно только администраторам и сотрудникам комплаенс-функции.",
+    "tabs": {
+      "overview": "Обзор",
+      "courseBuilder": "Конструктор курсов",
+      "assignments": "Назначения обучения",
+      "calendar": "Календарь обучения",
+      "campaigns": "Комплаенс-кампании",
+      "trainingPlan": "Годовой план",
+      "certificates": "Сертификаты"
+    }
+  },
+  "testsAndSurveys": {
+    "title": "Тесты и опросы",
+    "description": "Прохождение тестов по назначенным курсам и участие в опросах — всё внутри платформы.",
+    "tabs": {
+      "myTests": "Мои тесты",
+      "surveys": "Опросы"
+    }
+  },
+  "myTests": {
+    "description": "Тесты по курсам, назначенным лично вам.",
+    "noAssignments": "Вам пока не назначено ни одного курса с тестом",
+    "takeTestButton": "Пройти тест"
   },
   "coursesPage": {
-    "title": "Конструктор курсов",
-    "description": "Создание и редактирование учебных курсов Академии комплаенса: модули, уроки и назначение работникам.",
+    "title": "Курсы и материалы",
+    "description": "Курсы, уроки и учебные материалы: статьи, презентации, видео, памятки и инструкции. Создание и назначение обучения — для комплаенс-функции.",
     "createButton": "Создать курс",
     "statusPlaceholder": "Статус",
     "mandatoryYes": "Да",
@@ -1654,6 +1724,10 @@
     "errorGeneric": "Не удалось выполнить запрос к ИИ-ассистенту",
     "disclaimer": "Результат сформирован ИИ и носит рекомендательный характер. Проверьте и отредактируйте содержание перед добавлением в курс."
   },
+  "attachmentViewer": {
+    "unsupportedType": "Предпросмотр недоступен для этого типа файла. Скачайте файл, чтобы открыть его.",
+    "download": "Скачать"
+  },
   "coursePreview": {
     "title": "Просмотр курса",
     "subtitle": "Так курс будет выглядеть для обучаемого работника",
@@ -1661,6 +1735,7 @@
     "previewModeNotice": "Режим предпросмотра — здесь отображается материал курса без возможности редактирования и без учёта прогресса прохождения.",
     "noModulesYet": "В курсе пока нет модулей",
     "attachmentsTitle": "Материалы",
+    "view": "Просмотреть",
     "download": "Скачать",
     "watchVideo": "Смотреть видео",
     "joinLink": "Перейти по ссылке",
