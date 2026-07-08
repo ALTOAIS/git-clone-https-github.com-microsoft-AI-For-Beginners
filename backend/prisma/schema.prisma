@@ -37,6 +37,31 @@ enum RiskStatus {
   ARCHIVED
 }
 
+/// Направление / бизнес-процесс типового риска в Библиотеке типовых рисков.
+/// Отдельно от Category (справочника категорий) — см. RiskTemplate.
+enum RiskTemplateDirection {
+  PROCUREMENT
+  CONTRACT_MANAGEMENT
+  CONFLICT_OF_INTEREST
+  GIFTS_HOSPITALITY
+  HR_PERSONNEL
+  FINANCE_PAYMENTS
+  ACCOUNTING
+  CHARITY_SPONSORSHIP
+  GOVERNMENT_INTERACTION
+  THIRD_PARTY_DUE_DILIGENCE
+  AFFILIATION_RELATED_PARTIES
+  ASSET_MANAGEMENT
+  CONSTRUCTION_CAPITAL_PROJECTS
+  IT_DATA_ACCESS
+  INSIDER_INFORMATION
+  SANCTIONS
+  AML
+  FRAUD_THEFT
+  CORPORATE_GOVERNANCE
+  TRAINING_COMPLIANCE_CULTURE
+}
+
 enum SourceType {
   CORRUPTION_RISK_ASSESSMENT
   ANTI_CORRUPTION_MONITORING
@@ -321,8 +346,46 @@ model Category {
 
   risks         Risk[]
   analysisRisks AnalysisRisk[]
+  riskTemplates RiskTemplate[]
 
   @@map("categories")
+}
+
+/// Библиотека типовых рисков — каталог шаблонов коррупционных и комплаенс-рисков,
+/// НЕ являющийся реестром реальных рисков организации (см. Risk). Из шаблона
+/// пользователь создаёт реальный риск в Реестре рисков либо использует его при
+/// проведении ВАКР (AnalysisRisk.sourceTemplateId).
+model RiskTemplate {
+  id         String                @id @default(uuid())
+  code       String                @unique
+  title      String
+  categoryId String?
+  category   Category?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  direction  RiskTemplateDirection
+
+  description        String
+  corruptionScheme   String?
+  causes             String?
+  corruptionFactors  String?
+  consequences       String?
+  redFlags           String?
+  typicalControls    String[]
+  recommendedActions String[]
+
+  baseProbability Int // 1-5
+  baseImpact      Int // 1-5
+  baseScore       Int // baseProbability * baseImpact
+
+  tags     String[]
+  isActive Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  risks         Risk[]
+  analysisRisks AnalysisRisk[]
+
+  @@map("risk_templates")
 }
 
 // ------------------------------------------------------------------
@@ -439,6 +502,9 @@ model Risk {
 
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  sourceTemplateId String?
+  sourceTemplate   RiskTemplate? @relation(fields: [sourceTemplateId], references: [id], onDelete: SetNull)
 
   companyId         String?
   company           Company?         @relation(fields: [companyId], references: [id], onDelete: SetNull)
@@ -790,7 +856,9 @@ model AnalysisRisk {
   title             String
   description       String?
   categoryId        String?
-  category          Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category          Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  sourceTemplateId  String?
+  sourceTemplate    RiskTemplate? @relation(fields: [sourceTemplateId], references: [id], onDelete: SetNull)
   source            String?
   cause             String?
   conditions        String?
@@ -799,7 +867,7 @@ model AnalysisRisk {
   consequences      String?
   existingControls  String?
   ownerId           String?
-  owner             User?     @relation("AnalysisRiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  owner             User?         @relation("AnalysisRiskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
 
   likelihood           Int?
   impact               Int?

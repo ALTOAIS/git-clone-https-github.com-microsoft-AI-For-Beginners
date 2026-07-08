@@ -115,6 +115,7 @@ export class RisksService {
         impact: dto.impact,
         inherentScore,
         status: RiskStatus.DRAFT,
+        sourceTemplateId: dto.sourceTemplateId,
         sources: dto.sourceIds
           ? { create: dto.sourceIds.map((sourceId) => ({ sourceId })) }
           : undefined,

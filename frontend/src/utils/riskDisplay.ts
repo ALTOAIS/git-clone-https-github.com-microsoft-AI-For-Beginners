@@ -1,5 +1,5 @@
 import i18n from '../i18n';
-import type { ActionStatus, ControlEffectiveness, IncidentStatus, RiskStatus, SourceType } from '../types';
+import type { ActionStatus, ControlEffectiveness, IncidentStatus, RiskStatus, RiskTemplateDirection, SourceType } from '../types';
 
 export function riskStatusLabel(status: RiskStatus): string {
   return i18n.t(`riskStatus.${status}`);
@@ -106,4 +106,8 @@ export const ALL_INCIDENT_STATUSES: IncidentStatus[] = ['OPEN', 'UNDER_REVIEW', 
 
 export function incidentStatusLabel(status: IncidentStatus): string {
   return i18n.t(`incidentStatus.${status}`);
+}
+
+export function riskTemplateDirectionLabel(direction: RiskTemplateDirection): string {
+  return i18n.t(`riskTemplateDirection.${direction}`);
 }

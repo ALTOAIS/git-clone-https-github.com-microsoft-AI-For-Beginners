@@ -678,6 +678,7 @@ export class AnalysesService {
           ownerId: risk.ownerId ?? undefined,
           likelihood: risk.likelihood ?? undefined,
           impact: risk.impact ?? undefined,
+          sourceTemplateId: risk.sourceTemplateId ?? undefined,
         },
         userId,
       );

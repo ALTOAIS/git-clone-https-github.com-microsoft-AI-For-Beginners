@@ -24,9 +24,13 @@ import { GenerateCourseOutlineDto } from './dto/generate-course-outline.dto';
 import { GenerateLessonContentDto } from './dto/generate-lesson-content.dto';
 import { GenerateQuizQuestionsDto } from './dto/generate-quiz-questions.dto';
 import { GenerateRiskRegisterEntryDto } from './dto/generate-risk-register-entry.dto';
+import { GenerateRiskTemplateForProcessDto } from './dto/generate-risk-template-for-process.dto';
 import { GenerateVakrReportDto } from './dto/generate-vakr-report.dto';
+import { ImproveRiskTemplateDescriptionDto } from './dto/improve-risk-template-description.dto';
 import { ReviewVakrAnalysisDto } from './dto/review-vakr-analysis.dto';
 import { SuggestControlsDto } from './dto/suggest-controls.dto';
+import { SuggestRiskTemplateActionsDto } from './dto/suggest-risk-template-actions.dto';
+import { SuggestRiskTemplateControlsDto } from './dto/suggest-risk-template-controls.dto';
 
 const SENSITIVE_AI_ROLES = [
   Role.ADMINISTRATOR,
@@ -63,6 +67,42 @@ export class AiController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.aiService.suggestControls(dto, user);
+  }
+
+  @Post('improve-risk-template-description')
+  @Roles(...SENSITIVE_AI_ROLES)
+  improveRiskTemplateDescription(
+    @Body() dto: ImproveRiskTemplateDescriptionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.aiService.improveRiskTemplateDescription(dto, user);
+  }
+
+  @Post('suggest-risk-template-controls')
+  @Roles(...SENSITIVE_AI_ROLES)
+  suggestRiskTemplateControls(
+    @Body() dto: SuggestRiskTemplateControlsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.aiService.suggestRiskTemplateControls(dto, user);
+  }
+
+  @Post('suggest-risk-template-actions')
+  @Roles(...SENSITIVE_AI_ROLES)
+  suggestRiskTemplateActions(
+    @Body() dto: SuggestRiskTemplateActionsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.aiService.suggestRiskTemplateActions(dto, user);
+  }
+
+  @Post('generate-risk-template-for-process')
+  @Roles(...SENSITIVE_AI_ROLES)
+  generateRiskTemplateForProcess(
+    @Body() dto: GenerateRiskTemplateForProcessDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.aiService.generateRiskTemplateForProcess(dto, user);
   }
 
   @Post('review-vakr-analysis')

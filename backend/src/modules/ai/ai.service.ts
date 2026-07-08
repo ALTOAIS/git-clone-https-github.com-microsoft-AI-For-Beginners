@@ -8,15 +8,20 @@ import { IncidentsService } from '../incidents/incidents.service';
 import { buildDocxReport } from '../reports/docx.util';
 import { buildPdfReport } from '../reports/pdf.util';
 import { ACTIVE_STATUSES } from '../risks/risks.constants';
+import { RiskTemplatesService } from '../risk-templates/risk-templates.service';
 import { AnalyzeRiskDto } from './dto/analyze-risk.dto';
 import { ChatDto } from './dto/chat.dto';
 import { GenerateCourseOutlineDto } from './dto/generate-course-outline.dto';
 import { GenerateLessonContentDto } from './dto/generate-lesson-content.dto';
 import { GenerateQuizQuestionsDto } from './dto/generate-quiz-questions.dto';
 import { GenerateRiskRegisterEntryDto } from './dto/generate-risk-register-entry.dto';
+import { GenerateRiskTemplateForProcessDto } from './dto/generate-risk-template-for-process.dto';
 import { GenerateVakrReportDto } from './dto/generate-vakr-report.dto';
+import { ImproveRiskTemplateDescriptionDto } from './dto/improve-risk-template-description.dto';
 import { ReviewVakrAnalysisDto } from './dto/review-vakr-analysis.dto';
 import { SuggestControlsDto } from './dto/suggest-controls.dto';
+import { SuggestRiskTemplateActionsDto } from './dto/suggest-risk-template-actions.dto';
+import { SuggestRiskTemplateControlsDto } from './dto/suggest-risk-template-controls.dto';
 import { AI_PROVIDER, AiProvider } from './providers/ai-provider.interface';
 import {
   AI_ADVISORY_DISCLAIMER,
@@ -41,6 +46,7 @@ export class AiService {
     private academy: AcademyService,
     private analytics: AnalyticsService,
     private incidents: IncidentsService,
+    private riskTemplates: RiskTemplatesService,
     @Inject(AI_PROVIDER) private provider: AiProvider,
   ) {}
 
@@ -138,6 +144,99 @@ export class AiService {
     });
 
     return { controls, disclaimer: AI_ADVISORY_DISCLAIMER };
+  }
+
+  async improveRiskTemplateDescription(
+    dto: ImproveRiskTemplateDescriptionDto,
+    user: RequestUser,
+  ) {
+    const template = await this.riskTemplates.findOne(dto.templateId);
+    const result = await this.provider.improveRiskDescription({
+      title: template.title,
+      description: template.description,
+    });
+
+    await this.logInteraction({
+      user,
+      module: 'RISK_TEMPLATE',
+      useCase: 'IMPROVE_DESCRIPTION',
+      entityType: 'RISK_TEMPLATE',
+      entityId: template.id,
+      inputSummary: `Шаблон: ${template.title}`,
+      outputSummary: 'Сформирован улучшенный вариант описания',
+    });
+
+    return { ...result, disclaimer: AI_ADVISORY_DISCLAIMER };
+  }
+
+  async suggestRiskTemplateControls(
+    dto: SuggestRiskTemplateControlsDto,
+    user: RequestUser,
+  ) {
+    const template = await this.riskTemplates.findOne(dto.templateId);
+    const controls = await this.provider.suggestControls({
+      riskTitle: template.title,
+      riskDescription: template.description,
+      corruptionScheme: template.corruptionScheme ?? undefined,
+      existingControls: template.typicalControls.join('; '),
+    });
+
+    await this.logInteraction({
+      user,
+      module: 'RISK_TEMPLATE',
+      useCase: 'SUGGEST_CONTROLS',
+      entityType: 'RISK_TEMPLATE',
+      entityId: template.id,
+      inputSummary: `Шаблон: ${template.title}`,
+      outputSummary: `Предложено контролей: ${controls.length}`,
+    });
+
+    return { controls, disclaimer: AI_ADVISORY_DISCLAIMER };
+  }
+
+  async suggestRiskTemplateActions(
+    dto: SuggestRiskTemplateActionsDto,
+    user: RequestUser,
+  ) {
+    const template = await this.riskTemplates.findOne(dto.templateId);
+    const actions = await this.provider.suggestRiskActions({
+      riskTitle: template.title,
+      riskDescription: template.description,
+      corruptionScheme: template.corruptionScheme ?? undefined,
+      existingActions: template.recommendedActions.join('; '),
+    });
+
+    await this.logInteraction({
+      user,
+      module: 'RISK_TEMPLATE',
+      useCase: 'SUGGEST_ACTIONS',
+      entityType: 'RISK_TEMPLATE',
+      entityId: template.id,
+      inputSummary: `Шаблон: ${template.title}`,
+      outputSummary: `Предложено мероприятий: ${actions.length}`,
+    });
+
+    return { actions, disclaimer: AI_ADVISORY_DISCLAIMER };
+  }
+
+  async generateRiskTemplateForProcess(
+    dto: GenerateRiskTemplateForProcessDto,
+    user: RequestUser,
+  ) {
+    const draft = await this.provider.generateRiskForProcess({
+      processDescription: dto.processDescription,
+      directionHint: dto.direction,
+    });
+
+    await this.logInteraction({
+      user,
+      module: 'RISK_TEMPLATE',
+      useCase: 'GENERATE_FOR_PROCESS',
+      inputSummary: `Процесс: ${dto.processDescription.slice(0, 120)}`,
+      outputSummary: `Сформирован черновик риска: ${draft.title}`,
+    });
+
+    return { ...draft, disclaimer: AI_ADVISORY_DISCLAIMER };
   }
 
   async reviewVakrAnalysis(

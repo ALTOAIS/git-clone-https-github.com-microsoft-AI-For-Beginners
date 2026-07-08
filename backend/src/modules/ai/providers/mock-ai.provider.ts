@@ -10,12 +10,16 @@ import {
   CourseOutlineDraft,
   CourseOutlineModuleDraft,
   CrossModuleFactsContext,
+  GenerateRiskForProcessContext,
+  ImproveDescriptionContext,
   LessonContentContext,
   QuizQuestionDraft,
   QuizQuestionsContext,
   ReportFactsContext,
   RiskRegisterFactsContext,
   RiskSuggestionContext,
+  RiskTemplateDraft,
+  SuggestRiskActionsContext,
 } from './ai-provider.interface';
 
 const MODULE_TITLE_TEMPLATES = [
@@ -442,5 +446,55 @@ export class MockAiProvider implements AiProvider {
         })),
       };
     });
+  }
+
+  async improveRiskDescription(
+    ctx: ImproveDescriptionContext,
+  ): Promise<{ improvedDescription: string }> {
+    const base = ctx.description.trim().replace(/\s+/g, ' ');
+    const improvedDescription = `${base}${base.endsWith('.') ? '' : '.'} Риск реализуется в условиях недостаточного разделения полномочий и ограниченного независимого контроля, что повышает вероятность его наступления при отсутствии дополнительных мер реагирования.`;
+    return { improvedDescription };
+  }
+
+  async suggestRiskActions(ctx: SuggestRiskActionsContext): Promise<string[]> {
+    const base = ctx.riskTitle.trim();
+    return [
+      `Провести целевое обучение работников, участвующих в процессах, связанных с риском «${base}»`,
+      'Актуализировать внутренний регламент с учётом выявленного риска и закрепить зоны ответственности',
+      'Внедрить периодический контроль (не реже одного раза в квартал) за операциями повышенного риска',
+    ];
+  }
+
+  async generateRiskForProcess(
+    ctx: GenerateRiskForProcessContext,
+  ): Promise<RiskTemplateDraft> {
+    const process = ctx.processDescription.trim().replace(/\s+/g, ' ');
+    const shortProcess =
+      process.length > 80 ? `${process.slice(0, 80)}…` : process;
+    return {
+      title: `Риск злоупотребления в процессе «${shortProcess}»`,
+      description: `В рамках процесса «${process}» существует риск использования служебных полномочий вопреки законным интересам организации при отсутствии надлежащего контроля.`,
+      causes:
+        'Широкие дискреционные полномочия ответственного лица; отсутствие независимой проверки решений на данном этапе процесса.',
+      corruptionScheme:
+        'Ответственное лицо принимает решение в личных интересах или интересах связанной стороны, используя отсутствие контроля на данном этапе процесса.',
+      corruptionFactors:
+        'Дискреционные полномочия; отсутствие разделения обязанностей; недостаточная прозрачность процедуры.',
+      consequences:
+        'Финансовые потери организации, репутационные и регуляторные риски, необъективность принятых решений.',
+      redFlags:
+        'Систематическое отклонение от типового порядка выполнения процесса; концентрация решений на одном лице без независимой проверки.',
+      typicalControls: [
+        'Независимая проверка/согласование ключевых решений в рамках процесса',
+        'Журналирование и периодический анализ решений, принятых в рамках процесса',
+      ],
+      recommendedActions: [
+        'Формализовать процедуру и закрепить контрольные точки в регламенте',
+        'Обучить участников процесса требованиям антикоррупционного законодательства',
+      ],
+      tags: ctx.directionHint ? [ctx.directionHint.toLowerCase()] : [],
+      baseProbability: 3,
+      baseImpact: 3,
+    };
   }
 }

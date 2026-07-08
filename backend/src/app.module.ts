@@ -17,6 +17,7 @@ import { BusinessProcessesModule } from './modules/business-processes/business-p
 import { CategoriesModule } from './modules/categories/categories.module';
 import { SourcesModule } from './modules/sources/sources.module';
 import { RisksModule } from './modules/risks/risks.module';
+import { RiskTemplatesModule } from './modules/risk-templates/risk-templates.module';
 import { ControlsModule } from './modules/controls/controls.module';
 import { ActionsModule } from './modules/actions/actions.module';
 import { IncidentsModule } from './modules/incidents/incidents.module';
@@ -49,6 +50,7 @@ import { AiModule } from './modules/ai/ai.module';
     CategoriesModule,
     SourcesModule,
     RisksModule,
+    RiskTemplatesModule,
     ControlsModule,
     ActionsModule,
     IncidentsModule,

@@ -66,4 +66,9 @@ export class CreateRiskDto {
   @IsArray()
   @IsString({ each: true })
   sourceIds?: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  sourceTemplateId?: string;
 }

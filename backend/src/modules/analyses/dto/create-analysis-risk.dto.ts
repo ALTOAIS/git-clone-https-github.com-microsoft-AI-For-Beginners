@@ -60,4 +60,9 @@ export class CreateAnalysisRiskDto {
   @IsOptional()
   @IsString()
   ownerId?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  sourceTemplateId?: string;
 }
