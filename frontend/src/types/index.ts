@@ -1289,13 +1289,23 @@ export interface AiCourseOutlineModuleDraft {
 }
 
 export interface AiCourseOutlineDraft {
+  title?: string;
   description: string;
+  goals?: string[];
   modules: AiCourseOutlineModuleDraft[];
+  recommendedTest?: { title: string; questionCount: number };
+  recommendedCases?: string[];
+  sourceLimitation?: string;
   disclaimer: string;
 }
 
 export interface AiLessonContentResult {
   content: string;
+  goal?: string;
+  keyPoints?: string[];
+  practicalExample?: string;
+  selfCheckQuestions?: string[];
+  sourceLimitation?: string;
   disclaimer: string;
 }
 
@@ -1312,9 +1322,57 @@ export interface AiQuizQuestionDraft {
   points: number;
   options?: AiQuizQuestionOptionDraft[];
   correctAnswerText?: string;
+  explanation?: string;
 }
 
 export interface AiQuizQuestionsResult {
   questions: AiQuizQuestionDraft[];
+  suggestedPassingScore?: number;
+  sourceLimitation?: string;
   disclaimer: string;
+}
+
+export interface AiCaseStudyDraft {
+  title: string;
+  situation: string;
+  question: string;
+  options: { text: string; isCorrect: boolean }[];
+  correctApproach: string;
+  analysis: string;
+  complianceRiskLink: string;
+  sourceLimitation?: string;
+  disclaimer: string;
+}
+
+export interface AiMemoDraft {
+  title: string;
+  summary: string;
+  checklist: string[];
+  prohibited: string[];
+  required: string[];
+  contacts: string;
+  sourceLimitation?: string;
+  disclaimer: string;
+}
+
+export interface AiCampaignMessageDraft {
+  subject: string;
+  body: string;
+  keyPoints: string[];
+  linkText?: string;
+  surveyQuestions: string[];
+  sourceLimitation?: string;
+  disclaimer: string;
+}
+
+export interface AcademyMaterial {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+  lessonId?: string | null;
+  lessonTitle?: string | null;
+  courseId?: string | null;
+  courseTitle?: string | null;
 }

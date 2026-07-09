@@ -1,4 +1,4 @@
-import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, RobotOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   App,
@@ -66,6 +66,7 @@ export function CourseEditorPage() {
   const watchedContent: string | undefined = Form.useWatch('content', lessonForm);
   const watchedTitle: string | undefined = Form.useWatch('title', lessonForm);
   const [generatingLessonContent, setGeneratingLessonContent] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', id],
@@ -95,6 +96,27 @@ export function CourseEditorPage() {
     await academyApi.update(id!, values);
     message.success(t('courseEditor.saved'));
     invalidate();
+  };
+
+  // Черновик описания подставляется в форму, но НЕ сохраняется — пользователь
+  // проверяет текст и нажимает «Сохранить» сам.
+  const handleGenerateDescription = async () => {
+    const title = metaForm.getFieldValue('title') ?? course?.title;
+    if (!title) return;
+    setGeneratingDescription(true);
+    try {
+      const { data } = await aiApi.generateCourseOutline({
+        courseId: id,
+        topic: title,
+        moduleCount: 0,
+      });
+      metaForm.setFieldValue('description', data.description);
+      message.success(t('courseEditor.descriptionGenerated'));
+    } catch {
+      message.error(t('courseEditor.generateFailed'));
+    } finally {
+      setGeneratingDescription(false);
+    }
   };
 
   const handlePublish = async (status: 'PUBLISHED' | 'DRAFT') => {
@@ -232,7 +254,22 @@ export function CourseEditorPage() {
           >
             <Input />
           </Form.Item>
-          <Form.Item name="description" label={t('courseEditor.form.descriptionLabel')}>
+          <Form.Item
+            name="description"
+            label={
+              <Space>
+                {t('courseEditor.form.descriptionLabel')}
+                <Button
+                  size="small"
+                  icon={<RobotOutlined />}
+                  loading={generatingDescription}
+                  onClick={handleGenerateDescription}
+                >
+                  {t('courseEditor.generateDescriptionButton')}
+                </Button>
+              </Space>
+            }
+          >
             <Input.TextArea rows={3} />
           </Form.Item>
           <Form.Item name="status" label={t('courseEditor.form.statusLabel')}>

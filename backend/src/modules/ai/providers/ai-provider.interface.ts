@@ -64,6 +64,14 @@ export interface CourseOutlineContext {
   topic: string;
   audienceHint?: string;
   moduleCount: number;
+  /** базовый / средний / продвинутый */
+  level?: string;
+  /** Ориентировочная длительность курса, часов */
+  durationHours?: number;
+  /** Цели обучения, заданные автором курса */
+  goals?: string[];
+  /** Извлечённый текст загруженного материала-источника (уже усечён) */
+  sourceText?: string;
 }
 
 export interface CourseOutlineLessonDraft {
@@ -80,19 +88,39 @@ export interface CourseOutlineModuleDraft {
 }
 
 export interface CourseOutlineDraft {
+  /** Предлагаемое название курса (если пользователь его ещё не задал) */
+  title?: string;
   description: string;
+  goals?: string[];
   modules: CourseOutlineModuleDraft[];
+  recommendedTest?: { title: string; questionCount: number };
+  recommendedCases?: string[];
 }
 
 export interface LessonContentContext {
   courseTopic: string;
   lessonTitle: string;
   contentType: LessonContentType;
+  audienceHint?: string;
+  durationMinutes?: number;
+  sourceText?: string;
+}
+
+export interface LessonContentDraft {
+  content: string;
+  goal?: string;
+  keyPoints?: string[];
+  practicalExample?: string;
+  selfCheckQuestions?: string[];
 }
 
 export interface QuizQuestionsContext {
   topic: string;
   questionCount: number;
+  /** базовый / средний / продвинутый */
+  difficulty?: string;
+  questionTypes?: TestQuestionType[];
+  sourceText?: string;
 }
 
 export interface QuizQuestionOptionDraft {
@@ -108,6 +136,67 @@ export interface QuizQuestionDraft {
   points: number;
   options?: QuizQuestionOptionDraft[];
   correctAnswerText?: string;
+  /** Пояснение, почему ответ правильный */
+  explanation?: string;
+}
+
+export interface QuizDraft {
+  questions: QuizQuestionDraft[];
+  suggestedPassingScore?: number;
+}
+
+export interface CaseStudyContext {
+  topic: string;
+  audienceHint?: string;
+  sourceText?: string;
+}
+
+export interface CaseStudyDraft {
+  title: string;
+  situation: string;
+  question: string;
+  options: { text: string; isCorrect: boolean }[];
+  correctApproach: string;
+  analysis: string;
+  complianceRiskLink: string;
+}
+
+export interface MemoContext {
+  topic: string;
+  audienceHint?: string;
+  sourceText?: string;
+}
+
+export interface MemoDraft {
+  title: string;
+  summary: string;
+  checklist: string[];
+  prohibited: string[];
+  required: string[];
+  contacts: string;
+}
+
+export interface CampaignMessageContext {
+  topic: string;
+  courseTitle?: string;
+  linkHint?: string;
+  sourceText?: string;
+}
+
+export interface CampaignMessageDraft {
+  subject: string;
+  body: string;
+  keyPoints: string[];
+  linkText?: string;
+  surveyQuestions: string[];
+}
+
+export interface AiCallInfo {
+  provider: string;
+  model?: string;
+  /** SUCCESS | ERROR | ERROR_FALLBACK */
+  status: string;
+  errorMessage?: string;
 }
 
 export interface ImproveDescriptionContext {
@@ -168,12 +257,16 @@ export interface AiProvider {
   chat(ctx: ChatFactsContext): Promise<string>;
   generateCrossModuleInsights(ctx: CrossModuleFactsContext): Promise<string[]>;
   generateCourseOutline(ctx: CourseOutlineContext): Promise<CourseOutlineDraft>;
-  generateLessonContent(
-    ctx: LessonContentContext,
-  ): Promise<{ content: string }>;
+  generateLessonContent(ctx: LessonContentContext): Promise<LessonContentDraft>;
   generateQuizQuestions(
     ctx: QuizQuestionsContext,
   ): Promise<QuizQuestionDraft[]>;
+  generateQuiz(ctx: QuizQuestionsContext): Promise<QuizDraft>;
+  generateCaseStudy(ctx: CaseStudyContext): Promise<CaseStudyDraft>;
+  generateMemo(ctx: MemoContext): Promise<MemoDraft>;
+  generateCampaignMessage(
+    ctx: CampaignMessageContext,
+  ): Promise<CampaignMessageDraft>;
   improveRiskDescription(
     ctx: ImproveDescriptionContext,
   ): Promise<{ improvedDescription: string }>;
@@ -181,6 +274,11 @@ export interface AiProvider {
   generateRiskForProcess(
     ctx: GenerateRiskForProcessContext,
   ): Promise<RiskTemplateDraft>;
+  /**
+   * Метаданные последнего вызова (провайдер/модель/статус/ошибка) для
+   * записи в AiInteractionLog. Опционально: MockAiProvider не реализует.
+   */
+  describeLastCall?(): AiCallInfo | undefined;
 }
 
 export const AI_PROVIDER = 'AI_PROVIDER';

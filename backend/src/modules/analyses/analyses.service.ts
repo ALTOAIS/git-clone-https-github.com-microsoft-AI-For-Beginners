@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AnalysisStage, AnalysisStatus, Prisma } from '@prisma/client';
+import { decodeUploadedFileName } from '../../common/utils/upload-name.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ActionsService } from '../actions/actions.service';
 import { AuditService } from '../audit/audit.service';
@@ -377,7 +378,7 @@ export class AnalysesService {
       data: {
         analysisId: params.analysisId,
         category: params.category as any,
-        fileName: params.file.originalname,
+        fileName: decodeUploadedFileName(params.file.originalname),
         storedName: params.file.filename,
         mimeType: params.file.mimetype,
         size: params.file.size,

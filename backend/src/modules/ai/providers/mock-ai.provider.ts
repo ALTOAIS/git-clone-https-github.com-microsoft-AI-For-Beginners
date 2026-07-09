@@ -4,6 +4,10 @@ import { AiControlSuggestion, AiRiskSuggestion } from '../types/ai-results';
 import {
   AiProvider,
   AnalysisFactsContext,
+  CampaignMessageContext,
+  CampaignMessageDraft,
+  CaseStudyContext,
+  CaseStudyDraft,
   ChatFactsContext,
   ControlSuggestionContext,
   CourseOutlineContext,
@@ -13,6 +17,10 @@ import {
   GenerateRiskForProcessContext,
   ImproveDescriptionContext,
   LessonContentContext,
+  LessonContentDraft,
+  MemoContext,
+  MemoDraft,
+  QuizDraft,
   QuizQuestionDraft,
   QuizQuestionsContext,
   ReportFactsContext,
@@ -408,20 +416,55 @@ export class MockAiProvider implements AiProvider {
     }
 
     return {
+      title: `Курс: ${ctx.topic}`,
       description:
         `Курс охватывает тему «${ctx.topic}»` +
         (ctx.audienceHint
           ? ` для целевой аудитории: ${ctx.audienceHint}.`
           : '.') +
+        (ctx.level ? ` Уровень: ${ctx.level}.` : '') +
+        (ctx.sourceText
+          ? ' Структура составлена с учётом загруженного материала-источника.'
+          : '') +
         ' Черновик сформирован ИИ-ассистентом и требует проверки комплаенс-офицером перед публикацией.',
+      goals: ctx.goals?.length
+        ? ctx.goals
+        : [
+            `Сформировать у работников понимание требований по теме «${ctx.topic}»`,
+            'Научить распознавать типичные нарушения и правильно на них реагировать',
+            'Закрепить порядок действий при возникновении сомнительной ситуации',
+          ],
       modules,
+      recommendedTest: {
+        title: `Итоговый тест по курсу «${ctx.topic}»`,
+        questionCount: 5,
+      },
+      recommendedCases: [
+        `Кейс: предложение подарка сверх лимита в контексте темы «${ctx.topic}»`,
+        `Кейс: конфликт интересов при принятии решения по теме «${ctx.topic}»`,
+      ],
     };
   }
 
   async generateLessonContent(
     ctx: LessonContentContext,
-  ): Promise<{ content: string }> {
-    return { content: this.buildLessonContent(ctx) };
+  ): Promise<LessonContentDraft> {
+    return {
+      content: this.buildLessonContent(ctx),
+      goal: `Сформировать у работников практическое понимание темы «${ctx.lessonTitle}» и порядка действий в типичных ситуациях.`,
+      keyPoints: [
+        'Соблюдать применимые внутренние политики и нормативные требования',
+        'Своевременно выявлять и документировать признаки нарушений',
+        'Обращаться к комплаенс-офицеру при возникновении сомнений',
+      ],
+      practicalExample:
+        'Контрагент предлагает ускорить согласование документов в обмен на подарок сверх установленного лимита — правильные действия: отказаться, зафиксировать факт и уведомить комплаенс-офицера.',
+      selfCheckQuestions: [
+        `Какие внутренние документы регулируют тему «${ctx.lessonTitle}»?`,
+        'Каков порядок действий при выявлении признаков нарушения?',
+        'К кому необходимо обратиться при возникновении сомнений?',
+      ],
+    };
   }
 
   async generateQuizQuestions(
@@ -431,9 +474,60 @@ export class MockAiProvider implements AiProvider {
       ctx.questionCount,
       QUIZ_QUESTION_TEMPLATES.length * 2,
     );
+    const types =
+      ctx.questionTypes && ctx.questionTypes.length > 0
+        ? ctx.questionTypes
+        : ['SINGLE_CHOICE' as const];
     return Array.from({ length: count }, (_, index) => {
+      const type = types[index % types.length];
       const template =
         QUIZ_QUESTION_TEMPLATES[index % QUIZ_QUESTION_TEMPLATES.length];
+      if (type === 'TRUE_FALSE') {
+        return {
+          order: index + 1,
+          type: 'TRUE_FALSE' as const,
+          text: `Верно ли утверждение: при выявлении признаков нарушения по теме «${ctx.topic}» работник обязан уведомить комплаенс-офицера?`,
+          points: 10,
+          options: [
+            { order: 1, text: 'Верно', isCorrect: true },
+            { order: 2, text: 'Неверно', isCorrect: false },
+          ],
+          explanation:
+            'Информирование комплаенс-офицера — обязательное требование внутренних антикоррупционных политик.',
+        };
+      }
+      if (type === 'MULTIPLE_CHOICE') {
+        return {
+          order: index + 1,
+          type: 'MULTIPLE_CHOICE' as const,
+          text: `Какие действия являются правильными в рамках темы «${ctx.topic}»? (выберите все подходящие варианты)`,
+          points: 10,
+          options: [
+            {
+              order: 1,
+              text: 'Зафиксировать выявленные признаки нарушения документально',
+              isCorrect: true,
+            },
+            {
+              order: 2,
+              text: 'Уведомить комплаенс-офицера',
+              isCorrect: true,
+            },
+            {
+              order: 3,
+              text: 'Игнорировать ситуацию при отсутствии прямого указания руководителя',
+              isCorrect: false,
+            },
+            {
+              order: 4,
+              text: 'Самостоятельно провести расследование без уведомления ответственных лиц',
+              isCorrect: false,
+            },
+          ],
+          explanation:
+            'Правильные действия — фиксация и информирование; самостоятельные расследования и бездействие нарушают установленный порядок.',
+        };
+      }
       return {
         order: index + 1,
         type: 'SINGLE_CHOICE' as const,
@@ -444,8 +538,100 @@ export class MockAiProvider implements AiProvider {
           text,
           isCorrect: optionIndex === template.correctIndex,
         })),
+        explanation:
+          'Правильный вариант соответствует требованиям внутренних политик о своевременном информировании и прозрачности действий.',
       };
     });
+  }
+
+  async generateQuiz(ctx: QuizQuestionsContext): Promise<QuizDraft> {
+    return {
+      questions: await this.generateQuizQuestions(ctx),
+      suggestedPassingScore: 70,
+    };
+  }
+
+  async generateCaseStudy(ctx: CaseStudyContext): Promise<CaseStudyDraft> {
+    return {
+      title: `Кейс: ${ctx.topic}`,
+      situation:
+        `Сотрудник${ctx.audienceHint ? ` (${ctx.audienceHint})` : ''} в рамках темы «${ctx.topic}» сталкивается со следующей ситуацией: ` +
+        'контрагент предлагает неформально «ускорить» решение вопроса и намекает на вознаграждение, при этом формальных оснований для отказа в рассмотрении обращения нет.',
+      question: 'Как должен поступить работник в этой ситуации?',
+      options: [
+        {
+          text: 'Принять предложение, если сумма незначительна и никто не узнает',
+          isCorrect: false,
+        },
+        {
+          text: 'Отказаться, зафиксировать факт предложения и уведомить комплаенс-офицера',
+          isCorrect: true,
+        },
+        {
+          text: 'Передать вопрос коллеге, не сообщая о предложении',
+          isCorrect: false,
+        },
+        {
+          text: 'Продолжить работу, проигнорировав намёк, без уведомления кого-либо',
+          isCorrect: false,
+        },
+      ],
+      correctApproach:
+        'Отказаться от предложения, документально зафиксировать факт и незамедлительно уведомить комплаенс-офицера в установленном порядке.',
+      analysis:
+        'Ситуация содержит признаки склонения к коррупционному правонарушению. Молчание или передача вопроса коллеге не устраняют риск и могут повлечь ответственность за несообщение. Правильные действия защищают и работника, и организацию.',
+      complianceRiskLink: `Коррупционный риск: получение незаконного вознаграждения при выполнении функций по теме «${ctx.topic}» (факторы: внешнее взаимодействие, дискреционные полномочия).`,
+    };
+  }
+
+  async generateMemo(ctx: MemoContext): Promise<MemoDraft> {
+    return {
+      title: `Памятка: ${ctx.topic}`,
+      summary: `Краткая памятка для работников по теме «${ctx.topic}»: основные требования, порядок действий и контакты для обращения. Черновик сформирован ИИ-ассистентом — проверьте актуальность ссылок на внутренние документы перед публикацией.`,
+      checklist: [
+        'Ознакомиться с применимой внутренней политикой по данной теме',
+        'При взаимодействии с внешними лицами фиксировать существенные договорённости письменно',
+        'При возникновении сомнительной ситуации — приостановить действие и получить консультацию',
+        'Сообщать о признаках нарушений в установленном порядке',
+      ],
+      prohibited: [
+        'Принимать подарки и вознаграждения сверх установленного лимита',
+        'Принимать решения в условиях нераскрытого конфликта интересов',
+        'Игнорировать выявленные признаки нарушений',
+      ],
+      required: [
+        'Раскрывать конфликт интересов до принятия решения',
+        'Уведомлять комплаенс-офицера о попытках склонения к нарушению',
+        'Соблюдать порядок согласования, установленный внутренними документами',
+      ],
+      contacts:
+        'Комплаенс-офицер организации; горячая линия комплаенс (при наличии); непосредственный руководитель.',
+    };
+  }
+
+  async generateCampaignMessage(
+    ctx: CampaignMessageContext,
+  ): Promise<CampaignMessageDraft> {
+    return {
+      subject: `Обучение: ${ctx.topic}`,
+      body:
+        `Коллеги, приглашаем пройти обучение по теме «${ctx.topic}».` +
+        (ctx.courseTitle
+          ? ` Курс «${ctx.courseTitle}» уже доступен в Академии комплаенса.`
+          : '') +
+        ' Обучение поможет уверенно действовать в типичных ситуациях и снизить риски для вас и компании. Прохождение займёт немного времени, а знания пригодятся в ежедневной работе.',
+      keyPoints: [
+        'Какие требования обязательны для каждого работника',
+        'Как распознать сомнительную ситуацию',
+        'Куда обращаться при возникновении вопросов',
+      ],
+      linkText: ctx.linkHint ?? 'Перейти к курсу в Академии комплаенса',
+      surveyQuestions: [
+        `Насколько понятны вам требования по теме «${ctx.topic}»? (1–5)`,
+        'Сталкивались ли вы с ситуациями, требующими консультации комплаенс-офицера?',
+        'Какие темы обучения были бы полезны вам в дальнейшем?',
+      ],
+    };
   }
 
   async improveRiskDescription(

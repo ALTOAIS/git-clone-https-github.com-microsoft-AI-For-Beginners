@@ -1,9 +1,10 @@
-import { InboxOutlined } from '@ant-design/icons';
+import { InboxOutlined, RobotOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { App, List, Typography, Upload } from 'antd';
+import { App, Dropdown, List, Typography, Upload } from 'antd';
 import type { UploadProps } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { attachmentsApi } from '../../api/endpoints';
 import { AttachmentViewerModal, type ViewableAttachment } from '../../components/AttachmentViewerModal';
 import type { Attachment } from '../../types';
@@ -23,8 +24,12 @@ function formatSize(bytes: number) {
 export function LessonAttachmentsPanel({ lessonId, canEdit }: Props) {
   const { t } = useTranslation();
   const { message } = App.useApp();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [viewing, setViewing] = useState<ViewableAttachment | null>(null);
+
+  const goToAiStudio = (action: 'course' | 'memo' | 'quiz', materialId: string) =>
+    navigate(`/academy/management?tab=aiStudio&action=${action}&materialId=${materialId}`);
 
   const queryKey = ['lesson-attachments', lessonId];
   const { data: attachments } = useQuery({
@@ -86,6 +91,22 @@ export function LessonAttachmentsPanel({ lessonId, canEdit }: Props) {
               </a>,
               ...(canEdit
                 ? [
+                    <Dropdown
+                      key="ai"
+                      menu={{
+                        items: [
+                          { key: 'course', label: t('lessonAttachments.aiCreateCourse') },
+                          { key: 'memo', label: t('lessonAttachments.aiCreateMemo') },
+                          { key: 'quiz', label: t('lessonAttachments.aiCreateQuiz') },
+                        ],
+                        onClick: ({ key }) =>
+                          goToAiStudio(key as 'course' | 'memo' | 'quiz', attachment.id),
+                      }}
+                    >
+                      <a>
+                        <RobotOutlined /> {t('lessonAttachments.aiActions')}
+                      </a>
+                    </Dropdown>,
                     <a key="delete" onClick={() => handleDelete(attachment.id)}>
                       {t('lessonAttachments.delete')}
                     </a>,

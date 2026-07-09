@@ -65,6 +65,12 @@ export class AcademyController {
     return this.academyService.matrix();
   }
 
+  @Get('materials')
+  @Roles(...MANAGE_ROLES)
+  listMaterials() {
+    return this.academyService.listMaterials();
+  }
+
   @Get()
   findAll(
     @Query('page') page = '1',

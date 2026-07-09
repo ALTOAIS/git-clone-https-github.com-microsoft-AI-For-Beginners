@@ -1464,6 +1464,11 @@ model AiInteractionLog {
   module        String
   useCase       String
   provider      String
+  /// Идентификатор модели LLM (например gpt-4o-mini); null для mock-провайдера
+  model         String?
+  /// SUCCESS | ERROR | ERROR_FALLBACK (реальный провайдер упал, ответил mock)
+  status        String   @default("SUCCESS")
+  errorMessage  String?
   entityType    String?
   entityId      String?
   inputSummary  String

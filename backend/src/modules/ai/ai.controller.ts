@@ -20,8 +20,11 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { AiService } from './ai.service';
 import { AnalyzeRiskDto } from './dto/analyze-risk.dto';
 import { ChatDto } from './dto/chat.dto';
+import { GenerateCampaignMessageDto } from './dto/generate-campaign-message.dto';
+import { GenerateCaseStudyDto } from './dto/generate-case-study.dto';
 import { GenerateCourseOutlineDto } from './dto/generate-course-outline.dto';
 import { GenerateLessonContentDto } from './dto/generate-lesson-content.dto';
+import { GenerateMemoDto } from './dto/generate-memo.dto';
 import { GenerateQuizQuestionsDto } from './dto/generate-quiz-questions.dto';
 import { GenerateRiskRegisterEntryDto } from './dto/generate-risk-register-entry.dto';
 import { GenerateRiskTemplateForProcessDto } from './dto/generate-risk-template-for-process.dto';
@@ -214,5 +217,32 @@ export class AiController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.aiService.generateQuizQuestions(dto, user);
+  }
+
+  @Post('generate-case-study')
+  @Roles(...ACADEMY_AI_ROLES)
+  generateCaseStudy(
+    @Body() dto: GenerateCaseStudyDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.aiService.generateCaseStudy(dto, user);
+  }
+
+  @Post('generate-memo')
+  @Roles(...ACADEMY_AI_ROLES)
+  generateMemo(
+    @Body() dto: GenerateMemoDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.aiService.generateMemo(dto, user);
+  }
+
+  @Post('generate-campaign-message')
+  @Roles(...ACADEMY_AI_ROLES)
+  generateCampaignMessage(
+    @Body() dto: GenerateCampaignMessageDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.aiService.generateCampaignMessage(dto, user);
   }
 }
