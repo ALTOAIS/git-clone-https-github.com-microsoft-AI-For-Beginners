@@ -2,8 +2,12 @@ import { apiClient } from './client';
 import type {
   Action,
   AcademyCalendar,
+  AcademyMaterial,
   AcademySummary,
   AiAnalyzeRiskResult,
+  AiCampaignMessageDraft,
+  AiCaseStudyDraft,
+  AiMemoDraft,
   AiChatResult,
   AiCourseOutlineDraft,
   AiImproveDescriptionResult,
@@ -53,6 +57,7 @@ import type {
   SurveyResults,
   TestAttempt,
   TestDetail,
+  TestQuestionType,
   TrainingMatrix,
   TrainingPlanDetail,
   TrainingPlanListItem,
@@ -380,6 +385,7 @@ export const academyApi = {
   myAssignments: () => apiClient.get<MyCourseAssignment[]>('/courses/my'),
   calendar: () => apiClient.get<AcademyCalendar>('/courses/calendar'),
   matrix: () => apiClient.get<TrainingMatrix>('/courses/matrix'),
+  listMaterials: () => apiClient.get<AcademyMaterial[]>('/courses/materials'),
   get: (id: string) => apiClient.get<CourseDetail>(`/courses/${id}`),
   preview: (id: string) => apiClient.get<CoursePreview>(`/courses/${id}/preview`),
   create: (data: Record<string, unknown>) => apiClient.post<CourseDetail>('/courses', data),
@@ -538,12 +544,39 @@ export const aiApi = {
     apiClient.post<AiChatResult>('/ai/chat', data),
   riskIntelligenceDashboard: () =>
     apiClient.get<AiRiskIntelligenceDashboard>('/ai/risk-intelligence-dashboard'),
-  generateCourseOutline: (data: { courseId: string; topic: string; audienceHint?: string; moduleCount?: number }) =>
-    apiClient.post<AiCourseOutlineDraft>('/ai/generate-course-outline', data),
-  generateLessonContent: (data: { courseId: string; courseTopic: string; lessonTitle: string; contentType: LessonContentType }) =>
-    apiClient.post<AiLessonContentResult>('/ai/generate-lesson-content', data),
-  generateQuizQuestions: (data: { courseId: string; topic: string; questionCount?: number }) =>
-    apiClient.post<AiQuizQuestionsResult>('/ai/generate-quiz-questions', data),
+  generateCourseOutline: (data: {
+    courseId?: string;
+    topic: string;
+    audienceHint?: string;
+    moduleCount?: number;
+    level?: string;
+    durationHours?: number;
+    goals?: string[];
+    materialAttachmentId?: string;
+  }) => apiClient.post<AiCourseOutlineDraft>('/ai/generate-course-outline', data),
+  generateLessonContent: (data: {
+    courseId?: string;
+    courseTopic: string;
+    lessonTitle: string;
+    contentType: LessonContentType;
+    audienceHint?: string;
+    durationMinutes?: number;
+    materialAttachmentId?: string;
+  }) => apiClient.post<AiLessonContentResult>('/ai/generate-lesson-content', data),
+  generateQuizQuestions: (data: {
+    courseId?: string;
+    topic: string;
+    questionCount?: number;
+    difficulty?: string;
+    questionTypes?: TestQuestionType[];
+    materialAttachmentId?: string;
+  }) => apiClient.post<AiQuizQuestionsResult>('/ai/generate-quiz-questions', data),
+  generateCaseStudy: (data: { courseId?: string; topic: string; audienceHint?: string; materialAttachmentId?: string }) =>
+    apiClient.post<AiCaseStudyDraft>('/ai/generate-case-study', data),
+  generateMemo: (data: { courseId?: string; topic: string; audienceHint?: string; materialAttachmentId?: string }) =>
+    apiClient.post<AiMemoDraft>('/ai/generate-memo', data),
+  generateCampaignMessage: (data: { topic: string; courseTitle?: string; campaignId?: string; materialAttachmentId?: string }) =>
+    apiClient.post<AiCampaignMessageDraft>('/ai/generate-campaign-message', data),
   improveRiskTemplateDescription: (templateId: string) =>
     apiClient.post<AiImproveDescriptionResult>('/ai/improve-risk-template-description', { templateId }),
   suggestRiskTemplateControls: (templateId: string) =>

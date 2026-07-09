@@ -532,6 +532,43 @@ export class AcademyService {
     };
   }
 
+  /**
+   * Все загруженные материалы Академии (вложения уроков) с контекстом
+   * курса/урока — для выбора материала-источника в ИИ-конструкторе.
+   */
+  async listMaterials() {
+    const attachments = await this.prisma.attachment.findMany({
+      where: { entityType: 'COURSE_LESSON' },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (attachments.length === 0) return [];
+    const lessons = await this.prisma.courseLesson.findMany({
+      where: { id: { in: attachments.map((a) => a.entityId) } },
+      select: {
+        id: true,
+        title: true,
+        module: {
+          select: { course: { select: { id: true, title: true } } },
+        },
+      },
+    });
+    const lessonById = new Map(lessons.map((l) => [l.id, l]));
+    return attachments.map((attachment) => {
+      const lesson = lessonById.get(attachment.entityId);
+      return {
+        id: attachment.id,
+        fileName: attachment.fileName,
+        mimeType: attachment.mimeType,
+        size: attachment.size,
+        createdAt: attachment.createdAt,
+        lessonId: lesson?.id ?? null,
+        lessonTitle: lesson?.title ?? null,
+        courseId: lesson?.module.course.id ?? null,
+        courseTitle: lesson?.module.course.title ?? null,
+      };
+    });
+  }
+
   // ------------------------------------------------------------------
   // Dashboard Академии
   // ------------------------------------------------------------------

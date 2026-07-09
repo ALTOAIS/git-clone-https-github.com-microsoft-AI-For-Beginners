@@ -1,8 +1,10 @@
 import { Result, Tabs } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../auth/authStore';
 import { AcademyCalendarPage } from './AcademyCalendarPage';
 import { AcademyOverviewTab } from './AcademyOverviewTab';
+import { AiTrainingStudio } from './AiTrainingStudio';
 import { CampaignsListPage } from './CampaignsListPage';
 import { CertificatesPage } from './CertificatesPage';
 import { CoursesListPage } from './CoursesListPage';
@@ -15,6 +17,8 @@ export function AcademyManagementPage() {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const canManage = !!user && MANAGE_ROLES.includes(user.role);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') ?? 'overview';
 
   if (!canManage) {
     return <Result status="403" title={t('academyManagement.accessDeniedTitle')} subTitle={t('academyManagement.accessDeniedSubtitle')} />;
@@ -22,9 +26,16 @@ export function AcademyManagementPage() {
 
   return (
     <Tabs
+      activeKey={activeTab}
+      onChange={(key) => {
+        const next = new URLSearchParams(searchParams);
+        next.set('tab', key);
+        setSearchParams(next, { replace: true });
+      }}
       items={[
         { key: 'overview', label: t('academyManagement.tabs.overview'), children: <AcademyOverviewTab /> },
         { key: 'courses', label: t('academyManagement.tabs.courseBuilder'), children: <CoursesListPage /> },
+        { key: 'aiStudio', label: t('academyManagement.tabs.aiStudio'), children: <AiTrainingStudio /> },
         { key: 'assignments', label: t('academyManagement.tabs.assignments'), children: <TrainingMatrixPage /> },
         { key: 'calendar', label: t('academyManagement.tabs.calendar'), children: <AcademyCalendarPage /> },
         { key: 'campaigns', label: t('academyManagement.tabs.campaigns'), children: <CampaignsListPage /> },

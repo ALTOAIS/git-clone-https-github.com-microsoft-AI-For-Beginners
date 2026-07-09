@@ -6,6 +6,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { AuditService } from '../audit/audit.service';
 import { IncidentsService } from '../incidents/incidents.service';
 import { buildDocxReport } from '../reports/docx.util';
+import { MaterialTextService } from './material-text.service';
 import { buildPdfReport } from '../reports/pdf.util';
 import { ACTIVE_STATUSES } from '../risks/risks.constants';
 import {
@@ -17,7 +18,10 @@ import {
 import { RiskTemplatesService } from '../risk-templates/risk-templates.service';
 import { AnalyzeRiskDto } from './dto/analyze-risk.dto';
 import { ChatDto } from './dto/chat.dto';
+import { GenerateCampaignMessageDto } from './dto/generate-campaign-message.dto';
+import { GenerateCaseStudyDto } from './dto/generate-case-study.dto';
 import { GenerateCourseOutlineDto } from './dto/generate-course-outline.dto';
+import { GenerateMemoDto } from './dto/generate-memo.dto';
 import { GenerateLessonContentDto } from './dto/generate-lesson-content.dto';
 import { GenerateQuizQuestionsDto } from './dto/generate-quiz-questions.dto';
 import { GenerateRiskRegisterEntryDto } from './dto/generate-risk-register-entry.dto';
@@ -53,6 +57,7 @@ export class AiService {
     private analytics: AnalyticsService,
     private incidents: IncidentsService,
     private riskTemplates: RiskTemplatesService,
+    private materialText: MaterialTextService,
     @Inject(AI_PROVIDER) private provider: AiProvider,
   ) {}
 
@@ -73,13 +78,17 @@ export class AiService {
     inputSummary: string;
     outputSummary: string;
   }) {
+    const callInfo = this.provider.describeLastCall?.();
     await this.prisma.aiInteractionLog.create({
       data: {
         userId: params.user.id,
         role: params.user.role,
         module: params.module,
         useCase: params.useCase,
-        provider: this.provider.name,
+        provider: callInfo?.provider ?? this.provider.name,
+        model: callInfo?.model,
+        status: callInfo?.status ?? 'SUCCESS',
+        errorMessage: callInfo?.errorMessage,
         entityType: params.entityType,
         entityId: params.entityId,
         inputSummary: params.inputSummary,
@@ -723,79 +732,235 @@ export class AiService {
     };
   }
 
+  /**
+   * Общий помощник Академии: проверяет курс (если указан) и извлекает текст
+   * материала-источника (если указан). Возвращает контекст для промпта и лога.
+   */
+  private async resolveAcademyContext(params: {
+    courseId?: string;
+    materialAttachmentId?: string;
+  }): Promise<{
+    courseId?: string;
+    courseTitle?: string;
+    sourceText?: string;
+    sourceFileName?: string;
+    sourceLimitation?: string;
+  }> {
+    let courseId: string | undefined;
+    let courseTitle: string | undefined;
+    if (params.courseId) {
+      const course = await this.academy.findOne(params.courseId);
+      courseId = course.id;
+      courseTitle = course.title;
+    }
+    if (!params.materialAttachmentId) {
+      return { courseId, courseTitle };
+    }
+    const material = await this.materialText.extractFromAttachment(
+      params.materialAttachmentId,
+    );
+    return {
+      courseId,
+      courseTitle,
+      sourceText: material.text,
+      sourceFileName: material.fileName,
+      sourceLimitation: material.limitation,
+    };
+  }
+
   async generateCourseOutline(
     dto: GenerateCourseOutlineDto,
     user: RequestUser,
   ) {
-    const course = await this.academy.findOne(dto.courseId);
+    const context = await this.resolveAcademyContext(dto);
     const moduleCount = dto.moduleCount ?? 3;
 
     const draft = await this.provider.generateCourseOutline({
       topic: dto.topic,
       audienceHint: dto.audienceHint,
       moduleCount,
+      level: dto.level,
+      durationHours: dto.durationHours,
+      goals: dto.goals,
+      sourceText: context.sourceText,
     });
 
     await this.logInteraction({
       user,
       module: 'ACADEMY',
       useCase: 'GENERATE_COURSE_OUTLINE',
-      entityType: 'COURSE',
-      entityId: course.id,
-      inputSummary: `Курс: ${course.title}, тема: ${dto.topic}`,
+      entityType: context.courseId ? 'COURSE' : 'ACADEMY',
+      entityId: context.courseId,
+      inputSummary:
+        `Тема: ${dto.topic}` +
+        (dto.level ? `, уровень: ${dto.level}` : '') +
+        (context.sourceFileName ? `, материал: ${context.sourceFileName}` : ''),
       outputSummary: `Сгенерировано модулей: ${draft.modules.length}`,
     });
 
-    return { ...draft, disclaimer: AI_ADVISORY_DISCLAIMER };
+    return {
+      ...draft,
+      sourceLimitation: context.sourceLimitation,
+      disclaimer: AI_ADVISORY_DISCLAIMER,
+    };
   }
 
   async generateLessonContent(
     dto: GenerateLessonContentDto,
     user: RequestUser,
   ) {
-    const course = await this.academy.findOne(dto.courseId);
+    const context = await this.resolveAcademyContext(dto);
 
     const result = await this.provider.generateLessonContent({
       courseTopic: dto.courseTopic,
       lessonTitle: dto.lessonTitle,
       contentType: dto.contentType,
+      audienceHint: dto.audienceHint,
+      durationMinutes: dto.durationMinutes,
+      sourceText: context.sourceText,
     });
 
     await this.logInteraction({
       user,
       module: 'ACADEMY',
       useCase: 'GENERATE_LESSON_CONTENT',
-      entityType: 'COURSE',
-      entityId: course.id,
-      inputSummary: `Урок: ${dto.lessonTitle}`,
+      entityType: context.courseId ? 'COURSE' : 'ACADEMY',
+      entityId: context.courseId,
+      inputSummary:
+        `Урок: ${dto.lessonTitle}` +
+        (context.sourceFileName ? `, материал: ${context.sourceFileName}` : ''),
       outputSummary: `Сгенерирован текст (${result.content.length} симв.)`,
     });
 
-    return { ...result, disclaimer: AI_ADVISORY_DISCLAIMER };
+    return {
+      ...result,
+      sourceLimitation: context.sourceLimitation,
+      disclaimer: AI_ADVISORY_DISCLAIMER,
+    };
   }
 
   async generateQuizQuestions(
     dto: GenerateQuizQuestionsDto,
     user: RequestUser,
   ) {
-    const course = await this.academy.findOne(dto.courseId);
+    const context = await this.resolveAcademyContext(dto);
     const questionCount = dto.questionCount ?? 3;
 
-    const questions = await this.provider.generateQuizQuestions({
+    const quiz = await this.provider.generateQuiz({
       topic: dto.topic,
       questionCount,
+      difficulty: dto.difficulty,
+      questionTypes: dto.questionTypes,
+      sourceText: context.sourceText,
     });
 
     await this.logInteraction({
       user,
       module: 'ACADEMY',
       useCase: 'GENERATE_QUIZ_QUESTIONS',
-      entityType: 'COURSE',
-      entityId: course.id,
-      inputSummary: `Тема: ${dto.topic}`,
-      outputSummary: `Сгенерировано вопросов: ${questions.length}`,
+      entityType: context.courseId ? 'COURSE' : 'ACADEMY',
+      entityId: context.courseId,
+      inputSummary:
+        `Тема: ${dto.topic}, вопросов: ${questionCount}` +
+        (dto.difficulty ? `, сложность: ${dto.difficulty}` : '') +
+        (context.sourceFileName ? `, материал: ${context.sourceFileName}` : ''),
+      outputSummary: `Сгенерировано вопросов: ${quiz.questions.length}`,
     });
 
-    return { questions, disclaimer: AI_ADVISORY_DISCLAIMER };
+    return {
+      questions: quiz.questions,
+      suggestedPassingScore: quiz.suggestedPassingScore,
+      sourceLimitation: context.sourceLimitation,
+      disclaimer: AI_ADVISORY_DISCLAIMER,
+    };
+  }
+
+  async generateCaseStudy(dto: GenerateCaseStudyDto, user: RequestUser) {
+    const context = await this.resolveAcademyContext(dto);
+
+    const draft = await this.provider.generateCaseStudy({
+      topic: dto.topic,
+      audienceHint: dto.audienceHint,
+      sourceText: context.sourceText,
+    });
+
+    await this.logInteraction({
+      user,
+      module: 'ACADEMY',
+      useCase: 'GENERATE_CASE_STUDY',
+      entityType: context.courseId ? 'COURSE' : 'ACADEMY',
+      entityId: context.courseId,
+      inputSummary:
+        `Тема кейса: ${dto.topic}` +
+        (context.sourceFileName ? `, материал: ${context.sourceFileName}` : ''),
+      outputSummary: `Кейс «${draft.title}», вариантов действий: ${draft.options.length}`,
+    });
+
+    return {
+      ...draft,
+      sourceLimitation: context.sourceLimitation,
+      disclaimer: AI_ADVISORY_DISCLAIMER,
+    };
+  }
+
+  async generateMemo(dto: GenerateMemoDto, user: RequestUser) {
+    const context = await this.resolveAcademyContext(dto);
+
+    const draft = await this.provider.generateMemo({
+      topic: dto.topic,
+      audienceHint: dto.audienceHint,
+      sourceText: context.sourceText,
+    });
+
+    await this.logInteraction({
+      user,
+      module: 'ACADEMY',
+      useCase: 'GENERATE_MEMO',
+      entityType: context.courseId ? 'COURSE' : 'ACADEMY',
+      entityId: context.courseId,
+      inputSummary:
+        `Тема памятки: ${dto.topic}` +
+        (context.sourceFileName ? `, материал: ${context.sourceFileName}` : ''),
+      outputSummary: `Памятка «${draft.title}», пунктов чек-листа: ${draft.checklist.length}`,
+    });
+
+    return {
+      ...draft,
+      sourceLimitation: context.sourceLimitation,
+      disclaimer: AI_ADVISORY_DISCLAIMER,
+    };
+  }
+
+  async generateCampaignMessage(
+    dto: GenerateCampaignMessageDto,
+    user: RequestUser,
+  ) {
+    const context = await this.resolveAcademyContext({
+      materialAttachmentId: dto.materialAttachmentId,
+    });
+
+    const draft = await this.provider.generateCampaignMessage({
+      topic: dto.topic,
+      courseTitle: dto.courseTitle,
+      sourceText: context.sourceText,
+    });
+
+    await this.logInteraction({
+      user,
+      module: 'ACADEMY',
+      useCase: 'GENERATE_CAMPAIGN_MESSAGE',
+      entityType: dto.campaignId ? 'CAMPAIGN' : 'ACADEMY',
+      entityId: dto.campaignId,
+      inputSummary:
+        `Тема рассылки: ${dto.topic}` +
+        (dto.courseTitle ? `, курс: ${dto.courseTitle}` : ''),
+      outputSummary: `Рассылка «${draft.subject}»`,
+    });
+
+    return {
+      ...draft,
+      sourceLimitation: context.sourceLimitation,
+      disclaimer: AI_ADVISORY_DISCLAIMER,
+    };
   }
 }

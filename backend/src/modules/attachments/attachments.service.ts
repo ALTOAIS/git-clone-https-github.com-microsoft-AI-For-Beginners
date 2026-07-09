@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { EntityType } from '@prisma/client';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
+import { decodeUploadedFileName } from '../../common/utils/upload-name.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 
@@ -49,7 +50,7 @@ export class AttachmentsService {
         entityType: params.entityType,
         entityId: params.entityId,
         riskId: params.riskId,
-        fileName: params.file.originalname,
+        fileName: decodeUploadedFileName(params.file.originalname),
         storedName: params.file.filename,
         mimeType: params.file.mimetype,
         size: params.file.size,
