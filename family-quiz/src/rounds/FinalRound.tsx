@@ -95,7 +95,10 @@ export function FinalRound({ round, teams, baseScores, onComplete }: FinalRoundP
           <div className="bets-summary">
             Ставки — {teams.boys}: {bets.boys}, {teams.girls}: {bets.girls}
           </div>
-          <div className="host-controls">
+          <div className="host-controls host-controls-row">
+            <button className="btn btn-ghost" onClick={() => setStage('bet')}>
+              ← К ставкам
+            </button>
             <button className="btn btn-primary" onClick={() => setStage('answer')}>
               Показать ответ
             </button>
@@ -121,6 +124,9 @@ export function FinalRound({ round, teams, baseScores, onComplete }: FinalRoundP
                 Ничья
               </button>
             </div>
+            <button className="btn btn-ghost" onClick={() => setStage('question')}>
+              ← Назад к вопросу
+            </button>
           </div>
         </>
       )}

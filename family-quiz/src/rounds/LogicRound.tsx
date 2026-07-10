@@ -40,6 +40,16 @@ export function LogicRound({ round, teams, onComplete }: LogicRoundProps) {
     }
   };
 
+  const canBack = index > 0 || stage === 'reveal';
+  const back = () => {
+    if (index > 0) {
+      setIndex(index - 1);
+    } else if (stage === 'reveal') {
+      setStage('ask');
+      setIndex(round.questions.length - 1);
+    }
+  };
+
   return (
     <div className="question-block">
       <div className="question-counter">
@@ -54,7 +64,12 @@ export function LogicRound({ round, teams, onComplete }: LogicRoundProps) {
       {stage === 'reveal' && <div className="answer-banner">Правильный ответ: {question.answer}</div>}
       {stage === 'reveal' && question.fact && <p className="question-fact">💡 {question.fact}</p>}
       {stage === 'ask' && <p className="open-question-hint">Запишите ответ на бумаге ✍️</p>}
-      <div className="host-controls">
+      <div className="host-controls host-controls-row">
+        {canBack && (
+          <button className="btn btn-ghost" onClick={back}>
+            ← Назад
+          </button>
+        )}
         <button className="btn btn-primary" onClick={next}>
           {stage === 'ask'
             ? isLast

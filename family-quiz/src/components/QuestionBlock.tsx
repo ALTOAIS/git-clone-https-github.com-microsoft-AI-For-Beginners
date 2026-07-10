@@ -33,6 +33,17 @@ export function QuestionBlock({ blockTitle, questions, timerSeconds, onDone }: Q
     }
   };
 
+  // Назад: к предыдущему вопросу/ответу; с первого ответа — к последнему вопросу
+  const canBack = index > 0 || stage === 'reveal';
+  const back = () => {
+    if (index > 0) {
+      setIndex(index - 1);
+    } else if (stage === 'reveal') {
+      setStage('ask');
+      setIndex(questions.length - 1);
+    }
+  };
+
   return (
     <div className="question-block">
       {blockTitle && <div className="block-title">{blockTitle}</div>}
@@ -68,7 +79,12 @@ export function QuestionBlock({ blockTitle, questions, timerSeconds, onDone }: Q
 
       {stage === 'ask' && timerSeconds && <Timer seconds={timerSeconds} resetKey={index} />}
 
-      <div className="host-controls">
+      <div className="host-controls host-controls-row">
+        {canBack && (
+          <button className="btn btn-ghost" onClick={back}>
+            ← Назад
+          </button>
+        )}
         <button className="btn btn-primary" onClick={next}>
           {stage === 'ask'
             ? isLast

@@ -338,6 +338,12 @@ body {
   gap: 16px;
 }
 
+.host-controls-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 /* ===== Таймер ===== */
 
 .timer {

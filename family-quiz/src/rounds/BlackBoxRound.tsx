@@ -56,6 +56,20 @@ export function BlackBoxRound({ round, teams, onComplete }: BlackBoxRoundProps) 
       </div>
 
       <div className="host-controls">
+        {(hintsShown > 0 || answerShown) && (
+          <button
+            className="btn btn-ghost"
+            onClick={() => {
+              if (answerShown) {
+                setAnswerShown(false);
+              } else {
+                setHintsShown(hintsShown - 1);
+              }
+            }}
+          >
+            ← Назад
+          </button>
+        )}
         {!allHintsShown && (
           <button className="btn btn-primary" onClick={() => setHintsShown(hintsShown + 1)}>
             Открыть подсказку
