@@ -124,6 +124,25 @@ body {
   padding: 10px 20px;
 }
 
+.top-bar-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Секундомер ведущего: незаметная иконка, время — только по клику */
+.stopwatch-btn {
+  font-size: clamp(16px, 1.4vw, 22px);
+  padding: 10px 16px;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.stopwatch-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
 /* ===== Главный экран ===== */
 
 .screen {

@@ -4,6 +4,7 @@ import { clearState, loadState, saveState } from './storage';
 import type { GameState, Round, TeamKey, TeamScores } from './types';
 import { Scoreboard } from './components/Scoreboard';
 import { FullscreenButton } from './components/FullscreenButton';
+import { HostStopwatch } from './components/HostStopwatch';
 import { HomeScreen } from './screens/HomeScreen';
 import { RoundIntro } from './screens/RoundIntro';
 import { Standings } from './screens/Standings';
@@ -18,6 +19,7 @@ function initialState(): GameState {
   return {
     screen: 'home',
     currentRound: 0,
+    startedAt: null,
     scores: { boys: 0, girls: 0 },
     roundResults: quiz.rounds.map(() => null),
   };
@@ -64,7 +66,7 @@ export default function App() {
   const hasSavedGame = state.screen !== 'home';
 
   const startNewGame = () => {
-    setState({ ...initialState(), screen: 'round' });
+    setState({ ...initialState(), screen: 'round', startedAt: Date.now() });
     setShowHome(false);
   };
 
@@ -119,7 +121,10 @@ export default function App() {
       <div className="top-bar">
         <span className="top-bar-round">{state.screen === 'final' ? 'Итоги игры' : round.title}</span>
         <Scoreboard teams={quiz.teams} scores={state.scores} />
-        <FullscreenButton />
+        <div className="top-bar-tools">
+          {state.startedAt != null && <HostStopwatch startedAt={state.startedAt} />}
+          <FullscreenButton />
+        </div>
       </div>
 
       {state.screen === 'round' && (

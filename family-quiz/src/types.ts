@@ -105,6 +105,8 @@ export type Screen = 'home' | 'round' | 'standings' | 'final';
 export interface GameState {
   screen: Screen;
   currentRound: number;
+  /** Момент старта игры (Date.now()) для секундомера ведущего; null до начала игры. */
+  startedAt: number | null;
   scores: TeamScores;
   /** Результаты по завершённым турам (дельта очков за тур), null — тур не сыгран. */
   roundResults: (TeamScores | null)[];
