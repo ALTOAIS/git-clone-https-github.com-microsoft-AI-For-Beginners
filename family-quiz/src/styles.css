@@ -1,0 +1,747 @@
+/* ===== TV First: крупные шрифты, высокая контрастность, читаемость с 3–5 метров ===== */
+
+:root {
+  --bg: #0b1020;
+  --panel: #171f36;
+  --panel-light: #212b4a;
+  --text: #f5f7ff;
+  --muted: #aab3d0;
+  --accent: #ffcc33;
+  --accent-text: #1a1400;
+  --boys: #4da3ff;
+  --girls: #ff5fa2;
+  --correct: #2ecc71;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  /* Системные шрифты корректно отображают кириллицу и казахские буквы: Ә Ғ Қ Ң Ө Ұ Ү Һ І */
+  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  font-size: clamp(18px, 2vw, 28px);
+  line-height: 1.4;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(16px, 2.5vw, 40px);
+  gap: clamp(12px, 2vh, 28px);
+}
+
+/* ===== Верхняя панель ===== */
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.top-bar-home {
+  justify-content: flex-end;
+}
+
+.top-bar-round {
+  font-size: clamp(20px, 2.2vw, 32px);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ===== Кнопки ===== */
+
+.btn {
+  font: inherit;
+  font-size: clamp(20px, 2.2vw, 32px);
+  font-weight: 700;
+  color: var(--text);
+  background: var(--panel-light);
+  border: 3px solid transparent;
+  border-radius: 16px;
+  padding: clamp(12px, 1.5vh, 20px) clamp(24px, 3vw, 48px);
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.btn:hover {
+  filter: brightness(1.15);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:focus-visible {
+  outline: 4px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--muted);
+}
+
+.btn-xl {
+  font-size: clamp(26px, 3vw, 44px);
+  padding: clamp(18px, 2.5vh, 28px) clamp(40px, 5vw, 72px);
+}
+
+.btn-boys {
+  background: var(--boys);
+  color: #041226;
+}
+
+.btn-girls {
+  background: var(--girls);
+  color: #2b0416;
+}
+
+.fullscreen-btn {
+  font-size: clamp(16px, 1.4vw, 22px);
+  padding: 10px 20px;
+}
+
+.top-bar-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Секундомер ведущего: незаметная иконка, время — только по клику */
+.stopwatch-btn {
+  font-size: clamp(16px, 1.4vw, 22px);
+  padding: 10px 16px;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.stopwatch-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* ===== Главный экран ===== */
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: clamp(16px, 3vh, 36px);
+}
+
+.home-title {
+  font-size: clamp(48px, 8vw, 120px);
+  color: var(--accent);
+  text-shadow: 0 4px 24px rgba(255, 204, 51, 0.35);
+}
+
+.home-subtitle {
+  font-size: clamp(28px, 4vw, 56px);
+  font-weight: 700;
+}
+
+.home-rounds {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  max-width: 1100px;
+}
+
+.home-round-chip {
+  background: var(--panel);
+  border-radius: 999px;
+  padding: 10px 28px;
+  font-size: clamp(16px, 1.6vw, 24px);
+  color: var(--muted);
+}
+
+.home-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ===== Табло ===== */
+
+.scoreboard {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--panel);
+  border-radius: 16px;
+  padding: 10px 28px;
+}
+
+.scoreboard-team {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-weight: 700;
+}
+
+.scoreboard-boys .scoreboard-name {
+  color: var(--boys);
+}
+
+.scoreboard-girls .scoreboard-name {
+  color: var(--girls);
+}
+
+.scoreboard-score {
+  font-size: clamp(24px, 2.6vw, 40px);
+}
+
+.scoreboard-divider {
+  font-size: clamp(24px, 2.6vw, 40px);
+  color: var(--muted);
+}
+
+/* ===== Вопросы ===== */
+
+.question-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: clamp(16px, 3vh, 36px);
+}
+
+.block-title {
+  font-size: clamp(22px, 2.4vw, 36px);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.question-counter {
+  font-size: clamp(18px, 1.8vw, 28px);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.question-text {
+  font-size: clamp(32px, 4.2vw, 64px);
+  max-width: 1400px;
+}
+
+.question-category {
+  font-size: clamp(18px, 1.8vw, 28px);
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.question-fact {
+  font-size: clamp(18px, 1.9vw, 30px);
+  color: var(--muted);
+  max-width: 1200px;
+}
+
+.section-title {
+  font-size: clamp(32px, 4vw, 60px);
+  color: var(--accent);
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(12px, 1.6vw, 24px);
+  width: min(92vw, 1400px);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--panel);
+  border: 4px solid transparent;
+  border-radius: 20px;
+  padding: clamp(14px, 2vh, 26px) clamp(18px, 2vw, 32px);
+  font-size: clamp(24px, 2.8vw, 44px);
+  font-weight: 600;
+  text-align: left;
+}
+
+.option-correct {
+  border-color: var(--correct);
+  background: rgba(46, 204, 113, 0.18);
+}
+
+.option-letter {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 50%;
+  background: var(--panel-light);
+  color: var(--accent);
+  font-size: 0.75em;
+  font-weight: 800;
+}
+
+.option-correct .option-letter {
+  background: var(--correct);
+  color: #04220f;
+}
+
+.open-question-hint {
+  font-size: clamp(20px, 2vw, 32px);
+  color: var(--muted);
+}
+
+.answer-banner {
+  background: rgba(46, 204, 113, 0.18);
+  border: 4px solid var(--correct);
+  border-radius: 20px;
+  padding: clamp(14px, 2vh, 26px) clamp(28px, 3vw, 48px);
+  font-size: clamp(28px, 3.4vw, 52px);
+  font-weight: 700;
+}
+
+.host-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ===== Таймер ===== */
+
+.timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(70vw, 700px);
+}
+
+.timer-value {
+  font-size: clamp(30px, 3.6vw, 56px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-expired .timer-value {
+  color: var(--girls);
+}
+
+.timer-bar {
+  width: 100%;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.timer-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 9px;
+  transition: width 1s linear;
+}
+
+.timer-expired .timer-bar-fill {
+  background: var(--girls);
+}
+
+/* ===== Картинки («Где логика?») ===== */
+
+.images-row {
+  display: flex;
+  justify-content: center;
+  gap: clamp(16px, 2.5vw, 40px);
+  flex-wrap: wrap;
+}
+
+.quiz-image {
+  width: clamp(160px, 22vw, 340px);
+  height: clamp(160px, 22vw, 340px);
+  background: var(--panel);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.quiz-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.quiz-image-emoji {
+  font-size: clamp(90px, 13vw, 200px);
+  line-height: 1;
+}
+
+/* ===== Чёрный ящик ===== */
+
+.blackbox-box {
+  width: clamp(220px, 30vw, 440px);
+  height: clamp(220px, 30vw, 440px);
+  background: #000;
+  border: 6px solid var(--panel-light);
+  border-radius: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+}
+
+.blackbox-open {
+  background: var(--panel);
+  border-color: var(--correct);
+}
+
+.blackbox-question {
+  font-size: clamp(90px, 12vw, 180px);
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.blackbox-answer {
+  font-size: clamp(30px, 3.6vw, 56px);
+  font-weight: 800;
+  padding: 16px;
+  text-align: center;
+}
+
+.hints {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(92vw, 1100px);
+}
+
+.hint {
+  background: var(--panel);
+  border-radius: 16px;
+  padding: 14px 28px;
+  font-size: clamp(22px, 2.4vw, 36px);
+  text-align: left;
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+}
+
+.hint-number {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 0.7em;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.winner-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.winner-pick-label {
+  font-size: clamp(22px, 2.4vw, 36px);
+  font-weight: 700;
+}
+
+.winner-pick-buttons {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ===== Ввод результатов ===== */
+
+.score-entry {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 3vh, 32px);
+}
+
+.score-entry-hint {
+  color: var(--muted);
+  font-size: clamp(18px, 1.8vw, 28px);
+}
+
+.score-entry-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 3vw, 48px);
+  background: var(--panel);
+  border-radius: 20px;
+  padding: 18px 36px;
+}
+
+.score-entry-boys .score-entry-team {
+  color: var(--boys);
+}
+
+.score-entry-girls .score-entry-team {
+  color: var(--girls);
+}
+
+.score-entry-team {
+  font-size: clamp(26px, 3vw, 44px);
+  font-weight: 800;
+  min-width: 5em;
+  text-align: left;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.stepper-btn {
+  width: 2.2em;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.stepper-value {
+  font-size: clamp(30px, 3.6vw, 56px);
+  font-weight: 800;
+  min-width: 2ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-entry-points {
+  color: var(--muted);
+  font-size: clamp(18px, 1.8vw, 28px);
+  min-width: 6em;
+  text-align: right;
+}
+
+/* ===== Интро тура ===== */
+
+.round-intro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: clamp(16px, 3vh, 32px);
+}
+
+.round-intro-title {
+  font-size: clamp(40px, 6vw, 90px);
+  color: var(--accent);
+}
+
+.round-intro-description {
+  font-size: clamp(24px, 2.8vw, 42px);
+  max-width: 1200px;
+}
+
+.round-intro-rules {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--muted);
+  font-size: clamp(18px, 1.9vw, 30px);
+}
+
+.round-intro-rules li::before {
+  content: '• ';
+  color: var(--accent);
+}
+
+/* ===== Таблица результатов ===== */
+
+.standings-table {
+  border-collapse: collapse;
+  font-size: clamp(20px, 2.2vw, 34px);
+  min-width: min(92vw, 1000px);
+}
+
+.standings-table th,
+.standings-table td {
+  padding: clamp(10px, 1.4vh, 18px) clamp(16px, 2vw, 36px);
+  border-bottom: 2px solid var(--panel-light);
+}
+
+.standings-table th {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75em;
+}
+
+.standings-table td:first-child {
+  text-align: left;
+}
+
+.standings-pending {
+  color: var(--muted);
+}
+
+.standings-total {
+  font-weight: 800;
+  font-size: 1.2em;
+  background: var(--panel);
+}
+
+.team-boys {
+  color: var(--boys);
+}
+
+.team-girls {
+  color: var(--girls);
+}
+
+.standings-leader {
+  font-size: clamp(24px, 2.8vw, 44px);
+  font-weight: 700;
+}
+
+/* ===== Финальный тур ===== */
+
+.final-live-score {
+  display: flex;
+  gap: clamp(28px, 4vw, 64px);
+  font-size: clamp(24px, 2.6vw, 40px);
+  font-weight: 800;
+}
+
+.bet-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 3vw, 48px);
+  background: var(--panel);
+  border-radius: 20px;
+  padding: 16px 32px;
+}
+
+.bet-team {
+  font-size: clamp(26px, 3vw, 44px);
+  font-weight: 800;
+  min-width: 5em;
+  text-align: left;
+}
+
+.bet-boys .bet-team {
+  color: var(--boys);
+}
+
+.bet-girls .bet-team {
+  color: var(--girls);
+}
+
+.bet-buttons {
+  display: flex;
+  gap: 14px;
+}
+
+.bet-btn {
+  width: 2.4em;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.bet-btn-active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.bets-summary {
+  font-size: clamp(20px, 2vw, 32px);
+  color: var(--muted);
+}
+
+/* ===== Итоговый экран и конфетти ===== */
+
+.final-screen {
+  position: relative;
+  overflow: hidden;
+}
+
+.final-title {
+  font-size: clamp(40px, 6vw, 96px);
+}
+
+.final-winner {
+  font-size: clamp(56px, 9vw, 140px);
+  font-weight: 900;
+  color: var(--accent);
+  text-shadow: 0 6px 32px rgba(255, 204, 51, 0.45);
+  animation: winner-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes winner-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -4%;
+  width: 14px;
+  height: 22px;
+  border-radius: 3px;
+  opacity: 0.9;
+  animation-name: confetti-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(110vh) rotate(720deg);
+  }
+}
