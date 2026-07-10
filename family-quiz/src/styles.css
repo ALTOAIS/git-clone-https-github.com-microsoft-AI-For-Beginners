@@ -130,6 +130,12 @@ body {
   gap: 10px;
 }
 
+.music-btn {
+  font-size: clamp(16px, 1.4vw, 22px);
+  padding: 10px 16px;
+  border-color: transparent;
+}
+
 /* Секундомер ведущего: незаметная иконка, время — только по клику */
 .stopwatch-btn {
   font-size: clamp(16px, 1.4vw, 22px);

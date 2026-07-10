@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { QuizData, TeamScores } from '../types';
+import { music } from '../audio/music';
 
 interface FinalResultsProps {
   quiz: QuizData;
@@ -14,6 +15,11 @@ const CONFETTI_COLORS = ['#ffcc33', '#ff5fa2', '#4da3ff', '#5ee08a', '#ff8c42', 
 export function FinalResults({ quiz, scores, roundResults, onNewGame }: FinalResultsProps) {
   const tie = scores.boys === scores.girls;
   const winner = scores.boys > scores.girls ? quiz.teams.boys : quiz.teams.girls;
+
+  // Фанфары победителю (если музыка включена)
+  useEffect(() => {
+    music.playFanfare();
+  }, []);
 
   const confetti = useMemo(
     () =>

@@ -5,6 +5,7 @@ import type { GameState, Round, TeamKey, TeamScores } from './types';
 import { Scoreboard } from './components/Scoreboard';
 import { FullscreenButton } from './components/FullscreenButton';
 import { HostStopwatch } from './components/HostStopwatch';
+import { MusicButton } from './components/MusicButton';
 import { HomeScreen } from './screens/HomeScreen';
 import { RoundIntro } from './screens/RoundIntro';
 import { Standings } from './screens/Standings';
@@ -101,6 +102,7 @@ export default function App() {
     return (
       <div className="app">
         <div className="top-bar top-bar-home">
+          <MusicButton />
           <FullscreenButton />
         </div>
         <HomeScreen
@@ -122,6 +124,7 @@ export default function App() {
         <span className="top-bar-round">{state.screen === 'final' ? 'Итоги игры' : round.title}</span>
         <Scoreboard teams={quiz.teams} scores={state.scores} />
         <div className="top-bar-tools">
+          <MusicButton />
           {state.startedAt != null && <HostStopwatch startedAt={state.startedAt} />}
           <FullscreenButton />
         </div>
