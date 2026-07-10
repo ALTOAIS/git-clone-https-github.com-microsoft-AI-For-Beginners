@@ -107,6 +107,7 @@ export function FinalRound({ round, teams, baseScores, onComplete }: FinalRoundP
         <>
           <h2 className="question-text">{question.text}</h2>
           <div className="answer-banner">Правильный ответ: {question.answer}</div>
+          {question.fact && <p className="question-fact">💡 {question.fact}</p>}
           <div className="winner-pick">
             <span className="winner-pick-label">Чей ответ ближе к правильному?</span>
             <div className="winner-pick-buttons">

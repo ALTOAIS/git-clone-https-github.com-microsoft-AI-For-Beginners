@@ -235,6 +235,20 @@ body {
   max-width: 1400px;
 }
 
+.question-category {
+  font-size: clamp(18px, 1.8vw, 28px);
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.question-fact {
+  font-size: clamp(18px, 1.9vw, 30px);
+  color: var(--muted);
+  max-width: 1200px;
+}
+
 .section-title {
   font-size: clamp(32px, 4vw, 60px);
   color: var(--accent);

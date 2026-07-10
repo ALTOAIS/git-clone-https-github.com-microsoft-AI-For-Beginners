@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { BlackBoxRound as BlackBoxRoundData, TeamKey, TeamScores } from '../types';
+import { pointsWord } from '../plural';
 
 interface BlackBoxRoundProps {
   round: BlackBoxRoundData;
@@ -67,7 +68,9 @@ export function BlackBoxRound({ round, teams, onComplete }: BlackBoxRoundProps) 
         )}
         {answerShown && (
           <div className="winner-pick">
-            <span className="winner-pick-label">Кто победил? (+{item.points} балла)</span>
+            <span className="winner-pick-label">
+              Кто победил? (+{item.points} {pointsWord(item.points)})
+            </span>
             <div className="winner-pick-buttons">
               <button className="btn btn-boys" onClick={() => pickWinner('boys')}>
                 {teams.boys}

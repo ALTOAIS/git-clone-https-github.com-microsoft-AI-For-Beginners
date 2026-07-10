@@ -52,6 +52,7 @@ export function LogicRound({ round, teams, onComplete }: LogicRoundProps) {
         ))}
       </div>
       {stage === 'reveal' && <div className="answer-banner">Правильный ответ: {question.answer}</div>}
+      {stage === 'reveal' && question.fact && <p className="question-fact">💡 {question.fact}</p>}
       {stage === 'ask' && <p className="open-question-hint">Запишите ответ на бумаге ✍️</p>}
       <div className="host-controls">
         <button className="btn btn-primary" onClick={next}>

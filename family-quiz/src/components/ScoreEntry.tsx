@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { TeamKey, TeamScores } from '../types';
+import { pointsWord } from '../plural';
 
 interface ScoreEntryProps {
   teams: Record<TeamKey, string>;
@@ -34,7 +35,7 @@ export function ScoreEntry({ teams, teamsToScore, maxCorrect, pointsPerCorrect, 
       <h2 className="section-title">Введите результаты</h2>
       <p className="score-entry-hint">
         Количество правильных ответов (максимум {maxCorrect}).
-        {pointsPerCorrect > 1 && ` Каждый правильный ответ — ${pointsPerCorrect} балла.`}
+        {pointsPerCorrect > 1 && ` Каждый правильный ответ — ${pointsPerCorrect} ${pointsWord(pointsPerCorrect)}.`}
       </p>
       {teamsToScore.map((team) => (
         <div key={team} className={`score-entry-row score-entry-${team}`}>
@@ -48,7 +49,9 @@ export function ScoreEntry({ teams, teamsToScore, maxCorrect, pointsPerCorrect, 
               +
             </button>
           </div>
-          <span className="score-entry-points">+{correct[team] * pointsPerCorrect} балл(ов)</span>
+          <span className="score-entry-points">
+            +{correct[team] * pointsPerCorrect} {pointsWord(correct[team] * pointsPerCorrect)}
+          </span>
         </div>
       ))}
       <button className="btn btn-primary" onClick={submit}>

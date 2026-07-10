@@ -39,6 +39,7 @@ export function QuestionBlock({ blockTitle, questions, timerSeconds, onDone }: Q
       <div className="question-counter">
         {stage === 'ask' ? 'Вопрос' : 'Ответ'} {index + 1} из {questions.length}
       </div>
+      {question.category && <div className="question-category">{question.category}</div>}
       <h2 className="question-text">{question.text}</h2>
 
       {question.options ? (
@@ -57,9 +58,13 @@ export function QuestionBlock({ blockTitle, questions, timerSeconds, onDone }: Q
         stage === 'ask' && <p className="open-question-hint">Запишите ответ на бумаге ✍️</p>
       )}
 
-      {stage === 'reveal' && !question.options && question.answer && (
-        <div className="answer-banner">Правильный ответ: {question.answer}</div>
+      {stage === 'reveal' && question.answer && (question.correctIndex === undefined || !question.options) && (
+        <div className="answer-banner">
+          {question.correctIndex === undefined && question.options ? question.answer : `Правильный ответ: ${question.answer}`}
+        </div>
       )}
+
+      {stage === 'reveal' && question.fact && <p className="question-fact">💡 {question.fact}</p>}
 
       {stage === 'ask' && timerSeconds && <Timer seconds={timerSeconds} resetKey={index} />}
 

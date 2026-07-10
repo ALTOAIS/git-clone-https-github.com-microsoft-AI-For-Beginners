@@ -11,9 +11,14 @@ export interface TeamScores {
  */
 export interface Question {
   text: string;
+  /** Короткая рубрика/заголовок вопроса («Кино», «Женская интуиция»…). */
+  category?: string;
   options?: string[];
+  /** Отсутствует у шуточных вопросов без правильного варианта — тогда показывается только answer. */
   correctIndex?: number;
   answer?: string;
+  /** Интересный факт — показывается вместе с правильным ответом. */
+  fact?: string;
 }
 
 export interface McqRound {
@@ -30,6 +35,7 @@ export interface ImagesQuestion {
   text?: string;
   images: string[];
   answer: string;
+  fact?: string;
 }
 
 export interface ImagesRound {
@@ -74,6 +80,7 @@ export interface BattleRound {
 export interface FinalQuestion {
   text: string;
   answer: string;
+  fact?: string;
 }
 
 export interface FinalRound {
