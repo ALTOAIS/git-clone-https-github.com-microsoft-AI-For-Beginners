@@ -74,8 +74,17 @@ All seeded users share the password `ChangeMe123!`:
 ## Repository layout
 
 ```
-backend/    NestJS REST API, Prisma schema/migrations, seed script
-frontend/   React + Ant Design single-page application
-docs/       Architecture documentation
+backend/       NestJS REST API, Prisma schema/migrations, seed script
+frontend/      React + Ant Design single-page application
+english-flow/  English Flow — Personal AI English Coach (standalone PWA, see its README)
+family-quiz/   Family Quiz Night TV app
+docs/          Architecture documentation
 docker-compose.yml
 ```
+
+## Other apps in this repository
+
+- **English Flow** (`english-flow/`) — персональный ИИ-тренер английского языка:
+  NestJS + Prisma + PostgreSQL API и React PWA (уроки, перевод, разговор с ИИ,
+  интервальное повторение, реестр ошибок). Запуск и документация: `english-flow/README.md`.
+- **Family Quiz Night** (`family-quiz/`) — ТВ-приложение для семейного квиза.

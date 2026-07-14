@@ -1,0 +1,56 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ef-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ef
+      POSTGRES_PASSWORD: ef_password
+      POSTGRES_DB: english_flow
+    ports:
+      - "5433:5432"
+    volumes:
+      - ef_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ef -d english_flow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: ef-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://ef:ef_password@postgres:5432/english_flow?schema=public
+      JWT_ACCESS_SECRET: change-me-access-secret
+      JWT_ACCESS_EXPIRES_IN: 30d
+      PORT: 3001
+      CORS_ORIGIN: http://localhost:8085
+      # Подключение реального ИИ (без него работает дев-фолбэк):
+      # AI_PROVIDER: anthropic | openai | anthropic-compatible
+      # AI_API_KEY: ...
+      # AI_MODEL: claude-sonnet-5 | gpt-4o-mini | ...
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+    ports:
+      - "3001:3001"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: ef-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8085:80"
+
+volumes:
+  ef_postgres_data:

@@ -1,0 +1,299 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CefrLevel {
+  A1
+  A1_PLUS
+  A2
+  A2_PLUS
+  B1
+  B1_PLUS
+  B2
+  C1
+}
+
+enum PhraseSource {
+  SEED
+  AI_LESSON
+  MANUAL
+  SPEAKING
+  UPLOADED_DOCUMENT
+  ERROR_CORRECTION
+  DIAGNOSTIC
+}
+
+enum UserPhraseStatus {
+  NEW
+  LEARNING
+  MASTERED
+  DIFFICULT
+}
+
+enum LessonSource {
+  SEED
+  AI_GENERATED
+  UPLOADED_DOCUMENT
+}
+
+enum LessonStatus {
+  DRAFT
+  READY
+  ARCHIVED
+}
+
+enum ErrorStatus {
+  NEW
+  PRACTICING
+  IMPROVING
+  RESOLVED
+  REPEATED
+}
+
+enum ErrorType {
+  ARTICLE
+  VERB_TENSE
+  VERB_FORM
+  WORD_ORDER
+  PREPOSITION
+  VOCABULARY
+  COLLOCATION
+  PRONUNCIATION
+  LITERAL_TRANSLATION
+  MISSING_WORD
+  UNNATURAL_PHRASE
+  OTHER
+}
+
+enum ProcessingStatus {
+  PENDING
+  READY
+  FAILED
+  DELETED
+}
+
+model User {
+  id                       String    @id @default(cuid())
+  email                    String    @unique
+  passwordHash             String
+  name                     String
+  nativeLanguage           String    @default("ru")
+  targetLanguage           String    @default("en")
+  timezone                 String    @default("Asia/Qyzylorda")
+  currentLevel             CefrLevel @default(A2)
+  dailyGoalMinutes         Int       @default(15)
+  goals                    String[]  @default([])
+  preferredTopics          String[]  @default([])
+  preferredLearningMethods String[]  @default([])
+  selfAssessment           Json?
+  reminderTime             String?
+  notificationSettings     Json?
+  onboardingCompleted      Boolean   @default(false)
+  streakDays               Int       @default(0)
+  lastStudyDate            DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  skillProfile      SkillProfile?
+  userPhrases       UserPhrase[]
+  lessons           Lesson[]
+  lessonAttempts    LessonAttempt[]
+  errorRecords      ErrorRecord[]
+  conversations     Conversation[]
+  reviewAttempts    ReviewAttempt[]
+  dailyPlans        DailyPlan[]
+  uploadedMaterials UploadedMaterial[]
+  voiceBenchmarks   VoiceBenchmark[]
+}
+
+model SkillProfile {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabulary     CefrLevel @default(A2)
+  grammar        CefrLevel @default(A2)
+  speaking       CefrLevel @default(A1)
+  listening      CefrLevel @default(A1)
+  reading        CefrLevel @default(A2)
+  writing        CefrLevel @default(A2)
+  strengths      String[]  @default([])
+  weaknesses     String[]  @default([])
+  summary        String?
+  lastAssessedAt DateTime  @default(now())
+}
+
+model Phrase {
+  id                 String       @id @default(cuid())
+  englishText        String
+  russianTranslation String
+  category           String       @default("everyday")
+  cefrLevel          CefrLevel    @default(A2)
+  exampleSentence    String?
+  pronunciationHint  String?
+  audioUrl           String?
+  source             PhraseSource @default(MANUAL)
+  tags               String[]     @default([])
+  createdAt          DateTime     @default(now())
+
+  userPhrases    UserPhrase[]
+  reviewAttempts ReviewAttempt[]
+
+  @@index([category])
+}
+
+model UserPhrase {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phraseId        String
+  phrase          Phrase           @relation(fields: [phraseId], references: [id], onDelete: Cascade)
+  masteryScore    Int              @default(0)
+  confidenceScore Int              @default(0)
+  reviewStage     Int              @default(0)
+  nextReviewAt    DateTime?
+  lastReviewedAt  DateTime?
+  correctCount    Int              @default(0)
+  incorrectCount  Int              @default(0)
+  personalExample String?
+  status          UserPhraseStatus @default(NEW)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([userId, phraseId])
+  @@index([userId, nextReviewAt])
+}
+
+model Lesson {
+  id              String       @id @default(cuid())
+  userId          String?
+  user            User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  topic           String
+  level           CefrLevel    @default(A2)
+  durationMinutes Int          @default(15)
+  objective       String?
+  dayNumber       Int?
+  contentJson     Json
+  source          LessonSource @default(SEED)
+  status          LessonStatus @default(READY)
+  aiGenerated     Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  attempts LessonAttempt[]
+}
+
+model LessonAttempt {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId        String
+  lesson          Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  score           Int?
+  speakingSeconds Int       @default(0)
+  errorsCount     Int       @default(0)
+  resultJson      Json?
+
+  @@index([userId, startedAt])
+}
+
+model ErrorRecord {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalText    String
+  correctedText   String
+  explanation     String
+  errorType       ErrorType   @default(OTHER)
+  source          String      @default("lesson")
+  personalExample String?
+  occurrenceCount Int         @default(1)
+  status          ErrorStatus @default(NEW)
+  nextPracticeAt  DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([userId, status])
+}
+
+model Conversation {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scenario        String
+  mode            String    @default("free")
+  level           CefrLevel @default(A2)
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  transcriptJson  Json      @default("[]")
+  feedbackJson    Json?
+  speakingSeconds Int       @default(0)
+  userTurns       Int       @default(0)
+
+  @@index([userId, startedAt])
+}
+
+model ReviewAttempt {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phraseId       String
+  phrase         Phrase   @relation(fields: [phraseId], references: [id], onDelete: Cascade)
+  taskType       String
+  answer         String?
+  correct        Boolean
+  confidence     Int      @default(2)
+  responseTimeMs Int?
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model DailyPlan {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date              String
+  plannedMinutes    Int       @default(15)
+  tasksJson         Json
+  completionPercent Int       @default(0)
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([userId, date])
+}
+
+model UploadedMaterial {
+  id               String           @id @default(cuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename         String
+  fileType         String
+  extractedText    String?
+  processingStatus ProcessingStatus @default(PENDING)
+  createdAt        DateTime         @default(now())
+  deletedAt        DateTime?
+}
+
+model VoiceBenchmark {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month         String
+  prompt        String
+  transcript    String
+  wordCount     Int      @default(0)
+  durationSec   Int      @default(0)
+  audioDataUrl  String?
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, month])
+}
