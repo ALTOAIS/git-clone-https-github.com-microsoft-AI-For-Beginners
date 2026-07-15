@@ -135,9 +135,25 @@ DATABASE_URL=... npx prisma migrate deploy && node dist-seed/prisma/seed.js && n
 cd frontend && npm ci && VITE_API_URL=https://api.example.com/api npm run build   # → dist/
 ```
 
-Для Render можно повторить схему из корневого `render.yaml` (компоненты `crh-*`),
-добавив сервисы с `rootDir: english-flow/backend` (docker) и
-`english-flow/frontend` (static, rewrite `/* → /index.html`).
+### Render (Blueprint)
+
+English Flow разворачивается отдельным Blueprint — файл **`english-flow/render.yaml`**
+(корневой `render.yaml` относится к Compliance Risk Hub и этим не затрагивается).
+Blueprint создаёт три изолированных ресурса:
+
+- `english-flow-db` — отдельная PostgreSQL (не связана с базой CRH);
+- `english-flow-api` — backend (Docker, NestJS), health check `/api/health`,
+  `JWT_ACCESS_SECRET` генерируется Render'ом, `AI_PROVIDER=mock` (дев-фолбэк
+  до подключения реального ключа);
+- `english-flow` — frontend (static, Vite/PWA, SPA-rewrite `/* → /index.html`).
+
+Порядок: Render Dashboard → **New +** → **Blueprint** → выбрать репозиторий и ветку
+`claude/english-flow-mvp-edrtv0`, указать файл `english-flow/render.yaml` → **Apply**.
+После деплоя бэкенда пропишите его URL в `VITE_API_URL` фронтенда (Manual Deploy),
+а URL фронтенда — в `CORS_ORIGIN` бэкенда.
+
+> Render допускает одну бесплатную Postgres на воркспейс. Если бесплатный слот
+> уже занят базой CRH, смените план `english-flow-db` на платный перед Apply.
 
 ## Установка как PWA (Android)
 

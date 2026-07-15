@@ -1,0 +1,72 @@
+# ------------------------------------------------------------------
+# English Flow — Personal AI English Coach
+# Отдельный Render Blueprint. НИКАК не связан с Compliance Risk Hub:
+# другая база, другие сервисы, другие имена. Корневой render.yaml (CRH)
+# этим файлом не затрагивается.
+#
+# Примечание по Render: rootDir указывается ОТНОСИТЕЛЬНО КОРНЯ репозитория,
+# независимо от того, где лежит сам render.yaml.
+# ------------------------------------------------------------------
+
+databases:
+  # Изолированная база только для English Flow (не CRH).
+  # ВНИМАНИЕ: Render допускает одну бесплатную Postgres на воркспейс.
+  # Если бесплатный слот уже занят базой CRH (crh-postgres), смените план
+  # english-flow-db на платный (например, basic-256mb) перед Apply.
+  - name: english-flow-db
+    databaseName: english_flow
+    plan: free
+
+services:
+  # -------------------- Backend (NestJS + Prisma) --------------------
+  - type: web
+    name: english-flow-api
+    runtime: docker
+    rootDir: english-flow/backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: english-flow-db
+          property: connectionString
+      # JWT-секрет генерируется Render'ом и нигде не хранится в репозитории.
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 30d
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      # Реальный ИИ-провайдер подключается позже через дашборд
+      # (AI_PROVIDER, AI_API_KEY, AI_MODEL). Без ключа работает
+      # детерминированный дев-фолбэк — приложение полностью функционально.
+      - key: AI_PROVIDER
+        value: mock
+      # После деплоя фронтенда замените "*" на его точный URL
+      # (https://english-flow.onrender.com), чтобы ограничить CORS.
+      - key: CORS_ORIGIN
+        value: "*"
+
+  # -------------------- Frontend (React + Vite + PWA) --------------------
+  - type: web
+    name: english-flow
+    runtime: static
+    rootDir: english-flow/frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      # Vite подставляет это значение на этапе сборки. После первого деплоя
+      # бэкенда замените на его точный URL + /api и сделайте Manual Deploy.
+      - key: VITE_API_URL
+        value: https://english-flow-api.onrender.com/api
+    # SPA-rewrite для React Router: все пути отдают index.html.
+    # Service worker и manifest (dist/sw.js, dist/manifest.webmanifest)
+    # это правило не ломает — они отдаются как статические файлы напрямую.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
