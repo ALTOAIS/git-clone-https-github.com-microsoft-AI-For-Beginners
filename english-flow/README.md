@@ -62,6 +62,38 @@ english-flow/
 Распознавание и синтез речи выполняются в браузере (Web Speech API) —
 ключи для этого не нужны; серверные STT/TTS-адаптеры можно добавить в слой ИИ позже.
 
+### Проверка статуса ИИ через health endpoint
+
+`GET /api/health` проверяет БД и возвращает режим работы ИИ **без раскрытия
+секретов** (не выводятся API-ключ, base URL, provider, model, тексты ошибок).
+`ai.configured=true` только когда одновременно заданы корректный `AI_PROVIDER`
+(`openai`|`anthropic`|`anthropic-compatible`), `AI_API_KEY` и `AI_MODEL`.
+
+Реальный ИИ подключён:
+
+```json
+{
+  "status": "ok",
+  "service": "english-flow-api",
+  "time": "2026-07-14T05:41:22.880Z",
+  "ai": { "configured": true, "mode": "llm" }
+}
+```
+
+Дев-фолбэк (переменные ИИ не заданы или заданы не полностью):
+
+```json
+{
+  "status": "ok",
+  "service": "english-flow-api",
+  "time": "2026-07-14T05:41:22.880Z",
+  "ai": { "configured": false, "mode": "fallback" }
+}
+```
+
+Provider и model в публичный ответ намеренно не попадают — их видно только
+в серверных логах при старте (`LlmClient`).
+
 ## Переменные окружения (backend/.env)
 
 | Переменная | Обязательна | Описание |
