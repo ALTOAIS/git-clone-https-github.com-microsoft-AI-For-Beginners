@@ -6,6 +6,7 @@ import {
   ExtractedPhrasesResult,
   GeneratedLesson,
   OpenTasksEvaluation,
+  ReviewAnswerEvaluation,
   SentenceEvaluation,
   SimplifiedTextResult,
   SpeakingFeedback,
@@ -69,6 +70,43 @@ export function evaluateTranslationFallback(
           : verdict === 'unnatural'
             ? 'Понятно, но звучит неестественно. Сравните с эталонным вариантом.'
             : 'Ответ не совпал с эталоном. Изучите правильный вариант.',
+    errors: [],
+  };
+}
+
+/**
+ * Дев-фолбэк оценки ответа в повторении: 5 уровней по совпадению токенов.
+ * Без реального ИИ конкретные грамматические ошибки не выделяются —
+ * даём безопасный вердикт и сравнение с эталоном.
+ */
+export function evaluateReviewAnswerFallback(
+  expected: string,
+  acceptable: string[],
+  userAnswer: string,
+): ReviewAnswerEvaluation {
+  const variants = [expected, ...acceptable];
+  const normalizedUser = normalizeEn(userAnswer);
+  const exact = variants.some((v) => normalizeEn(v) === normalizedUser);
+  const bestOverlap = Math.max(
+    ...variants.map((v) => tokenOverlap(v, userAnswer)),
+  );
+
+  let verdict: ReviewAnswerEvaluation['verdict'];
+  if (exact) verdict = 'correct';
+  else if (bestOverlap >= 0.8) verdict = 'minor_error';
+  else if (bestOverlap >= 0.55) verdict = 'unnatural';
+  else if (bestOverlap >= 0.3) verdict = 'significant_error';
+  else verdict = 'wrong';
+
+  const accepted = verdict === 'correct' || verdict === 'minor_error';
+  return {
+    aiMode: 'fallback',
+    verdict,
+    accepted,
+    corrected: expected,
+    natural: expected,
+    rule: 'Дев-режим ИИ: подробный разбор правила доступен при подключённом ИИ-провайдере. Сравните свой ответ с эталоном.',
+    examples: acceptable.slice(0, 2),
     errors: [],
   };
 }

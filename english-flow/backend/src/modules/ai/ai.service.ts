@@ -11,6 +11,7 @@ import {
   ExtractedPhrasesResult,
   GeneratedLesson,
   OpenTasksEvaluation,
+  ReviewAnswerEvaluation,
   SentenceEvaluation,
   SimplifiedTextResult,
   SpeakingFeedback,
@@ -20,6 +21,7 @@ import {
 import {
   classifyErrorFallback,
   evaluateOpenTasksFallback,
+  evaluateReviewAnswerFallback,
   evaluateSentenceFallback,
   evaluateTranslationFallback,
   extractPhrasesFallback,
@@ -36,6 +38,7 @@ import {
   GRAMMAR_CORRECTOR_PROMPT,
   LESSON_GENERATOR_PROMPT,
   PHRASE_EXTRACTOR_PROMPT,
+  REVIEW_EVALUATOR_PROMPT,
   PLAN_GENERATOR_PROMPT,
   SPEAKING_FEEDBACK_PROMPT,
   SPEAKING_PARTNER_PROMPT,
@@ -155,6 +158,63 @@ ${input.acceptable?.length ? `Допустимые варианты: ${input.acc
       () =>
         evaluateTranslationFallback(
           input.expected,
+          input.acceptable ?? [],
+          input.userAnswer,
+        ),
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // 2b. Оценщик ответов в повторении (5 уровней + правило + примеры)
+  // ------------------------------------------------------------------
+  evaluateReviewAnswer(input: {
+    taskType: string;
+    targetEnglish: string;
+    russian: string;
+    acceptable?: string[];
+    userAnswer: string;
+    level: string;
+  }): Promise<ReviewAnswerEvaluation> {
+    const VALID: ReviewAnswerEvaluation['verdict'][] = [
+      'correct',
+      'minor_error',
+      'unnatural',
+      'significant_error',
+      'wrong',
+    ];
+    return this.withFallback<ReviewAnswerEvaluation>(
+      'evaluateReviewAnswer',
+      async () => {
+        const raw = await this.llm.chatJson<ReviewAnswerEvaluation>(
+          REVIEW_EVALUATOR_PROMPT,
+          `Тип задания: ${input.taskType}
+Целевая фраза (эталон, английский): ${input.targetEnglish}
+Русский смысл: ${input.russian}
+${input.acceptable?.length ? `Допустимые варианты: ${input.acceptable.join(' | ')}` : ''}
+Уровень ученика: ${input.level}
+Ответ ученика: ${input.userAnswer}`,
+        );
+        if (!VALID.includes(raw.verdict)) {
+          throw new Error('LLM вернул неизвестный verdict');
+        }
+        const accepted =
+          raw.verdict === 'correct' || raw.verdict === 'minor_error';
+        return {
+          aiMode: 'llm' as AiMode,
+          verdict: raw.verdict,
+          accepted,
+          corrected: raw.corrected || input.targetEnglish,
+          natural: raw.natural || raw.corrected || input.targetEnglish,
+          rule: raw.rule || '',
+          examples: Array.isArray(raw.examples)
+            ? raw.examples.filter((e) => typeof e === 'string').slice(0, 2)
+            : [],
+          errors: this.sanitizeErrors(raw.errors),
+        };
+      },
+      () =>
+        evaluateReviewAnswerFallback(
+          input.targetEnglish,
           input.acceptable ?? [],
           input.userAnswer,
         ),

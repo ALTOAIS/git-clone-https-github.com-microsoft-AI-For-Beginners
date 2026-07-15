@@ -50,6 +50,27 @@ export interface SentenceEvaluation extends AiMeta {
   errors: DetectedError[];
 }
 
+/** Пять уровней качества ответа в повторении (раздел «интеллектуальная проверка»). */
+export type ReviewVerdict =
+  | 'correct' // полностью правильный
+  | 'minor_error' // правильный смысл, небольшая грамматическая ошибка
+  | 'unnatural' // понятный, но неестественный
+  | 'significant_error' // существенная ошибка
+  | 'wrong'; // полностью неправильный
+
+export interface ReviewAnswerEvaluation extends AiMeta {
+  verdict: ReviewVerdict;
+  /** Считается ли ответ «зачётным» для продвижения по SRS */
+  accepted: boolean;
+  corrected: string;
+  natural: string;
+  /** Короткое объяснение правила на русском */
+  rule: string;
+  /** 1–2 дополнительных примера на английском */
+  examples: string[];
+  errors: DetectedError[];
+}
+
 export interface SpeakingTurnResult extends AiMeta {
   reply: string;
   hintRu?: string;
