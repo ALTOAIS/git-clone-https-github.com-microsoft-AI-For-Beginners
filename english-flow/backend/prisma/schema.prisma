@@ -109,6 +109,7 @@ model User {
   dailyPlans        DailyPlan[]
   uploadedMaterials UploadedMaterial[]
   voiceBenchmarks   VoiceBenchmark[]
+  voiceAnswers      VoiceAnswer[]
 }
 
 model SkillProfile {
@@ -281,6 +282,28 @@ model UploadedMaterial {
   processingStatus ProcessingStatus @default(PENDING)
   createdAt        DateTime         @default(now())
   deletedAt        DateTime?
+}
+
+/// Голосовой (или устный) ответ ученика с ИИ-разбором.
+/// Аудио НЕ хранится — только распознанный текст и результат оценки.
+model VoiceAnswer {
+  id                      String   @id @default(cuid())
+  userId                  String
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceModule            String // review | speaking | lesson
+  prompt                  String // что нужно было сказать (RU/EN)
+  targetEnglish           String? // эталон, если есть
+  transcript              String // что распознала система
+  corrected               String? // исправленный вариант
+  feedbackJson            Json? // ReviewAnswerEvaluation
+  verdict                 String? // correct | minor_error | unnatural | significant_error | wrong
+  durationSec             Int      @default(0)
+  errorRecordIds          String[] @default([]) // связанные ErrorRecord
+  repeatedAfterCorrection Boolean  @default(false)
+  secondImproved          Boolean? // улучшился ли повторный ответ
+  createdAt               DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model VoiceBenchmark {

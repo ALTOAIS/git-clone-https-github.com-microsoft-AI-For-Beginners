@@ -108,6 +108,29 @@ export class EvaluateTranslationDto {
   source?: string;
 }
 
+export class ReviewEvaluateDto {
+  @IsString()
+  @IsNotEmpty()
+  phraseId: string;
+
+  @IsIn(['translation', 'sentence', 'voice'])
+  taskType: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(1000)
+  userAnswer: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  durationSec?: number;
+
+  @IsOptional()
+  @IsString()
+  retryOfVoiceAnswerId?: string;
+}
+
 export class ReviewAttemptDto {
   @IsString()
   @IsNotEmpty()

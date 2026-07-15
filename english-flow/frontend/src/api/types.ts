@@ -91,6 +91,28 @@ export interface ReviewTask {
 export interface ReviewQueue {
   tasks: ReviewTask[];
   dueTotal: number;
+  sessionSize: number;
+  estimatedMinutes: number;
+}
+
+export type ReviewVerdict =
+  | 'correct'
+  | 'minor_error'
+  | 'unnatural'
+  | 'significant_error'
+  | 'wrong';
+
+export interface ReviewAnswerEvaluation {
+  aiMode: AiMode;
+  aiError?: string;
+  verdict: ReviewVerdict;
+  accepted: boolean;
+  corrected: string;
+  natural: string;
+  rule: string;
+  examples: string[];
+  errors: DetectedError[];
+  voiceAnswerId?: string;
 }
 
 export interface PlanTask {
