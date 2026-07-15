@@ -139,21 +139,29 @@ cd frontend && npm ci && VITE_API_URL=https://api.example.com/api npm run build 
 
 English Flow разворачивается отдельным Blueprint — файл **`english-flow/render.yaml`**
 (корневой `render.yaml` относится к Compliance Risk Hub и этим не затрагивается).
-Blueprint создаёт три изолированных ресурса:
+Blueprint создаёт два сервиса; база данных в Render НЕ создаётся:
 
-- `english-flow-db` — отдельная PostgreSQL (не связана с базой CRH);
 - `english-flow-api` — backend (Docker, NestJS), health check `/api/health`,
   `JWT_ACCESS_SECRET` генерируется Render'ом, `AI_PROVIDER=mock` (дев-фолбэк
   до подключения реального ключа);
 - `english-flow` — frontend (static, Vite/PWA, SPA-rewrite `/* → /index.html`).
 
-Порядок: Render Dashboard → **New +** → **Blueprint** → выбрать репозиторий и ветку
-`claude/english-flow-mvp-edrtv0`, указать файл `english-flow/render.yaml` → **Apply**.
-После деплоя бэкенда пропишите его URL в `VITE_API_URL` фронтенда (Manual Deploy),
-а URL фронтенда — в `CORS_ORIGIN` бэкенда.
+**База данных — внешняя PostgreSQL.** Бесплатный слот Postgres в Render занят
+базой CRH, поэтому создайте изолированную базу у внешнего провайдера
+(Neon / Supabase / Railway — у всех есть бесплатный тариф) и возьмите строку
+подключения вида `postgresql://USER:PASSWORD@HOST/DBNAME?sslmode=require`.
 
-> Render допускает одну бесплатную Postgres на воркспейс. Если бесплатный слот
-> уже занят базой CRH, смените план `english-flow-db` на платный перед Apply.
+Порядок:
+
+1. Создайте базу у внешнего провайдера, скопируйте connection string.
+2. Render Dashboard → **New +** → **Blueprint** → выбрать репозиторий и ветку
+   `claude/english-flow-mvp-edrtv0`, файл `english-flow/render.yaml` → **Apply**.
+3. Render запросит значение `DATABASE_URL` (в blueprint оно помечено
+   `sync: false` и в репозитории не хранится) — вставьте строку подключения.
+   Миграции и сиды применятся автоматически при старте контейнера.
+4. После деплоя бэкенда пропишите его URL в `VITE_API_URL` фронтенда
+   (Manual Deploy — Vite читает переменную на этапе сборки).
+5. URL фронтенда пропишите в `CORS_ORIGIN` бэкенда вместо `*`.
 
 ## Установка как PWA (Android)
 
