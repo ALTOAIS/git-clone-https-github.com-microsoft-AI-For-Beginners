@@ -10,6 +10,9 @@ import {
   ErrorTypeString,
   ExtractedPhrasesResult,
   GeneratedLesson,
+  GeneratedMicroLesson,
+  MicroCategoryString,
+  MicroLessonExercise,
   OpenTasksEvaluation,
   ReviewAnswerEvaluation,
   SentenceEvaluation,
@@ -26,6 +29,7 @@ import {
   evaluateTranslationFallback,
   extractPhrasesFallback,
   generateLessonFallback,
+  generateMicroLessonFallback,
   simplifyTextFallback,
   speakingFeedbackFallback,
   speakingTurnFallback,
@@ -37,6 +41,7 @@ import {
   ERROR_CLASSIFIER_PROMPT,
   GRAMMAR_CORRECTOR_PROMPT,
   LESSON_GENERATOR_PROMPT,
+  MICRO_LESSON_GENERATOR_PROMPT,
   PHRASE_EXTRACTOR_PROMPT,
   REVIEW_EVALUATOR_PROMPT,
   PLAN_GENERATOR_PROMPT,
@@ -543,5 +548,74 @@ ${input.text.slice(0, 16000)}
         suggestedTopics: ['Рассказ о себе', 'Моя работа', 'Комплаенс-риски'],
       }),
     );
+  }
+
+  // ------------------------------------------------------------------
+  // 11. Генератор адаптивных микро-уроков по реальным ошибкам ученика
+  // ------------------------------------------------------------------
+  generateMicroLesson(input: {
+    category: MicroCategoryString;
+    level: string;
+    userExamples: { original: string; corrected: string }[];
+  }): Promise<GeneratedMicroLesson> {
+    return this.withFallback<GeneratedMicroLesson>(
+      'generateMicroLesson',
+      async () => {
+        const raw = await this.llm.chatJson<{
+          ruleExplanation: string;
+          additionalExamples: string[];
+          exercises: unknown;
+        }>(
+          MICRO_LESSON_GENERATOR_PROMPT,
+          `Категория ошибки: ${input.category}
+Уровень ученика: ${input.level}
+Реальные ошибки ученика (что сказал -> как правильно):
+${input.userExamples.map((e, i) => `${i + 1}. "${e.original}" -> "${e.corrected}"`).join('\n')}`,
+        );
+        if (!raw.ruleExplanation) {
+          throw new Error('LLM не вернул объяснение правила');
+        }
+        const exercises = this.sanitizeMicroExercises(raw.exercises);
+        if (exercises.length === 0) {
+          throw new Error('LLM не вернул упражнения');
+        }
+        return {
+          aiMode: 'llm' as AiMode,
+          content: {
+            ruleExplanation: raw.ruleExplanation,
+            additionalExamples: Array.isArray(raw.additionalExamples)
+              ? raw.additionalExamples
+                  .filter((e) => typeof e === 'string')
+                  .slice(0, 3)
+              : [],
+            exercises,
+          },
+        };
+      },
+      () => generateMicroLessonFallback(input.category, input.userExamples),
+    );
+  }
+
+  private sanitizeMicroExercises(value: unknown): MicroLessonExercise[] {
+    if (!Array.isArray(value)) return [];
+    const VALID_TYPES = ['fill_blank', 'correct_sentence', 'choice'];
+    return value
+      .filter(
+        (e) =>
+          e &&
+          typeof e.prompt === 'string' &&
+          typeof e.answer === 'string' &&
+          VALID_TYPES.includes(e.type),
+      )
+      .map((e, i) => ({
+        id: typeof e.id === 'string' ? e.id : `ex${i + 1}`,
+        type: e.type,
+        prompt: e.prompt,
+        options: Array.isArray(e.options)
+          ? e.options.filter((o: unknown) => typeof o === 'string')
+          : undefined,
+        answer: e.answer,
+      }))
+      .slice(0, 6);
   }
 }

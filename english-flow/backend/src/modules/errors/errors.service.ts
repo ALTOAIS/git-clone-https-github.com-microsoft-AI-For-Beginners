@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { DetectedError } from '../ai/ai.types';
 import { normalizeEn } from '../ai/fallbacks';
+import { classifyMicroCategory } from './micro-category.classifier';
 
 @Injectable()
 export class ErrorsService {
@@ -51,6 +52,10 @@ export class ErrorsService {
           },
         },
       });
+      const microCategory = classifyMicroCategory(
+        error.original.trim(),
+        error.corrected.trim(),
+      );
       if (existing) {
         results.push(
           await this.prisma.errorRecord.update({
@@ -60,6 +65,8 @@ export class ErrorsService {
               status:
                 existing.status === 'RESOLVED' ? 'REPEATED' : existing.status,
               nextPracticeAt: new Date(),
+              lastOccurrenceAt: new Date(),
+              microCategory: microCategory ?? existing.microCategory,
             },
           }),
         );
@@ -72,9 +79,11 @@ export class ErrorsService {
               correctedText: error.corrected.trim(),
               explanation: error.explanation || '',
               errorType: error.errorType ?? 'OTHER',
+              microCategory: microCategory ?? undefined,
               source,
               personalExample,
               nextPracticeAt: new Date(),
+              lastOccurrenceAt: new Date(),
             },
           }),
         );

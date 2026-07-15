@@ -12,6 +12,7 @@ import {
   PageTitle,
   Spinner,
 } from '../components/ui';
+import MicroLessonBanner from '../components/MicroLessonBanner';
 
 const STATUS_TONES: Record<string, 'slate' | 'blue' | 'green' | 'amber' | 'red'> = {
   NEW: 'red',
@@ -48,6 +49,8 @@ export default function ErrorsPage() {
       >
         {t('errors.title')}
       </PageTitle>
+
+      <MicroLessonBanner />
 
       <div className="flex flex-wrap gap-2">
         <select

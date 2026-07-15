@@ -97,4 +97,78 @@ describe('ErrorsService.recordErrors — дедупликация и объед�
     );
     expect(store).toHaveLength(2);
   });
+
+  it('присваивает microCategory и lastOccurrenceAt новой записи', async () => {
+    const store: any[] = [];
+    const prisma = {
+      errorRecord: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockImplementation(({ data }) => {
+          const rec = { id: `e${store.length + 1}`, occurrenceCount: 1, ...data };
+          store.push(rec);
+          return Promise.resolve(rec);
+        }),
+        update: jest.fn(),
+      },
+    } as unknown as PrismaService;
+
+    const service = new ErrorsService(prisma);
+    await service.recordErrors(
+      'u1',
+      [
+        {
+          original: 'He work here.',
+          corrected: 'He works here.',
+          explanation: '3-е лицо',
+          errorType: 'VERB_FORM' as const,
+        },
+      ],
+      'review',
+    );
+    expect(store[0].microCategory).toBe('THIRD_PERSON_SINGULAR');
+    expect(store[0].lastOccurrenceAt).toBeInstanceOf(Date);
+  });
+
+  it('обновляет lastOccurrenceAt при повторной ошибке', async () => {
+    const oldDate = new Date(Date.now() - 5 * 24 * 3600 * 1000);
+    const store: any[] = [
+      {
+        id: 'e1',
+        correctedText: 'He works here.',
+        occurrenceCount: 1,
+        status: 'NEW',
+        microCategory: 'THIRD_PERSON_SINGULAR',
+        lastOccurrenceAt: oldDate,
+      },
+    ];
+    const prisma = {
+      errorRecord: {
+        findFirst: jest.fn().mockImplementation(() => Promise.resolve(store[0])),
+        create: jest.fn(),
+        update: jest.fn().mockImplementation(({ data }) => {
+          Object.assign(store[0], {
+            occurrenceCount: store[0].occurrenceCount + (data.occurrenceCount?.increment ?? 0),
+            lastOccurrenceAt: data.lastOccurrenceAt,
+          });
+          return Promise.resolve(store[0]);
+        }),
+      },
+    } as unknown as PrismaService;
+
+    const service = new ErrorsService(prisma);
+    await service.recordErrors(
+      'u1',
+      [
+        {
+          original: 'He work here.',
+          corrected: 'He works here.',
+          explanation: '',
+          errorType: 'VERB_FORM' as const,
+        },
+      ],
+      'review',
+    );
+    expect(store[0].occurrenceCount).toBe(2);
+    expect(store[0].lastOccurrenceAt.getTime()).toBeGreaterThan(oldDate.getTime());
+  });
 });

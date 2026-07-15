@@ -5,6 +5,9 @@ import {
   ErrorClassification,
   ExtractedPhrasesResult,
   GeneratedLesson,
+  GeneratedMicroLesson,
+  MicroCategoryString,
+  MicroLessonExercise,
   OpenTasksEvaluation,
   ReviewAnswerEvaluation,
   SentenceEvaluation,
@@ -395,6 +398,236 @@ export function classifyErrorFallback(
     errorType,
     explanation:
       'Тип ошибки определён автоматически в дев-режиме. Подключите ИИ-провайдера для точной классификации.',
+  };
+}
+
+const MICRO_LESSON_RULES: Record<MicroCategoryString, string> = {
+  ARTICLES:
+    'Артикль почти всегда обязателен перед исчисляемым существительным в единственном числе. "A/an" используется, когда речь о чём-то одном из многих ("a document"), "the" — когда собеседник понимает, о каком именно предмете речь ("the document we discussed"). Перед неисчисляемыми существительными и множественным числом без конкретики артикль обычно не нужен.',
+  THIRD_PERSON_SINGULAR:
+    'В Present Simple к глаголу добавляется -s (или -es), если подлежащее — he, she, it или существительное в единственном числе ("he works", "the company complies"). Это единственное время, где форма глагола меняется в зависимости от лица — легко забыть по привычке из русского языка.',
+  PRESENT_SIMPLE:
+    'Present Simple используется для фактов, привычек и регулярных действий ("I check reports every day"). Важно согласование подлежащего и глагола: I/you/we/they + базовая форма, he/she/it + форма с -s.',
+  PRESENT_PERFECT:
+    'Present Perfect (have/has + причастие прошедшего времени) используется, когда действие в прошлом связано с настоящим моментом — результат важен сейчас ("I have finished the report"), либо для опыта без указания точного времени. Если указано точное время в прошлом (yesterday, last week), используется Past Simple, а не Present Perfect.',
+  PAST_SIMPLE:
+    'Past Simple используется для завершённых действий в конкретный момент в прошлом ("I reviewed the contract yesterday"). Правильные глаголы получают окончание -ed, неправильные меняют форму (go → went).',
+  PREPOSITIONS:
+    'Выбор предлога в английском часто не переводится дословно с русского и запоминается вместе с фразой: "responsible for", "comply with", "depend on", "in accordance with". Лучше запоминать не отдельный предлог, а всю устойчивую связку.',
+  WORD_ORDER:
+    'В английском предложении обычно фиксированный порядок: подлежащее → сказуемое → дополнение. Обстоятельства времени и места чаще ставятся в конец предложения, а не в начало, как часто бывает в русском.',
+  COMPLY_VS_COMPLIANCE:
+    '"Comply" — это глагол ("to comply with the law"), а "compliance" — существительное ("compliance with the law"). "Compliant" — прилагательное ("the company is compliant"). Их легко перепутать, потому что по-русски это часто одно и то же слово.',
+  MAKE_VS_DO:
+    '"Make" обычно используется, когда что-то создаётся или производится ("make a decision", "make a mistake", "make a report"), а "do" — для выполнения действий и задач в целом ("do business", "do a task"). Такие сочетания чаще всего просто запоминаются целиком.',
+  COUNTABLE_VS_UNCOUNTABLE:
+    'Некоторые существительные в английском не имеют множественного числа, даже если похожее русское слово его имеет: information, advice, evidence, research, equipment. К ним не добавляется -s, и вместо "many" используется "much" или "a lot of".',
+  COLLOCATIONS:
+    'Некоторые сочетания слов в английском устойчивы и не переводятся дословно — их нужно запоминать целиком, а не собирать по отдельным словам (например: "conduct an investigation", а не "make an investigation").',
+  COMPLIANCE_VOCABULARY:
+    'Профессиональная комплаенс-лексика (regulator, breach, disclosure, whistleblower, due diligence) имеет точные значения, важные для точной рабочей коммуникации.',
+};
+
+const MICRO_LESSON_GENERIC_EXERCISES: Record<
+  MicroCategoryString,
+  {
+    fillBlank: { prompt: string; answer: string };
+    choice: { prompt: string; options: string[]; answer: string };
+  }
+> = {
+  ARTICLES: {
+    fillBlank: {
+      prompt: 'The company must comply with ___ new regulation.',
+      answer: 'the',
+    },
+    choice: {
+      prompt: 'She is ___ compliance officer.',
+      options: ['a', 'an', 'the'],
+      answer: 'a',
+    },
+  },
+  THIRD_PERSON_SINGULAR: {
+    fillBlank: {
+      prompt: 'The manager usually ___ (check) reports on Monday.',
+      answer: 'checks',
+    },
+    choice: {
+      prompt: 'Choose the correct verb: "The department ___ this policy."',
+      options: ['follow', 'follows', 'following'],
+      answer: 'follows',
+    },
+  },
+  PRESENT_SIMPLE: {
+    fillBlank: {
+      prompt: 'We ___ (review) every contract before signing.',
+      answer: 'review',
+    },
+    choice: {
+      prompt: 'Choose the correct sentence.',
+      options: [
+        'He work in compliance.',
+        'He works in compliance.',
+        'He working in compliance.',
+      ],
+      answer: 'He works in compliance.',
+    },
+  },
+  PRESENT_PERFECT: {
+    fillBlank: {
+      prompt: 'I ___ (already / finish) the risk assessment.',
+      answer: 'have already finished',
+    },
+    choice: {
+      prompt: 'Choose the correct sentence.',
+      options: [
+        'I have seen this policy yesterday.',
+        'I saw this policy yesterday.',
+        'I have see this policy yesterday.',
+      ],
+      answer: 'I saw this policy yesterday.',
+    },
+  },
+  PAST_SIMPLE: {
+    fillBlank: {
+      prompt: 'We ___ (submit) the report last week.',
+      answer: 'submitted',
+    },
+    choice: {
+      prompt: 'Choose the correct past form of "go".',
+      options: ['goed', 'went', 'gone'],
+      answer: 'went',
+    },
+  },
+  PREPOSITIONS: {
+    fillBlank: {
+      prompt: 'The company must comply ___ the regulation.',
+      answer: 'with',
+    },
+    choice: {
+      prompt:
+        'Choose the correct preposition: "She is responsible ___ this project."',
+      options: ['for', 'of', 'at'],
+      answer: 'for',
+    },
+  },
+  WORD_ORDER: {
+    fillBlank: {
+      prompt:
+        'Rewrite in correct order: "yesterday / the report / I / finished"',
+      answer: 'I finished the report yesterday',
+    },
+    choice: {
+      prompt: 'Choose the correctly ordered sentence.',
+      options: [
+        'Always I check the documents.',
+        'I always check the documents.',
+        'I check always the documents.',
+      ],
+      answer: 'I always check the documents.',
+    },
+  },
+  COMPLY_VS_COMPLIANCE: {
+    fillBlank: {
+      prompt: 'The company must ___ (comply/compliance) with the law.',
+      answer: 'comply',
+    },
+    choice: {
+      prompt:
+        'Choose the correct word: "This department is responsible for ___."',
+      options: ['comply', 'compliance', 'complying with'],
+      answer: 'compliance',
+    },
+  },
+  MAKE_VS_DO: {
+    fillBlank: {
+      prompt: 'We need to ___ (make/do) a decision today.',
+      answer: 'make',
+    },
+    choice: {
+      prompt:
+        'Choose the correct verb: "Please ___ your homework before the meeting."',
+      options: ['make', 'do', 'making'],
+      answer: 'do',
+    },
+  },
+  COUNTABLE_VS_UNCOUNTABLE: {
+    fillBlank: {
+      prompt: 'We do not have ___ (many/much) information about this case.',
+      answer: 'much',
+    },
+    choice: {
+      prompt: 'Choose the correct sentence.',
+      options: [
+        'We collected many evidences.',
+        'We collected much evidence.',
+        'We collected a evidence.',
+      ],
+      answer: 'We collected much evidence.',
+    },
+  },
+  COLLOCATIONS: {
+    fillBlank: {
+      prompt: 'The team will ___ (conduct/make) an investigation.',
+      answer: 'conduct',
+    },
+    choice: {
+      prompt: 'Choose the natural collocation.',
+      options: ['take a decision', 'make a decision', 'do a decision'],
+      answer: 'make a decision',
+    },
+  },
+  COMPLIANCE_VOCABULARY: {
+    fillBlank: {
+      prompt: 'An employee who reports misconduct is called a ___.',
+      answer: 'whistleblower',
+    },
+    choice: {
+      prompt: 'Choose the correct term for "нарушение": ',
+      options: ['breach', 'branch', 'brench'],
+      answer: 'breach',
+    },
+  },
+};
+
+/**
+ * Дев-фолбэк микро-урока: детерминированное правило + упражнения на основе
+ * реальных ошибок ученика (если они есть) и общих примеров категории.
+ */
+export function generateMicroLessonFallback(
+  category: MicroCategoryString,
+  userExamples: { original: string; corrected: string }[],
+): GeneratedMicroLesson {
+  const generic = MICRO_LESSON_GENERIC_EXERCISES[category];
+  const exercises: MicroLessonExercise[] = [];
+  userExamples.slice(0, 2).forEach((ex, i) => {
+    exercises.push({
+      id: `ex${i + 1}`,
+      type: 'correct_sentence',
+      prompt: ex.original,
+      answer: ex.corrected,
+    });
+  });
+  exercises.push({
+    id: `ex${exercises.length + 1}`,
+    type: 'fill_blank',
+    prompt: generic.fillBlank.prompt,
+    answer: generic.fillBlank.answer,
+  });
+  exercises.push({
+    id: `ex${exercises.length + 1}`,
+    type: 'choice',
+    prompt: generic.choice.prompt,
+    options: generic.choice.options,
+    answer: generic.choice.answer,
+  });
+
+  return {
+    aiMode: 'fallback',
+    content: {
+      ruleExplanation: `${MICRO_LESSON_RULES[category]}\n\nДев-режим ИИ: часть примеров и упражнений ниже общие, персонализированный урок по вашим ошибкам доступен при подключённом ИИ-провайдере.`,
+      additionalExamples: [],
+      exercises,
+    },
   };
 }
 

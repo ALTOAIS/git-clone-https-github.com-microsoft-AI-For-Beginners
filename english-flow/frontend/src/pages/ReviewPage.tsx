@@ -21,6 +21,8 @@ import {
 } from '../components/ui';
 import { ReviewFeedback } from '../components/ReviewFeedback';
 import { VoiceRecorder } from '../components/VoiceRecorder';
+import DailySummaryCard from '../components/DailySummaryCard';
+import MicroLessonBanner from '../components/MicroLessonBanner';
 import { postWithOfflineFallback, useOnline } from '../lib/offline';
 import { speak } from '../lib/voice';
 
@@ -179,6 +181,8 @@ export default function ReviewPage() {
             </Button>
           </div>
         </Card>
+        <MicroLessonBanner />
+        <DailySummaryCard />
       </div>
     );
   }

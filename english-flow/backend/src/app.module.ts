@@ -11,6 +11,7 @@ import { DiagnosticsModule } from './modules/diagnostics/diagnostics.module';
 import { ErrorsModule } from './modules/errors/errors.module';
 import { LessonsModule } from './modules/lessons/lessons.module';
 import { MaterialsModule } from './modules/materials/materials.module';
+import { MicroLessonsModule } from './modules/micro-lessons/micro-lessons.module';
 import { PhrasesModule } from './modules/phrases/phrases.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { ProgressModule } from './modules/progress/progress.module';
@@ -34,6 +35,7 @@ import { UsersModule } from './modules/users/users.module';
     ConversationsModule,
     ProgressModule,
     MaterialsModule,
+    MicroLessonsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

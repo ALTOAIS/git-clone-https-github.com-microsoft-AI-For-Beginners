@@ -1,12 +1,22 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
   Min,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { CurrentUser, JwtUser } from '../../common/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProgressService } from './progress.service';
@@ -33,6 +43,15 @@ class SaveBenchmarkDto {
   audioDataUrl?: string;
 }
 
+class DailyHistoryQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(90)
+  days?: number;
+}
+
 @Controller('progress')
 @UseGuards(JwtAuthGuard)
 export class ProgressController {
@@ -41,6 +60,19 @@ export class ProgressController {
   @Get()
   overview(@CurrentUser() user: JwtUser) {
     return this.progressService.getOverview(user.userId);
+  }
+
+  @Get('daily-summary')
+  dailySummary(@CurrentUser() user: JwtUser) {
+    return this.progressService.getDailySummary(user.userId);
+  }
+
+  @Get('daily-history')
+  dailyHistory(
+    @CurrentUser() user: JwtUser,
+    @Query() query: DailyHistoryQueryDto,
+  ) {
+    return this.progressService.getDailyHistory(user.userId, query.days ?? 30);
   }
 
   @Post('benchmark')

@@ -13,6 +13,7 @@ import ReviewPage from './pages/ReviewPage';
 import PhrasesPage from './pages/PhrasesPage';
 import SpeakingPage from './pages/SpeakingPage';
 import ErrorsPage from './pages/ErrorsPage';
+import MicroLessonPage from './pages/MicroLessonPage';
 import ProgressPage from './pages/ProgressPage';
 import SettingsPage from './pages/SettingsPage';
 import GeneratorPage from './pages/GeneratorPage';
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="/phrases" element={<PhrasesPage />} />
         <Route path="/speaking" element={<SpeakingPage />} />
         <Route path="/errors" element={<ErrorsPage />} />
+        <Route path="/micro-lessons/:id" element={<MicroLessonPage />} />
         <Route path="/progress" element={<ProgressPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/generator" element={<GeneratorPage />} />
