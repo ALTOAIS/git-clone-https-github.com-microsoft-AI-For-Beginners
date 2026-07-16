@@ -387,3 +387,78 @@ export interface ExtractedPhrasesResult {
     example?: string;
   }[];
 }
+
+export interface DailySummary {
+  date: string;
+  correctedErrorsToday: number;
+  reviewsCompletedToday: number;
+  speakingMinutesToday: number;
+  newPhrasesToday: number;
+  lessonsCompletedToday: number;
+  streakDays: number;
+  dailyGoalMet: boolean;
+  speakingConfidenceNote?: string;
+}
+
+export interface DailyHistoryEntry {
+  date: string;
+  correctedErrors: number;
+  reviewsCompleted: number;
+  speakingMinutes: number;
+  newPhrases: number;
+  lessonsCompleted: number;
+}
+
+export type MicroCategory =
+  | 'ARTICLES'
+  | 'THIRD_PERSON_SINGULAR'
+  | 'PRESENT_SIMPLE'
+  | 'PRESENT_PERFECT'
+  | 'PAST_SIMPLE'
+  | 'PREPOSITIONS'
+  | 'WORD_ORDER'
+  | 'COMPLY_VS_COMPLIANCE'
+  | 'MAKE_VS_DO'
+  | 'COUNTABLE_VS_UNCOUNTABLE'
+  | 'COLLOCATIONS'
+  | 'COMPLIANCE_VOCABULARY';
+
+export interface EligibleMicroLesson {
+  category: MicroCategory;
+  count: number;
+  threshold: number;
+  lookbackDays: number;
+  examples: { original: string; corrected: string }[];
+}
+
+export interface MicroLessonExercise {
+  id: string;
+  type: 'fill_blank' | 'correct_sentence' | 'choice';
+  prompt: string;
+  options?: string[];
+  answer: string;
+}
+
+export interface MicroLessonContent {
+  ruleExplanation: string;
+  additionalExamples: string[];
+  exercises: MicroLessonExercise[];
+}
+
+export interface MicroLessonResult {
+  results: { exerciseId: string; correct: boolean; correctAnswer: string; given: string }[];
+  score: number;
+  total: number;
+}
+
+export interface MicroLesson {
+  id: string;
+  category: MicroCategory;
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'DISMISSED';
+  aiMode: AiMode | null;
+  createdAt: string;
+  completedAt?: string | null;
+  resultJson?: MicroLessonResult | null;
+  content: MicroLessonContent;
+  userExamples: { original: string; corrected: string }[];
+}

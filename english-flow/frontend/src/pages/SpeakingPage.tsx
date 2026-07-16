@@ -23,6 +23,8 @@ import {
   levelLabel,
 } from '../components/ui';
 import { speak, useSpeechRecognition } from '../lib/voice';
+import DailySummaryCard from '../components/DailySummaryCard';
+import MicroLessonBanner from '../components/MicroLessonBanner';
 
 export default function SpeakingPage() {
   const { t } = useTranslation();
@@ -213,6 +215,8 @@ export default function SpeakingPage() {
             </div>
           </Card>
         )}
+        <MicroLessonBanner />
+        <DailySummaryCard />
         <Button
           className="w-full"
           onClick={() => {

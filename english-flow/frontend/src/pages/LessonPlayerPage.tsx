@@ -23,6 +23,7 @@ import {
   cx,
 } from '../components/ui';
 import { speak, useSpeechRecognition } from '../lib/voice';
+import DailySummaryCard from '../components/DailySummaryCard';
 
 type Stage =
   | 'warmup'
@@ -675,6 +676,8 @@ export default function LessonPlayerPage() {
           </Button>
         </Card>
       )}
+
+      {stage === 'summary' && <DailySummaryCard />}
     </div>
   );
 }

@@ -77,6 +77,30 @@ enum ProcessingStatus {
   DELETED
 }
 
+/// Тонкая категория для адаптивных микро-уроков — отдельно от ErrorType,
+/// т.к. охватывает конкретные грамматические/лексические паттерны, а не общий тип ошибки.
+enum MicroCategory {
+  ARTICLES
+  THIRD_PERSON_SINGULAR
+  PRESENT_SIMPLE
+  PRESENT_PERFECT
+  PAST_SIMPLE
+  PREPOSITIONS
+  WORD_ORDER
+  COMPLY_VS_COMPLIANCE
+  MAKE_VS_DO
+  COUNTABLE_VS_UNCOUNTABLE
+  COLLOCATIONS
+  COMPLIANCE_VOCABULARY
+}
+
+enum MicroLessonStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DISMISSED
+}
+
 model User {
   id                       String    @id @default(cuid())
   email                    String    @unique
@@ -110,6 +134,7 @@ model User {
   uploadedMaterials UploadedMaterial[]
   voiceBenchmarks   VoiceBenchmark[]
   voiceAnswers      VoiceAnswer[]
+  microLessons      MicroLesson[]
 }
 
 model SkillProfile {
@@ -206,22 +231,27 @@ model LessonAttempt {
 }
 
 model ErrorRecord {
-  id              String      @id @default(cuid())
+  id              String         @id @default(cuid())
   userId          String
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   originalText    String
   correctedText   String
   explanation     String
-  errorType       ErrorType   @default(OTHER)
-  source          String      @default("lesson")
+  errorType       ErrorType      @default(OTHER)
+  microCategory   MicroCategory?
+  source          String         @default("lesson")
   personalExample String?
-  occurrenceCount Int         @default(1)
-  status          ErrorStatus @default(NEW)
+  occurrenceCount Int            @default(1)
+  status          ErrorStatus    @default(NEW)
   nextPracticeAt  DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  /// Момент последнего появления ошибки (создание или повтор) — отдельно от updatedAt,
+  /// который меняется и при ручных изменениях статуса (например, "отметить решённой").
+  lastOccurrenceAt DateTime      @default(now())
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   @@index([userId, status])
+  @@index([userId, microCategory])
 }
 
 model Conversation {
@@ -304,6 +334,26 @@ model VoiceAnswer {
   createdAt               DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+/// Адаптивный микро-урок, сгенерированный ИИ по реальным ошибкам пользователя
+/// в конкретной категории (например, third_person_singular), когда их количество
+/// за окно наблюдения превышает порог.
+model MicroLesson {
+  id             String            @id @default(cuid())
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category       MicroCategory
+  status         MicroLessonStatus @default(PENDING)
+  contentJson    Json // { explanation, examples: [...], exercises: [...] }
+  sourceErrorIds String[]          @default([]) // ErrorRecord, на основе которых сгенерирован урок
+  resultJson     Json? // { answers: [...], score, total }
+  aiMode         String? // llm | fallback
+  createdAt      DateTime          @default(now())
+  completedAt    DateTime?
+
+  @@index([userId, category])
+  @@index([userId, status])
 }
 
 model VoiceBenchmark {

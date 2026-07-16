@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type { ProgressOverview } from '../api/types';
+import type { DailyHistoryEntry, ProgressOverview } from '../api/types';
 import {
   Badge,
   Button,
@@ -91,6 +91,10 @@ export default function ProgressPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['progress'],
     queryFn: () => api.get<ProgressOverview>('/progress'),
+  });
+  const { data: history } = useQuery({
+    queryKey: ['daily-history'],
+    queryFn: () => api.get<DailyHistoryEntry[]>('/progress/daily-history?days=30'),
   });
 
   if (isLoading || !data) return <Spinner />;
@@ -181,6 +185,59 @@ export default function ProgressPage() {
           onSaved={() => queryClient.invalidateQueries({ queryKey: ['progress'] })}
         />
       </Card>
+
+      {history && (
+        <Card className="space-y-3">
+          <h2 className="font-semibold">{t('summary.historyTitle')}</h2>
+          {history.every(
+            (d) =>
+              d.speakingMinutes === 0 &&
+              d.reviewsCompleted === 0 &&
+              d.correctedErrors === 0 &&
+              d.newPhrases === 0 &&
+              d.lessonsCompleted === 0,
+          ) ? (
+            <p className="text-sm text-slate-500">{t('summary.historyEmpty')}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[480px] text-sm">
+                <thead>
+                  <tr className="text-left text-slate-500">
+                    <th className="py-1 pr-2 font-normal">{t('app.date')}</th>
+                    <th className="px-2 py-1 font-normal">{t('summary.speakingMinutes')}</th>
+                    <th className="px-2 py-1 font-normal">{t('summary.reviewsCompleted')}</th>
+                    <th className="px-2 py-1 font-normal">{t('summary.correctedErrors')}</th>
+                    <th className="px-2 py-1 font-normal">{t('summary.newPhrases')}</th>
+                    <th className="px-2 py-1 font-normal">{t('summary.lessonsCompleted')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...history]
+                    .reverse()
+                    .filter(
+                      (d) =>
+                        d.speakingMinutes > 0 ||
+                        d.reviewsCompleted > 0 ||
+                        d.correctedErrors > 0 ||
+                        d.newPhrases > 0 ||
+                        d.lessonsCompleted > 0,
+                    )
+                    .map((d) => (
+                      <tr key={d.date} className="border-t border-slate-100">
+                        <td className="py-1.5 pr-2 text-slate-600">{d.date}</td>
+                        <td className="px-2 py-1.5">{d.speakingMinutes}</td>
+                        <td className="px-2 py-1.5">{d.reviewsCompleted}</td>
+                        <td className="px-2 py-1.5">{d.correctedErrors}</td>
+                        <td className="px-2 py-1.5">{d.newPhrases}</td>
+                        <td className="px-2 py-1.5">{d.lessonsCompleted}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

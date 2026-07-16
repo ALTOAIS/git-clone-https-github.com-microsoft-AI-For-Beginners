@@ -14,6 +14,8 @@ import {
   cx,
   levelLabel,
 } from '../components/ui';
+import DailySummaryCard from '../components/DailySummaryCard';
+import MicroLessonBanner from '../components/MicroLessonBanner';
 import { speak } from '../lib/voice';
 
 function taskLink(type: string, lessonId?: string): string {
@@ -167,6 +169,10 @@ export default function TodayPage() {
           </div>
         )}
       </Card>
+
+      <MicroLessonBanner />
+
+      <DailySummaryCard />
 
       {/* Дополнительные карточки */}
       <div className="grid gap-3 sm:grid-cols-2">

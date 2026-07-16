@@ -131,3 +131,38 @@ export interface ConversationTurn {
   role: 'user' | 'assistant';
   text: string;
 }
+
+export const MICRO_CATEGORIES = [
+  'ARTICLES',
+  'THIRD_PERSON_SINGULAR',
+  'PRESENT_SIMPLE',
+  'PRESENT_PERFECT',
+  'PAST_SIMPLE',
+  'PREPOSITIONS',
+  'WORD_ORDER',
+  'COMPLY_VS_COMPLIANCE',
+  'MAKE_VS_DO',
+  'COUNTABLE_VS_UNCOUNTABLE',
+  'COLLOCATIONS',
+  'COMPLIANCE_VOCABULARY',
+] as const;
+
+export type MicroCategoryString = (typeof MICRO_CATEGORIES)[number];
+
+export interface MicroLessonExercise {
+  id: string;
+  type: 'fill_blank' | 'correct_sentence' | 'choice';
+  prompt: string;
+  options?: string[];
+  answer: string;
+}
+
+export interface MicroLessonContent {
+  ruleExplanation: string;
+  additionalExamples: string[];
+  exercises: MicroLessonExercise[];
+}
+
+export interface GeneratedMicroLesson extends AiMeta {
+  content: MicroLessonContent;
+}
