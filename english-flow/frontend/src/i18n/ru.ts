@@ -432,6 +432,9 @@ export const ru = {
       scheduledFor: 'Запланировано на {{date}}',
       invalidRecord: 'Похоже, запись повреждена',
       deleteInvalid: 'Удалить ошибочную запись',
+      deleteConfirm: 'Удалить эту запись безвозвратно? Это действие нельзя отменить.',
+      deleting: 'Удаление…',
+      deleteFailed: 'Не удалось удалить запись. Попробуйте ещё раз.',
     },
     daily: {
       intro: 'Сегодняшняя практика ошибок: {{count}} {{taskWord}} · около {{minutes}} минут',

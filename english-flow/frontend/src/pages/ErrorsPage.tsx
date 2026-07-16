@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../api/client';
+import { api, ApiError } from '../api/client';
 import type {
   ErrorDailySession,
   ErrorPracticeSubmitResult,
@@ -130,6 +130,47 @@ function ErrorContextCard({ task }: { task: ErrorContextCardData }) {
         <div className="text-xs text-slate-400">
           {t('errors.context.source')}: {moduleLabel}
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Кнопка удаления повреждённой legacy-записи (раздел 7 доработок). Своя
+ * useMutation на карточку — пока запись A удаляется, кнопка на записи B
+ * не блокируется и не показывает чужую ошибку. Удаление необратимо, поэтому
+ * требует явного подтверждения; из UI запись исчезает только после
+ * успешного ответа backend (invalidateQueries запускает рефетч списка).
+ */
+function DeleteInvalidRecordButton({ id }: { id: string }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/errors/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['errors'] }),
+  });
+
+  return (
+    <div className="space-y-1">
+      <Button
+        variant="danger"
+        disabled={deleteMutation.isPending}
+        onClick={() => {
+          if (!window.confirm(t('errors.context.deleteConfirm') as string)) return;
+          deleteMutation.mutate();
+        }}
+      >
+        {deleteMutation.isPending
+          ? t('errors.context.deleting')
+          : t('errors.context.deleteInvalid')}
+      </Button>
+      {deleteMutation.isError && (
+        <p className="text-xs text-red-600">
+          {deleteMutation.error instanceof ApiError
+            ? deleteMutation.error.message
+            : t('errors.context.deleteFailed')}
+        </p>
       )}
     </div>
   );
@@ -502,11 +543,6 @@ export default function ErrorsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['errors'] }),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/errors/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['errors'] }),
-  });
-
   return (
     <div className="space-y-4">
       <PageTitle>{t('errors.title')}</PageTitle>
@@ -599,15 +635,7 @@ export default function ErrorsPage() {
                       ✓ {t('errors.markResolved')}
                     </Button>
                   )}
-                  {suspectInvalid && (
-                    <Button
-                      variant="danger"
-                      disabled={deleteMutation.isPending}
-                      onClick={() => deleteMutation.mutate(error.id)}
-                    >
-                      {t('errors.context.deleteInvalid')}
-                    </Button>
-                  )}
+                  {suspectInvalid && <DeleteInvalidRecordButton id={error.id} />}
                 </div>
               </Card>
             );
