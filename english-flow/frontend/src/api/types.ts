@@ -262,6 +262,7 @@ export interface ErrorRecord {
   createdAt: string;
   updatedAt: string;
   practiceStatus?: ErrorPracticeStatus;
+  nextPracticeAt?: string | null;
   sourceModule?: string | null;
   sourcePrompt?: string | null;
   sourceContext?: string | null;

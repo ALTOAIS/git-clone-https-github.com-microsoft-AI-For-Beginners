@@ -47,7 +47,11 @@ async function loginAsE2eUser(
 }
 
 async function currentMistakeText(page: import('@playwright/test').Page) {
-  const text = await page.locator('.text-red-600.line-through').first().textContent();
+  const text = await page
+    .getByTestId('daily-practice-card')
+    .locator('.text-red-600.line-through')
+    .first()
+    .textContent();
   return text?.trim() ?? '';
 }
 
@@ -68,6 +72,11 @@ test.describe('Ежедневная практика ошибок — разде
     for (let i = 1; i <= 3; i++) {
       await expect(page.getByText(`Ошибка ${i} из 3`)).toBeVisible();
 
+      // Активная карточка практики — с этого коммита та же ErrorContextCard
+      // используется и в общем списке ниже, поэтому проверяем контекст
+      // именно внутри активной карточки (data-testid), а не по всей странице.
+      const activeCard = page.getByTestId('daily-practice-card');
+
       // Контекстная карточка (раздел 2 ТЗ): либо реальный контекст, либо
       // честное сообщение об его отсутствии — никогда не выдуманный текст.
       const mistakeText = await currentMistakeText(page);
@@ -75,10 +84,12 @@ test.describe('Ежедневная практика ошибок — разде
       expect(corrected).toBeTruthy();
 
       if (mistakeText === NO_CONTEXT_ORIGINAL) {
-        await expect(page.getByText('Контекст исходного задания не был сохранён.')).toBeVisible();
+        await expect(
+          activeCard.getByText('Контекст исходного задания не был сохранён.'),
+        ).toBeVisible();
       } else {
-        await expect(page.getByText('Задание:', { exact: true })).toBeVisible();
-        await expect(page.getByText('Ваш ответ:', { exact: true })).toBeVisible();
+        await expect(activeCard.getByText('Задание:', { exact: true })).toBeVisible();
+        await expect(activeCard.getByText('Ваш ответ:', { exact: true })).toBeVisible();
       }
 
       // Разделённые действия (доработка 1): «Проверить ответ» ничего не

@@ -14,6 +14,7 @@ import {
   buildBlankExercise,
   buildHelpDetails,
 } from './context-examples';
+import { detectAnswerLanguage } from './language-detector';
 
 /** Целевой размер ежедневной практики ошибок (раздел 4 ТЗ). */
 export const DAILY_TARGET = 3;
@@ -56,6 +57,20 @@ export class ErrorsService {
       where: { id },
       data: { status: status as any },
     });
+  }
+
+  /**
+   * Удаление ошибочной записи по явному действию пользователя (раздел 7
+   * доработок) — например, старой записи, где "исправленный" вариант сам по
+   * себе не английский. Никакого автоматического удаления нигде в коде нет:
+   * это единственный путь, и он требует прямого клика пользователя.
+   */
+  async deleteRecord(userId: string, id: string) {
+    const record = await this.prisma.errorRecord.findUnique({ where: { id } });
+    if (!record) throw new NotFoundException('Ошибка не найдена');
+    if (record.userId !== userId) throw new ForbiddenException();
+    await this.prisma.errorRecord.delete({ where: { id } });
+    return { deleted: true };
   }
 
   /**
@@ -269,28 +284,61 @@ export class ErrorsService {
       this.prisma.errorRecord.findMany({
         where: {
           userId,
-          practiceStatus: {
-            in: ['NEW', 'PRACTICING', 'RECURRING', 'SCHEDULED_REVIEW'],
-          },
           completedTodayDate: null,
-          // nextPracticeAt уже отфильтровывает сегодняшние пропуски —
-          // skipDailyTask переносит их на следующий календарный день.
-          OR: [
-            { nextPracticeAt: { lte: new Date() } },
-            { nextPracticeAt: null },
+          AND: [
+            // Пропущенная сегодня запись не должна вернуться в этой же
+            // сессии (раздел 4 доработок) — это единственная причина
+            // временно скрыть NEW/PRACTICING/RECURRING, независимая от
+            // общего "always due" правила ниже.
+            {
+              OR: [
+                { lastSkippedDate: null },
+                { lastSkippedDate: { not: today } },
+              ],
+            },
+            {
+              OR: [
+                // NEW/PRACTICING/RECURRING не имеют легитимного
+                // "расписания" — nextPracticeAt на них может быть
+                // унаследован от старого (пред-редизайн) трекера или от
+                // legacy-тренажёра ошибок (submitPractice меняет
+                // nextPracticeAt, но не practiceStatus), поэтому такие
+                // записи ВСЕГДА активны независимо от даты.
+                { practiceStatus: { in: ['NEW', 'PRACTICING', 'RECURRING'] } },
+                // SCHEDULED_REVIEW — единственный статус с настоящим
+                // расписанием интервального повторения (раздел 5 ТЗ) —
+                // здесь дата важна.
+                {
+                  practiceStatus: 'SCHEDULED_REVIEW',
+                  OR: [
+                    { nextPracticeAt: { lte: new Date() } },
+                    { nextPracticeAt: null },
+                  ],
+                },
+              ],
+            },
           ],
         },
         take: 50,
       }),
     ]);
 
-    const priorityOf = (r: (typeof dueCandidatesRaw)[number]) =>
+    // Записи, чей "исправленный" вариант сам по себе не английский
+    // (старые данные до языкового гейта — например, обе части ошибочно
+    // русские), не должны попадать в ежедневную практику. Это фильтр
+    // выборки, не изменение данных — запись остаётся в БД как есть и
+    // по-прежнему видна в общем списке /errors.
+    const validCandidatesRaw = dueCandidatesRaw.filter(
+      (r) => detectAnswerLanguage(r.correctedText) === 'EN',
+    );
+
+    const priorityOf = (r: (typeof validCandidatesRaw)[number]) =>
       r.practiceStatus === 'RECURRING'
         ? 0
         : r.practiceStatus === 'SCHEDULED_REVIEW'
           ? 1
           : 2;
-    const dueCandidates = [...dueCandidatesRaw].sort(
+    const dueCandidates = [...validCandidatesRaw].sort(
       (a, b) =>
         priorityOf(a) - priorityOf(b) || b.occurrenceCount - a.occurrenceCount,
     );
