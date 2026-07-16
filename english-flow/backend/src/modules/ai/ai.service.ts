@@ -9,6 +9,7 @@ import {
   ErrorClassification,
   ErrorTypeString,
   ExtractedPhrasesResult,
+  FallbackReason,
   GeneratedLesson,
   GeneratedMicroLesson,
   MicroCategoryString,
@@ -34,7 +35,7 @@ import {
   speakingFeedbackFallback,
   speakingTurnFallback,
 } from './fallbacks';
-import { LlmClient } from './llm.client';
+import { LlmCallError, LlmClient } from './llm.client';
 import {
   CONTENT_SIMPLIFIER_PROMPT,
   DIAGNOSTIC_EVALUATOR_PROMPT,
@@ -71,22 +72,43 @@ export class AiService {
     return this.llm.isConfigured;
   }
 
-  /** Общая обёртка: LLM с валидацией → детерминированный фолбэк. */
-  private async withFallback<T extends { aiMode: string; aiError?: string }>(
-    useCase: string,
-    llmCall: () => Promise<T>,
-    fallback: () => T,
-  ): Promise<T> {
+  /**
+   * Общая обёртка: LLM (с автоповторами на транспортном уровне, см.
+   * LlmClient) → детерминированный фолбэк. Помечает результат метаданными
+   * (retryCount/fallbackReason/providerStatus), чтобы UI мог отличить
+   * "ИИ не настроен" от "провайдер временно недоступен".
+   */
+  private async withFallback<
+    T extends {
+      aiMode: string;
+      aiError?: string;
+      retryCount?: number;
+      fallbackReason?: FallbackReason;
+      providerStatus?: number;
+    },
+  >(useCase: string, llmCall: () => Promise<T>, fallback: () => T): Promise<T> {
     if (!this.llm.isConfigured) {
-      return fallback();
+      const result = fallback();
+      result.fallbackReason = 'not_configured';
+      return result;
     }
     try {
-      return await llmCall();
+      const result = await llmCall();
+      result.retryCount = this.llm.lastCallMeta?.retryCount ?? 0;
+      return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`LLM-вызов ${useCase} не удался: ${message}`);
       const result = fallback();
       result.aiError = message;
+      if (error instanceof LlmCallError) {
+        result.retryCount = error.retryCount;
+        result.providerStatus = error.providerStatus;
+        result.fallbackReason = 'llm_error';
+      } else {
+        result.retryCount = this.llm.lastCallMeta?.retryCount ?? 0;
+        result.fallbackReason = 'invalid_json';
+      }
       return result;
     }
   }

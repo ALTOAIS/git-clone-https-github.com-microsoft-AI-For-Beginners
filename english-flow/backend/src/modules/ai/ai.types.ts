@@ -3,9 +3,24 @@ import { LessonContent } from '../content/lesson-content';
 /** Режим ответа ИИ: реальная LLM или явно помеченный дев-фолбэк. */
 export type AiMode = 'llm' | 'fallback';
 
+/**
+ * Почему конкретный ответ ушёл в fallback — различает три разных по смыслу
+ * ситуации для UI и логов:
+ *  - not_configured: AI_PROVIDER/AI_API_KEY/AI_MODEL не заданы вовсе;
+ *  - llm_error: провайдер настроен, но вызов не удался (после всех повторов);
+ *  - invalid_json: провайдер ответил, но ответ не удалось разобрать как JSON.
+ */
+export type FallbackReason = 'not_configured' | 'llm_error' | 'invalid_json';
+
 export interface AiMeta {
   aiMode: AiMode;
   aiError?: string;
+  /** Сколько повторных попыток было сделано (0 — с первого раза). */
+  retryCount?: number;
+  /** Причина fallback — присутствует только когда aiMode === 'fallback'. */
+  fallbackReason?: FallbackReason;
+  /** HTTP-статус провайдера при последней неудачной попытке (если был). */
+  providerStatus?: number;
 }
 
 export const ERROR_TYPES = [

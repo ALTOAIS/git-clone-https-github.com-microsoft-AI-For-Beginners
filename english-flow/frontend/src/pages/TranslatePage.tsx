@@ -291,7 +291,7 @@ export default function TranslatePage() {
                   >
                     {t(`translate.verdicts.${result.verdict}`)}
                   </Badge>
-                  <AiModeBadge mode={result.aiMode} />
+                  <AiModeBadge mode={result.aiMode} fallbackReason={result.fallbackReason} />
                 </div>
                 <div className="text-sm">
                   <span className="text-slate-500">{t('translate.correctAnswer')}: </span>

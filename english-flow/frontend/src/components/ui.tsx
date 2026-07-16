@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { AiMode } from '../api/types';
+import type { AiMode, FallbackReason } from '../api/types';
 
 export function cx(...classes: (string | false | undefined | null)[]) {
   return classes.filter(Boolean).join(' ');
@@ -139,16 +139,28 @@ export function EmptyState({ children }: { children: ReactNode }) {
   );
 }
 
-/** Явная пометка ответов ИИ, полученных в дев-режиме без реального провайдера. */
-export function AiModeBadge({ mode }: { mode?: AiMode }) {
+/**
+ * Явная пометка ответов ИИ, полученных не от реального провайдера.
+ * Различает две причины: ИИ вообще не настроен (дев-режим) vs. провайдер
+ * настроен, но временно недоступен (перегружен/сбой) — после исчерпания
+ * автоматических повторов на транспортном уровне.
+ */
+export function AiModeBadge({
+  mode,
+  fallbackReason,
+}: {
+  mode?: AiMode;
+  fallbackReason?: FallbackReason;
+}) {
   const { t } = useTranslation();
   if (mode !== 'fallback') return null;
+  const overloaded = fallbackReason === 'llm_error';
   return (
     <span
-      title={t('app.aiFallbackHint')}
+      title={t(overloaded ? 'app.aiOverloadedHint' : 'app.aiFallbackHint')}
       className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800"
     >
-      ⚠︎ {t('app.aiFallback')}
+      ⚠︎ {t(overloaded ? 'app.aiOverloaded' : 'app.aiFallback')}
     </span>
   );
 }

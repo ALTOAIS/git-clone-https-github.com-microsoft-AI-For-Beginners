@@ -40,7 +40,7 @@ export function ReviewFeedback({
         <Badge tone={VERDICT_TONE[evaluation.verdict] ?? 'amber'}>
           {t(`review.verdicts.${evaluation.verdict}`)}
         </Badge>
-        <AiModeBadge mode={evaluation.aiMode} />
+        <AiModeBadge mode={evaluation.aiMode} fallbackReason={evaluation.fallbackReason} />
       </div>
 
       {/* Ваш ответ */}

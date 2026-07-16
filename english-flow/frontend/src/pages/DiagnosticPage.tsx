@@ -121,7 +121,7 @@ export default function DiagnosticPage() {
       <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">{t('diagnostic.resultTitle')}</h1>
-          <AiModeBadge mode={result.aiMode} />
+          <AiModeBadge mode={result.aiMode} fallbackReason={result.fallbackReason} />
         </div>
         <Card className="space-y-3">
           <div className="flex items-center justify-between">

@@ -217,7 +217,7 @@ export default function GeneratorPage() {
           <div className="flex items-center gap-2">
             <h2 className="font-semibold">{t('generator.preview')}</h2>
             <Badge tone="amber">{t('lesson.draftBadge')}</Badge>
-            <AiModeBadge mode={draft.aiMode} />
+            <AiModeBadge mode={draft.aiMode} fallbackReason={draft.fallbackReason} />
           </div>
           <div>
             <label className="mb-1 block text-sm text-slate-500">

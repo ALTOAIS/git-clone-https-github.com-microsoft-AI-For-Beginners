@@ -6,6 +6,7 @@ import { api } from '../api/client';
 import type {
   Conversation,
   ConversationTurn,
+  FallbackReason,
   ScenariosResponse,
   SpeakingFeedback,
   SpeakingStats,
@@ -43,6 +44,7 @@ export default function SpeakingPage() {
   const [sending, setSending] = useState(false);
   const [paused, setPaused] = useState(false);
   const [aiMode, setAiMode] = useState<'llm' | 'fallback' | undefined>();
+  const [fallbackReason, setFallbackReason] = useState<FallbackReason | undefined>();
   const [feedback, setFeedback] = useState<
     (SpeakingFeedback & { stats?: SpeakingStats }) | null
   >(null);
@@ -63,6 +65,7 @@ export default function SpeakingPage() {
     setTurns(created.transcriptJson);
     setFeedback(null);
     setAiMode(created.aiMode);
+    setFallbackReason(created.fallbackReason);
     setSavedPhrases([]);
     secondsRef.current = 0;
     speak(created.transcriptJson[0]?.text ?? '');
@@ -93,6 +96,7 @@ export default function SpeakingPage() {
       setTurns((prev) => [...prev, { role: 'assistant', text: result.reply }]);
       setHint(result.hintRu ?? '');
       setAiMode(result.aiMode);
+      setFallbackReason(result.fallbackReason);
       if (!paused) speak(result.reply);
     } finally {
       setSending(false);
@@ -130,7 +134,7 @@ export default function SpeakingPage() {
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <PageTitle>{t('speaking.feedbackTitle')}</PageTitle>
-          <AiModeBadge mode={feedback.aiMode} />
+          <AiModeBadge mode={feedback.aiMode} fallbackReason={feedback.fallbackReason} />
         </div>
         <Card className="space-y-2">
           <h2 className="font-semibold text-emerald-700">{t('speaking.wentWell')}</h2>
@@ -242,7 +246,7 @@ export default function SpeakingPage() {
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <Badge tone="blue">{levelLabel(conversation.level)}</Badge>
               <span>{t('speaking.estimated', { minutes: scenario?.estimatedMinutes ?? 5 })}</span>
-              <AiModeBadge mode={aiMode} />
+              <AiModeBadge mode={aiMode} fallbackReason={fallbackReason} />
             </div>
           </div>
           <div className="flex gap-2">

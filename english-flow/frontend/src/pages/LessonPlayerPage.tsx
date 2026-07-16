@@ -177,7 +177,7 @@ function TranslateTask({
             <Badge tone={verdictOk ? 'green' : result.verdict === 'incorrect' ? 'red' : 'amber'}>
               {t(`translate.verdicts.${result.verdict}`)}
             </Badge>
-            <AiModeBadge mode={result.aiMode} />
+            <AiModeBadge mode={result.aiMode} fallbackReason={result.fallbackReason} />
           </div>
           {!verdictOk && (
             <div className="text-sm">
@@ -490,7 +490,7 @@ export default function LessonPlayerPage() {
             </Button>
           ) : (
             <div className="space-y-2">
-              <AiModeBadge mode={personalEval.aiMode} />
+              <AiModeBadge mode={personalEval.aiMode} fallbackReason={personalEval.fallbackReason} />
               <div className="text-sm">
                 <span className="text-slate-500">{t('lesson.aiSuggestion')}: </span>
                 <button

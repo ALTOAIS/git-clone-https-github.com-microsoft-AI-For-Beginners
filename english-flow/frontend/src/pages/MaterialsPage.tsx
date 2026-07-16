@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type {
   ExtractedPhrasesResult,
+  FallbackReason,
   UploadedMaterial,
 } from '../api/types';
 import {
@@ -35,6 +36,7 @@ export default function MaterialsPage() {
     materialId: string;
     text: string;
     aiMode: 'llm' | 'fallback';
+    fallbackReason?: FallbackReason;
   } | null>(null);
 
   const { data: materials, isLoading } = useQuery({
@@ -90,13 +92,16 @@ export default function MaterialsPage() {
   const simplify = async (material: UploadedMaterial) => {
     setBusyId(material.id);
     try {
-      const result = await api.post<{ simplified: string; aiMode: 'llm' | 'fallback' }>(
-        `/materials/${material.id}/simplify`,
-      );
+      const result = await api.post<{
+        simplified: string;
+        aiMode: 'llm' | 'fallback';
+        fallbackReason?: FallbackReason;
+      }>(`/materials/${material.id}/simplify`);
       setSimplified({
         materialId: material.id,
         text: result.simplified,
         aiMode: result.aiMode,
+        fallbackReason: result.fallbackReason,
       });
       setExtracted(null);
     } finally {
@@ -245,7 +250,7 @@ export default function MaterialsPage() {
                     <span className="text-sm font-medium">
                       {t('materials.extractedPreview')}
                     </span>
-                    <AiModeBadge mode={extracted.aiMode} />
+                    <AiModeBadge mode={extracted.aiMode} fallbackReason={extracted.fallbackReason} />
                   </div>
                   {extracted.phrases.map((phrase, i) => (
                     <label key={i} className="flex cursor-pointer items-start gap-2 text-sm">
@@ -282,7 +287,7 @@ export default function MaterialsPage() {
                 <div className="space-y-2 rounded-xl bg-slate-50 p-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{t('materials.simplified')}</span>
-                    <AiModeBadge mode={simplified.aiMode} />
+                    <AiModeBadge mode={simplified.aiMode} fallbackReason={simplified.fallbackReason} />
                   </div>
                   <p className="text-sm text-slate-700">{simplified.text}</p>
                 </div>

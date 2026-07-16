@@ -10,6 +10,9 @@ export type CefrLevel =
 
 export type AiMode = 'llm' | 'fallback';
 
+/** Почему ответ ушёл в fallback: не настроен ИИ vs. провайдер временно недоступен. */
+export type FallbackReason = 'not_configured' | 'llm_error' | 'invalid_json';
+
 export interface User {
   id: string;
   email: string;
@@ -104,6 +107,9 @@ export type ReviewVerdict =
 
 export interface ReviewAnswerEvaluation {
   aiMode: AiMode;
+  retryCount?: number;
+  fallbackReason?: FallbackReason;
+  providerStatus?: number;
   aiError?: string;
   verdict: ReviewVerdict;
   accepted: boolean;
@@ -175,6 +181,9 @@ export interface Lesson {
   createdAt: string;
   attempts?: { id: string; completedAt?: string | null; score?: number | null }[];
   aiMode?: AiMode;
+  retryCount?: number;
+  fallbackReason?: FallbackReason;
+  providerStatus?: number;
   aiError?: string;
 }
 
@@ -195,6 +204,9 @@ export interface DetectedError {
 
 export interface TranslationEvaluation {
   aiMode: AiMode;
+  retryCount?: number;
+  fallbackReason?: FallbackReason;
+  providerStatus?: number;
   aiError?: string;
   verdict: 'correct' | 'mostly_correct' | 'unnatural' | 'incorrect';
   correctAnswer: string;
@@ -205,6 +217,9 @@ export interface TranslationEvaluation {
 
 export interface SentenceEvaluation {
   aiMode: AiMode;
+  retryCount?: number;
+  fallbackReason?: FallbackReason;
+  providerStatus?: number;
   aiError?: string;
   corrected: string;
   natural: string;
@@ -280,10 +295,16 @@ export interface Conversation {
   userTurns: number;
   scenarioTitle?: string;
   aiMode?: AiMode;
+  retryCount?: number;
+  fallbackReason?: FallbackReason;
+  providerStatus?: number;
 }
 
 export interface SpeakingTurnResult {
   aiMode: AiMode;
+  retryCount?: number;
+  fallbackReason?: FallbackReason;
+  providerStatus?: number;
   reply: string;
   hintRu?: string;
   done: boolean;
@@ -291,6 +312,9 @@ export interface SpeakingTurnResult {
 
 export interface SpeakingFeedback {
   aiMode: AiMode;
+  retryCount?: number;
+  fallbackReason?: FallbackReason;
+  providerStatus?: number;
   aiError?: string;
   wentWell: string[];
   mistakes: DetectedError[];
@@ -329,6 +353,9 @@ export interface DiagnosticTest {
 
 export interface DiagnosticResult {
   aiMode: AiMode;
+  retryCount?: number;
+  fallbackReason?: FallbackReason;
+  providerStatus?: number;
   aiError?: string;
   sectionScores: Record<string, number>;
   levels: Record<string, CefrLevel>;
@@ -379,6 +406,9 @@ export interface UploadedMaterial {
 
 export interface ExtractedPhrasesResult {
   aiMode: AiMode;
+  retryCount?: number;
+  fallbackReason?: FallbackReason;
+  providerStatus?: number;
   aiError?: string;
   phrases: {
     english: string;
