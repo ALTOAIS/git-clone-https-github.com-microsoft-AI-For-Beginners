@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { ReviewAnswerEvaluation } from '../ai/ai.types';
 import { ErrorsService } from '../errors/errors.service';
+import {
+  buildLanguageIssue,
+  detectAnswerLanguage,
+  extractEnglishPart,
+} from '../errors/language-detector';
 import { UsersService } from '../users/users.service';
 import { ReviewAttemptDto, ReviewEvaluateDto } from '../phrases/phrases.dto';
 
@@ -152,12 +158,41 @@ export class ReviewsService {
    * примеры + классифицированные ошибки. Найденные ошибки сохраняются в
    * реестр (дедуп по исправлению). Для голосовых ответов пишется VoiceAnswer.
    */
-  async evaluate(userId: string, dto: ReviewEvaluateDto) {
+  async evaluate(
+    userId: string,
+    dto: ReviewEvaluateDto,
+  ): Promise<ReviewAnswerEvaluation & { voiceAnswerId?: string }> {
     const userPhrase = await this.prisma.userPhrase.findUnique({
       where: { userId_phraseId: { userId, phraseId: dto.phraseId } },
       include: { phrase: true },
     });
     if (!userPhrase) throw new NotFoundException('Фраза не найдена');
+
+    // translation/sentence/voice требуют английский ответ (раздел 3 ТЗ).
+    let userAnswer = dto.userAnswer;
+    const detected = detectAnswerLanguage(userAnswer);
+    if (detected !== 'EN') {
+      const englishPart =
+        detected === 'MIXED' ? extractEnglishPart(userAnswer) : null;
+      if (englishPart) {
+        userAnswer = englishPart;
+      } else {
+        return {
+          aiMode: 'llm',
+          verdict: 'wrong',
+          accepted: false,
+          corrected: userPhrase.phrase.englishText,
+          natural: userPhrase.phrase.englishText,
+          rule: '',
+          examples: [],
+          errors: [],
+          languageIssue: buildLanguageIssue(
+            detected as 'RU' | 'MIXED' | 'EMPTY' | 'UNCLEAR',
+            userPhrase.phrase.englishText,
+          ),
+        };
+      }
+    }
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -168,7 +203,7 @@ export class ReviewsService {
       taskType: dto.taskType,
       targetEnglish: userPhrase.phrase.englishText,
       russian: userPhrase.phrase.russianTranslation,
-      userAnswer: dto.userAnswer,
+      userAnswer,
       level: user?.currentLevel ?? 'A2',
     });
 
@@ -179,6 +214,14 @@ export class ReviewsService {
         userId,
         evaluation.errors,
         `review_${dto.taskType}`,
+        undefined,
+        {
+          sourceModule: 'review',
+          sourceEntityId: userPhrase.id,
+          sourcePrompt: userPhrase.phrase.russianTranslation,
+          sourceContext: `Повторение · ${dto.taskType}`,
+          originalUserAnswer: dto.userAnswer,
+        },
       );
       errorRecordIds = recorded.map((r) => r.id);
     }

@@ -119,6 +119,7 @@ export interface ReviewAnswerEvaluation {
   examples: string[];
   errors: DetectedError[];
   voiceAnswerId?: string;
+  languageIssue?: LanguageIssueInfo;
 }
 
 export interface PlanTask {
@@ -202,6 +203,14 @@ export interface DetectedError {
   errorType: string;
 }
 
+export interface LanguageIssueInfo {
+  detectedLanguage: 'RU' | 'MIXED' | 'EMPTY' | 'UNCLEAR';
+  message: string;
+  hint?: string;
+  firstWord?: string;
+  example?: string;
+}
+
 export interface TranslationEvaluation {
   aiMode: AiMode;
   retryCount?: number;
@@ -213,6 +222,7 @@ export interface TranslationEvaluation {
   naturalAlternative?: string;
   explanation: string;
   errors: DetectedError[];
+  languageIssue?: LanguageIssueInfo;
 }
 
 export interface SentenceEvaluation {
@@ -225,6 +235,7 @@ export interface SentenceEvaluation {
   natural: string;
   explanation: string;
   errors: DetectedError[];
+  languageIssue?: LanguageIssueInfo;
 }
 
 export interface TrainerTask {
@@ -250,6 +261,11 @@ export interface ErrorRecord {
   status: 'NEW' | 'PRACTICING' | 'IMPROVING' | 'RESOLVED' | 'REPEATED';
   createdAt: string;
   updatedAt: string;
+  practiceStatus?: ErrorPracticeStatus;
+  sourceModule?: string | null;
+  sourcePrompt?: string | null;
+  sourceContext?: string | null;
+  originalUserAnswer?: string | null;
 }
 
 export interface ErrorPracticeTask {
@@ -259,6 +275,61 @@ export interface ErrorPracticeTask {
   errorType: string;
   explanation: string;
   status: string;
+}
+
+export type ErrorPracticeStatus =
+  | 'NEW'
+  | 'PRACTICING'
+  | 'COMPLETED_TODAY'
+  | 'SCHEDULED_REVIEW'
+  | 'RECURRING'
+  | 'MASTERED'
+  | 'ARCHIVED';
+
+export interface ErrorExercise {
+  type: 'blank' | 'correct_sentence';
+  prompt: string;
+  answer: string;
+}
+
+export interface ErrorSessionTask {
+  id: string;
+  practiceStatus: ErrorPracticeStatus;
+  errorType: string;
+  occurrenceCount: number;
+  successfulReviewCount: number;
+  nextPracticeAt?: string | null;
+  hasContext: boolean;
+  sourceModule?: string | null;
+  sourcePrompt?: string | null;
+  sourceContext?: string | null;
+  originalUserAnswer?: string | null;
+  exercise: ErrorExercise;
+  originalText: string;
+  correctedText: string;
+  explanation: string;
+  additionalExample?: string | null;
+  ruleDetails?: string | null;
+}
+
+export interface ErrorDailySession {
+  date: string;
+  targetCount: number;
+  completedCount: number;
+  resolvedToday: number;
+  scheduledToday: number;
+  sessionComplete: boolean;
+  tasks: ErrorSessionTask[];
+  completedTasks: ErrorSessionTask[];
+}
+
+export interface ErrorPracticeSubmitResult {
+  correct: boolean;
+  correctedText: string;
+  explanation: string;
+  mastered?: boolean;
+  nextReviewInDays?: number | null;
+  record: ErrorSessionTask;
 }
 
 export interface SpeakingScenario {

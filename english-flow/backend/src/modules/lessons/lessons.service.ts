@@ -6,9 +6,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
-import { CefrString } from '../ai/ai.types';
+import { CefrString, SentenceEvaluation } from '../ai/ai.types';
 import { isValidLessonContent, LessonContent } from '../content/lesson-content';
 import { ErrorsService } from '../errors/errors.service';
+import {
+  buildLanguageIssue,
+  detectAnswerLanguage,
+  extractEnglishPart,
+} from '../errors/language-detector';
 import { PhrasesService } from '../phrases/phrases.service';
 import { UsersService } from '../users/users.service';
 import {
@@ -217,13 +222,39 @@ export class LessonsService {
   }
 
   /** Оценка личного предложения (этап 4 урока) с записью ошибок. */
-  async evaluateSentence(userId: string, dto: EvaluateSentenceDto) {
+  async evaluateSentence(
+    userId: string,
+    dto: EvaluateSentenceDto,
+  ): Promise<SentenceEvaluation> {
+    // Задание требует английское предложение (раздел 3 ТЗ).
+    let sentence = dto.sentence;
+    const detected = detectAnswerLanguage(sentence);
+    if (detected !== 'EN') {
+      const englishPart =
+        detected === 'MIXED' ? extractEnglishPart(sentence) : null;
+      if (englishPart) {
+        sentence = englishPart;
+      } else {
+        return {
+          aiMode: 'llm',
+          corrected: dto.sentence,
+          natural: dto.sentence,
+          explanation: '',
+          errors: [],
+          languageIssue: buildLanguageIssue(
+            detected as 'RU' | 'MIXED' | 'EMPTY' | 'UNCLEAR',
+            dto.targetPhrase,
+          ),
+        };
+      }
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { currentLevel: true },
     });
     const result = await this.ai.evaluateSentence({
-      sentence: dto.sentence,
+      sentence,
       targetPhrase: dto.targetPhrase,
       level: user?.currentLevel ?? 'A2',
       context: dto.context,
@@ -234,6 +265,13 @@ export class LessonsService {
         result.errors,
         dto.source ?? 'lesson',
         result.natural,
+        {
+          sourceModule: 'lesson',
+          sourceEntityId: dto.lessonId,
+          sourcePrompt: dto.targetPhrase,
+          sourceContext: dto.context,
+          originalUserAnswer: dto.sentence,
+        },
       );
     }
     return result;

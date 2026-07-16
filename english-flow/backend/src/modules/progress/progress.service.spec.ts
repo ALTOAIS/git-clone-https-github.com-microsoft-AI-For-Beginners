@@ -81,6 +81,30 @@ describe('ProgressService.getDailySummary', () => {
     expect(summary.speakingConfidenceNote).toBeUndefined();
   });
 
+  it('считает ошибки, отработанные сегодня в ежедневной практике (completedTodayDate), в correctedErrorsToday', async () => {
+    const today = new Date();
+    const usersServiceForDate = new UsersService(buildPrisma());
+    const todayStr = usersServiceForDate.localDate(today, 'UTC');
+    const prisma = buildPrisma({
+      errorRecord: {
+        findMany: jest
+          .fn()
+          .mockImplementation(({ where }: any) =>
+            Promise.resolve(
+              'completedTodayDate' in where
+                ? [{ completedTodayDate: todayStr }]
+                : [],
+            ),
+          ),
+      },
+    });
+    const usersService = new UsersService(prisma);
+    const service = new ProgressService(prisma, usersService);
+
+    const summary = await service.getDailySummary('u1');
+    expect(summary.correctedErrorsToday).toBe(1);
+  });
+
   it('не считает ошибку, изменённую сегодня (updatedAt), если это не occurrence — lastOccurrenceAt не в окне', async () => {
     const oldDate = new Date(Date.now() - 10 * 24 * 3600 * 1000);
     const prisma = buildPrisma({

@@ -108,4 +108,8 @@ export class EvaluateSentenceDto {
   @IsString()
   @MaxLength(40)
   source?: string;
+
+  @IsOptional()
+  @IsString()
+  lessonId?: string;
 }

@@ -24,6 +24,7 @@ import {
 } from '../components/ui';
 import { speak, useSpeechRecognition } from '../lib/voice';
 import DailySummaryCard from '../components/DailySummaryCard';
+import { LanguageIssueNotice } from '../components/LanguageIssueNotice';
 
 type Stage =
   | 'warmup'
@@ -171,6 +172,11 @@ function TranslateTask({
         <Button onClick={check} disabled={checking}>
           {t('app.check')}
         </Button>
+      ) : result.languageIssue ? (
+        <div className="space-y-2">
+          <LanguageIssueNotice issue={result.languageIssue} />
+          <Button onClick={() => onDone(false)}>{t('app.next')}</Button>
+        </div>
       ) : (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -475,12 +481,15 @@ export default function LessonPlayerPage() {
                       sentence: personalSentence,
                       targetPhrase: content.personalPrompt.phrase,
                       context: content.personalPrompt.instruction,
+                      lessonId: id,
                     },
                   );
                   setPersonalEval(evaluation);
-                  setTotalChecked((n) => n + 1);
-                  if (evaluation.errors.length === 0) setCorrectCount((n) => n + 1);
-                  else setErrorsCount((n) => n + evaluation.errors.length);
+                  if (!evaluation.languageIssue) {
+                    setTotalChecked((n) => n + 1);
+                    if (evaluation.errors.length === 0) setCorrectCount((n) => n + 1);
+                    else setErrorsCount((n) => n + evaluation.errors.length);
+                  }
                 } finally {
                   setPersonalChecking(false);
                 }
@@ -488,6 +497,11 @@ export default function LessonPlayerPage() {
             >
               {t('app.check')}
             </Button>
+          ) : personalEval.languageIssue ? (
+            <div className="space-y-2">
+              <LanguageIssueNotice issue={personalEval.languageIssue} />
+              <Button onClick={goNext}>{t('app.next')}</Button>
+            </div>
           ) : (
             <div className="space-y-2">
               <AiModeBadge mode={personalEval.aiMode} fallbackReason={personalEval.fallbackReason} />

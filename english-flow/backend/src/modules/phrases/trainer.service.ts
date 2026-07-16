@@ -1,7 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
+import { TranslationEvaluation } from '../ai/ai.types';
 import { ErrorsService } from '../errors/errors.service';
+import {
+  buildLanguageIssue,
+  detectAnswerLanguage,
+  extractEnglishPart,
+} from '../errors/language-detector';
 import { UsersService } from '../users/users.service';
 import { EvaluateTranslationDto } from './phrases.dto';
 
@@ -154,7 +160,31 @@ export class TrainerService {
     return tasks;
   }
 
-  async evaluate(userId: string, dto: EvaluateTranslationDto) {
+  async evaluate(
+    userId: string,
+    dto: EvaluateTranslationDto,
+  ): Promise<TranslationEvaluation> {
+    let userAnswer = dto.userAnswer;
+    // Задание требует английский ответ только при направлении ru_en —
+    // при en_ru эталон сам на русском, поэтому языковой гейт не применяем.
+    if (dto.direction === 'ru_en') {
+      const languageIssue = this.checkLanguageGate(userAnswer, dto.expected);
+      if (languageIssue) {
+        return {
+          aiMode: 'llm',
+          verdict: 'incorrect',
+          correctAnswer: dto.expected,
+          explanation: '',
+          errors: [],
+          languageIssue,
+        };
+      }
+      const detected = detectAnswerLanguage(userAnswer);
+      if (detected === 'MIXED') {
+        userAnswer = extractEnglishPart(userAnswer) ?? userAnswer;
+      }
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { currentLevel: true },
@@ -172,10 +202,34 @@ export class TrainerService {
         userId,
         result.errors,
         dto.source ?? 'translation_trainer',
+        undefined,
+        {
+          sourceModule: 'trainer',
+          sourcePrompt: dto.prompt,
+          sourceContext: `Тренажёр перевода · ${dto.direction === 'ru_en' ? 'RU→EN' : 'EN→RU'}`,
+          originalUserAnswer: dto.userAnswer,
+        },
       );
     }
     await this.usersService.registerStudyActivity(userId);
     return result;
+  }
+
+  /**
+   * Раздел 3 ТЗ: русский/пустой/бессмысленный ответ не должен попадать в
+   * оценщик английской грамматики. Возвращает LanguageIssueInfo, если
+   * задание нужно заблокировать; undefined, если можно продолжать
+   * (в т.ч. если из MIXED-ответа надёжно извлеклась английская часть).
+   */
+  private checkLanguageGate(userAnswer: string, expected: string) {
+    const detected = detectAnswerLanguage(userAnswer);
+    if (detected === 'EN') return undefined;
+    if (detected === 'MIXED' && extractEnglishPart(userAnswer))
+      return undefined;
+    return buildLanguageIssue(
+      detected as 'RU' | 'MIXED' | 'EMPTY' | 'UNCLEAR',
+      expected,
+    );
   }
 
   private shuffle(items: string[], seedKey: string): string[] {

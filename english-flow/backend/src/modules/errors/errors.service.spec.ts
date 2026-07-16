@@ -1,5 +1,10 @@
 import { PrismaService } from '../../prisma/prisma.service';
+import { UsersService } from '../users/users.service';
 import { ErrorsService } from './errors.service';
+
+const fakeUsersService = {
+  localDate: () => '2026-01-01',
+} as unknown as UsersService;
 
 describe('ErrorsService.recordErrors — дедупликация и объединение', () => {
   it('новая ошибка создаётся, повторная — инкрементит occurrenceCount без дубля', async () => {
@@ -34,7 +39,7 @@ describe('ErrorsService.recordErrors — дедупликация и объед�
       },
     } as unknown as PrismaService;
 
-    const service = new ErrorsService(prisma);
+    const service = new ErrorsService(prisma, fakeUsersService);
     const err = {
       original: 'He work',
       corrected: 'He works',
@@ -76,7 +81,7 @@ describe('ErrorsService.recordErrors — дедупликация и объед�
       },
     } as unknown as PrismaService;
 
-    const service = new ErrorsService(prisma);
+    const service = new ErrorsService(prisma, fakeUsersService);
     await service.recordErrors(
       'u1',
       [
@@ -116,7 +121,7 @@ describe('ErrorsService.recordErrors — дедупликация и объед�
       },
     } as unknown as PrismaService;
 
-    const service = new ErrorsService(prisma);
+    const service = new ErrorsService(prisma, fakeUsersService);
     await service.recordErrors(
       'u1',
       [
@@ -162,7 +167,7 @@ describe('ErrorsService.recordErrors — дедупликация и объед�
       },
     } as unknown as PrismaService;
 
-    const service = new ErrorsService(prisma);
+    const service = new ErrorsService(prisma, fakeUsersService);
     await service.recordErrors(
       'u1',
       [

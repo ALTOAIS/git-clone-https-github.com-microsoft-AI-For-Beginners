@@ -293,9 +293,11 @@ export class ProgressService {
   ): Promise<Map<string, DayBucket>> {
     // +1 день запаса на случай сдвига часового пояса относительно UTC.
     const since = new Date(Date.now() - (days + 1) * DAY_MS);
+    const sinceDateStr = this.usersService.localDate(since, timezone);
 
     const [
       errorRecords,
+      practicedErrors,
       reviewAttempts,
       conversations,
       lessonAttempts,
@@ -311,6 +313,15 @@ export class ProgressService {
           ],
         },
         select: { createdAt: true, lastOccurrenceAt: true },
+      }),
+      // Ошибки, успешно отработанные в ежедневной практике (раздел 4 ТЗ) —
+      // completedTodayDate хранит только последнюю дату отработки записи,
+      // поэтому в истории учитывается не более одного раза за день на
+      // запись, но для "сегодня" (основной случай использования) это
+      // всегда точно.
+      this.prisma.errorRecord.findMany({
+        where: { userId, completedTodayDate: { gte: sinceDateStr } },
+        select: { completedTodayDate: true },
       }),
       this.prisma.reviewAttempt.findMany({
         where: { userId, createdAt: { gte: since } },
@@ -356,6 +367,10 @@ export class ProgressService {
       if (e.createdAt >= since) days.add(local(e.createdAt));
       if (e.lastOccurrenceAt >= since) days.add(local(e.lastOccurrenceAt));
       for (const d of days) bucket(d).correctedErrors += 1;
+    }
+    for (const e of practicedErrors) {
+      if (e.completedTodayDate)
+        bucket(e.completedTodayDate).correctedErrors += 1;
     }
     for (const a of reviewAttempts) {
       bucket(local(a.createdAt)).reviewsCompleted += 1;

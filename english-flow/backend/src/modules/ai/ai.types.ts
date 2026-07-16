@@ -50,12 +50,26 @@ export interface DetectedError {
 export type TranslationVerdict =
   'correct' | 'mostly_correct' | 'unnatural' | 'incorrect';
 
+/**
+ * Ответ ученика распознан как не-английский (или пустой/бессмысленный) —
+ * задание требовало английский, поэтому оценщик грамматики НЕ вызывается и
+ * ErrorRecord не создаётся. Детерминированно (см. language-detector.ts).
+ */
+export interface LanguageIssueInfo {
+  detectedLanguage: 'RU' | 'MIXED' | 'EMPTY' | 'UNCLEAR';
+  message: string;
+  hint?: string;
+  firstWord?: string;
+  example?: string;
+}
+
 export interface TranslationEvaluation extends AiMeta {
   verdict: TranslationVerdict;
   correctAnswer: string;
   naturalAlternative?: string;
   explanation: string;
   errors: DetectedError[];
+  languageIssue?: LanguageIssueInfo;
 }
 
 export interface SentenceEvaluation extends AiMeta {
@@ -63,6 +77,7 @@ export interface SentenceEvaluation extends AiMeta {
   natural: string;
   explanation: string;
   errors: DetectedError[];
+  languageIssue?: LanguageIssueInfo;
 }
 
 /** Пять уровней качества ответа в повторении (раздел «интеллектуальная проверка»). */
@@ -84,6 +99,7 @@ export interface ReviewAnswerEvaluation extends AiMeta {
   /** 1–2 дополнительных примера на английском */
   examples: string[];
   errors: DetectedError[];
+  languageIssue?: LanguageIssueInfo;
 }
 
 export interface SpeakingTurnResult extends AiMeta {

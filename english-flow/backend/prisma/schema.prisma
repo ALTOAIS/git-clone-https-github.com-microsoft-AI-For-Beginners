@@ -107,6 +107,30 @@ enum MicroLessonStatus {
   DISMISSED
 }
 
+/// Жизненный цикл отдельной ошибки в новой ежедневной практике (раздел «Мои
+/// ошибки»). Отдельно от legacy ErrorStatus — старые статусы/фильтры не
+/// трогаем, новый UI читает practiceStatus.
+enum ErrorPracticeStatus {
+  NEW
+  PRACTICING
+  COMPLETED_TODAY
+  SCHEDULED_REVIEW
+  RECURRING
+  MASTERED
+  ARCHIVED
+}
+
+/// Результат детерминированной классификации языка ответа ученика —
+/// нужен, чтобы русский/пустой/бессмысленный ответ не попадал в реестр
+/// ошибок английской грамматики.
+enum DetectedLanguage {
+  EN
+  RU
+  MIXED
+  EMPTY
+  UNCLEAR
+}
+
 model User {
   id                       String    @id @default(cuid())
   email                    String    @unique
@@ -256,7 +280,36 @@ model ErrorRecord {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
+  // --- Контекст исходного задания (UX-редизайн «Мои ошибки») ---
+  // Для записей, созданных до этой миграции, все поля ниже — null;
+  // фронтенд обязан показывать честный fallback, а не выдумывать контекст.
+  /// lesson | review | trainer | speaking | diagnostic
+  sourceModule        String?
+  /// id урока/диалога/фразы — если применимо
+  sourceEntityId      String?
+  /// исходное задание/вопрос/RU-фраза, которую нужно было выразить
+  sourcePrompt        String?
+  /// доп. контекст: сценарий, название урока, последний вопрос ИИ
+  sourceContext       String?
+  /// полный ответ ученика целиком (originalText/correctedText — это фрагмент)
+  originalUserAnswer  String?
+
+  /// Результат детерминированной классификации языка ответа при создании записи
+  detectedLanguage    DetectedLanguage?
+
+  // --- Жизненный цикл ежедневной практики ---
+  practiceStatus         ErrorPracticeStatus @default(NEW)
+  lastPracticedAt         DateTime?
+  /// Успешных повторных проверок подряд (используется для интервала и MASTERED)
+  successfulReviewCount   Int                 @default(0)
+  /// Сколько из успехов было на ДРУГОМ (не исходном) предложении — гейт MASTERED
+  contextsPassed          Int                 @default(0)
+  /// Локальная дата (YYYY-MM-DD), когда ошибка была отработана — основа для
+  /// «Выполнено сегодня» без отдельной таблицы сессий.
+  completedTodayDate      String?
+
   @@index([userId, status])
+  @@index([userId, practiceStatus])
   @@index([userId, microCategory])
 }
 
