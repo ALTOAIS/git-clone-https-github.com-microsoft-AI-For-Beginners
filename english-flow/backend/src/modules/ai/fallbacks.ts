@@ -401,7 +401,7 @@ export function classifyErrorFallback(
   };
 }
 
-const MICRO_LESSON_RULES: Record<MicroCategoryString, string> = {
+export const MICRO_LESSON_RULES: Record<MicroCategoryString, string> = {
   ARTICLES:
     'Артикль почти всегда обязателен перед исчисляемым существительным в единственном числе. "A/an" используется, когда речь о чём-то одном из многих ("a document"), "the" — когда собеседник понимает, о каком именно предмете речь ("the document we discussed"). Перед неисчисляемыми существительными и множественным числом без конкретики артикль обычно не нужен.',
   THIRD_PERSON_SINGULAR:

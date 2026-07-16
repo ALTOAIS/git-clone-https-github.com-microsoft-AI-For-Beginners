@@ -17,6 +17,7 @@ import {
   cx,
 } from '../components/ui';
 import { speak, useSpeechRecognition } from '../lib/voice';
+import { LanguageIssueNotice } from '../components/LanguageIssueNotice';
 
 const MODES = ['words', 'phrases', 'sentences', 'professional', 'voice', 'errors'] as const;
 type Mode = (typeof MODES)[number];
@@ -277,6 +278,13 @@ export default function TranslatePage() {
               <Button onClick={check} disabled={checking} className="w-full">
                 {t('app.check')}
               </Button>
+            ) : result.languageIssue ? (
+              <div className="space-y-2">
+                <LanguageIssueNotice issue={result.languageIssue} />
+                <Button onClick={next} className="w-full">
+                  {t('app.next')}
+                </Button>
+              </div>
             ) : (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">

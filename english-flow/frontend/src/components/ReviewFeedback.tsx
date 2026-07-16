@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { ReviewAnswerEvaluation } from '../api/types';
 import { AiModeBadge, Badge, Button, cx } from './ui';
 import { speak } from '../lib/voice';
+import { LanguageIssueNotice } from './LanguageIssueNotice';
 
 const VERDICT_TONE: Record<
   string,
@@ -33,6 +34,19 @@ export function ReviewFeedback({
 }) {
   const { t } = useTranslation();
   const [showDetails, setShowDetails] = useState(false);
+
+  if (evaluation.languageIssue) {
+    return (
+      <div className="space-y-3">
+        <LanguageIssueNotice issue={evaluation.languageIssue} />
+        {onRetry && (
+          <Button variant="secondary" onClick={onRetry} className="w-full">
+            🔁 {retryLabel ?? t('review.tryAgain')}
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

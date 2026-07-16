@@ -161,12 +161,20 @@ export class DiagnosticsService {
       },
     });
 
-    // 4. Повторяющиеся ошибки → реестр ошибок
+    // 4. Повторяющиеся ошибки → реестр ошибок.
+    // ИИ агрегирует recurringErrors по ВСЕМ письменным/устным ответам сразу,
+    // поэтому надёжно связать конкретную ошибку с конкретным заданием
+    // невозможно — честно даём только общий контекст модуля, без выдумывания.
     if (aiEvaluation.recurringErrors.length > 0) {
       await this.errorsService.recordErrors(
         userId,
         aiEvaluation.recurringErrors,
         'diagnostic',
+        undefined,
+        {
+          sourceModule: 'diagnostic',
+          sourceContext: 'Диагностический тест',
+        },
       );
     }
 

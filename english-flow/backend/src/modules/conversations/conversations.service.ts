@@ -124,10 +124,25 @@ export class ConversationsService {
     };
 
     if (feedback.mistakes.length > 0) {
+      // Лучшее приближение исходного контекста: последний вопрос ИИ перед
+      // завершением и реплика ученика, где встречается ошибочный фрагмент
+      // (если её удаётся найти) — надёжно определить, какой ИМЕННО вопрос
+      // спровоцировал каждую конкретную ошибку, невозможно (ИИ анализирует
+      // весь транскрипт целиком), поэтому даём общий, но честный контекст.
+      const lastAssistantTurn = [...transcript]
+        .reverse()
+        .find((t) => t.role === 'assistant');
       await this.errorsService.recordErrors(
         userId,
         feedback.mistakes,
         'speaking',
+        undefined,
+        {
+          sourceModule: 'speaking',
+          sourceEntityId: conversationId,
+          sourceContext: scenario?.titleRu ?? conversation.scenario,
+          sourcePrompt: lastAssistantTurn?.text,
+        },
       );
     }
 

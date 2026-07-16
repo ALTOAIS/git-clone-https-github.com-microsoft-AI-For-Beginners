@@ -52,6 +52,28 @@ export class ErrorsController {
     return this.errorsService.submitPractice(user.userId, id, dto.answer);
   }
 
+  @Get('daily-session')
+  getDailySession(
+    @CurrentUser() user: JwtUser,
+    @Query('extra') extra?: string,
+  ) {
+    return this.errorsService.getDailySession(user.userId, extra === 'true');
+  }
+
+  @Post('daily-session/:id/submit')
+  submitDailyPractice(
+    @CurrentUser() user: JwtUser,
+    @Param('id') id: string,
+    @Body() dto: PracticeAnswerDto,
+  ) {
+    return this.errorsService.submitDailyPractice(user.userId, id, dto.answer);
+  }
+
+  @Post('daily-session/:id/skip')
+  skipDailyTask(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+    return this.errorsService.skipDailyTask(user.userId, id);
+  }
+
   @Patch(':id')
   updateStatus(
     @CurrentUser() user: JwtUser,
