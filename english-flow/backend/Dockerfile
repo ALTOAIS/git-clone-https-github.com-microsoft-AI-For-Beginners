@@ -18,4 +18,7 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 
 EXPOSE 3001
-CMD ["sh", "-c", "npx prisma migrate deploy && (node dist-seed/prisma/seed.js || true) && node dist/main"]
+# Миграции и сиды выполняются через Render preDeployCommand (см. render.yaml)
+# ДО старта нового инстанса — не здесь. Так исключены гонки за postgres
+# advisory lock между CMD перекрывающихся деплоев (см. комментарий в render.yaml).
+CMD ["node", "dist/main"]

@@ -144,7 +144,10 @@ cd frontend && npm run typecheck && npm run lint && npm run build
 ## Миграции БД
 
 - новая миграция в разработке: `npm run prisma:migrate -- --name <name>`
-- применить в продакшене: `npm run prisma:deploy` (выполняется автоматически в Docker-образе)
+- применить в продакшене: `npm run prisma:deploy` — в `docker compose` выполняется
+  автоматически при старте (см. `command:` бэкенда в `docker-compose.yml`);
+  на Render — через `preDeployCommand` перед стартом нового инстанса (см. раздел
+  «Render (Blueprint)» ниже), сам Docker-образ миграции не запускает.
 - сиды идемпотентны: повторный запуск не создаёт дублей.
 
 ## Продакшен-сборка
@@ -194,12 +197,17 @@ Blueprint создаёт два сервиса; база данных в Render 
    - `DATABASE_URL` — обычная (у Neon — **pooled**, host с `-pooler`) строка
      подключения, используется приложением во время работы.
    - `DIRECT_URL` — **прямое** подключение без pooler'а (у Neon: в Connection
-     Details выключите тумблер «Pooled connection»). Используется только на
-     шаге `prisma migrate deploy` при старте контейнера — `migrate deploy`
-     берёт postgres advisory lock, который не работает через PgBouncer и
-     без `DIRECT_URL` падает с `P1002` (таймаут). Если ваш провайдер БД не
-     использует pooler, укажите то же значение, что и в `DATABASE_URL`.
-   Миграции и сиды применятся автоматически при старте контейнера.
+     Details выключите тумблер «Pooled connection»). Используется только для
+     `prisma migrate deploy` — `migrate deploy` берёт postgres advisory lock,
+     который не работает через PgBouncer и без `DIRECT_URL` падает с `P1002`
+     (таймаут). Если ваш провайдер БД не использует pooler, укажите то же
+     значение, что и в `DATABASE_URL`.
+   Миграции и сиды выполняются через `preDeployCommand` (см. `render.yaml`) —
+   Render запускает эту команду один раз ПЕРЕД стартом нового инстанса и
+   сериализует деплои, так что параллельные `migrate deploy` двух
+   пересекающихся деплоев (например, авто-деплой по пушу и ручной Manual
+   Deploy почти одновременно) не борются за один и тот же advisory lock.
+   Сам образ (`CMD`) миграции/сиды больше не запускает — только старт сервера.
 4. После деплоя бэкенда пропишите его URL в `VITE_API_URL` фронтенда
    (Manual Deploy — Vite читает переменную на этапе сборки).
 5. URL фронтенда пропишите в `CORS_ORIGIN` бэкенда вместо `*`.

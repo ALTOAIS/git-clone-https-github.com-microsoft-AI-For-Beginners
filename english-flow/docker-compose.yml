@@ -22,6 +22,11 @@ services:
       context: ./backend
     container_name: ef-backend
     restart: unless-stopped
+    # На Render миграции/сиды выполняются через preDeployCommand (см.
+    # english-flow/render.yaml), поэтому образ сам по себе их не запускает
+    # (CMD — только `node dist/main`). Для локального docker-compose такого
+    # отдельного шага нет, поэтому здесь тот же порядок явно через command:.
+    command: sh -c "npx prisma migrate deploy && (node dist-seed/prisma/seed.js || true) && node dist/main"
     depends_on:
       postgres:
         condition: service_healthy

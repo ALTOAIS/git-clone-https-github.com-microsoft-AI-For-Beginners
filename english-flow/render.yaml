@@ -25,6 +25,14 @@ services:
     dockerContext: .
     plan: free
     healthCheckPath: /api/health
+    # Render запускает preDeployCommand ОДИН РАЗ перед стартом нового инстанса
+    # и сериализует деплои — это исключает гонки между `prisma migrate deploy`
+    # разных деплоев (напр. auto-deploy по пушу + ручной Manual Deploy почти
+    # одновременно), из-за которых advisory lock мог зависать. Раньше эта
+    # команда была частью CMD контейнера — при перекрывающихся деплоях два
+    # процесса migrate deploy могли одновременно бороться за один и тот же
+    # postgres advisory lock и падать по таймауту (P1002).
+    preDeployCommand: npx prisma migrate deploy && (node dist-seed/prisma/seed.js || true)
     envVars:
       # Внешняя PostgreSQL. sync: false — Render запросит значение
       # при создании сервиса; в репозитории строка подключения не хранится.
