@@ -104,6 +104,103 @@ async function main() {
   });
 
   console.log(`E2E-пользователь готов: ${E2E_EMAIL} (id=${user.id})`);
+
+  await seedRegressionUser();
+}
+
+/**
+ * Отдельный пользователь для регрессионных тестов production-инцидента
+ * после PR #33 (пустая дневная сессия при наличии NEW-записей). Отдельный
+ * от основного E2E-пользователя, чтобы не влиять на состав его daily-session
+ * (там ожидается ровно 3 конкретных задания).
+ */
+export const REGRESSION_EMAIL = 'e2e-regression@englishflow.local';
+export const REGRESSION_PASSWORD = 'e2e-regression-password';
+
+async function seedRegressionUser() {
+  await prisma.user.deleteMany({ where: { email: REGRESSION_EMAIL } });
+
+  const user = await prisma.user.create({
+    data: {
+      email: REGRESSION_EMAIL,
+      passwordHash: await bcrypt.hash(REGRESSION_PASSWORD, 10),
+      name: 'E2E Regression',
+      currentLevel: 'A2',
+      onboardingCompleted: true,
+      skillProfile: { create: {} },
+    },
+  });
+
+  const past = new Date(Date.now() - 60_000);
+  const future = new Date(Date.now() + 10 * 24 * 3600 * 1000);
+
+  // A. practiceStatus=NEW, но nextPracticeAt в будущем — унаследовано от
+  // legacy-тренажёра/старого пред-миграционного трекера. Воспроизводит
+  // production-баг: должна быть видна в daily session несмотря на дату,
+  // и без контекста — должна показывать честный fallback в общем списке.
+  await prisma.errorRecord.create({
+    data: {
+      userId: user.id,
+      originalText: 'She go to office.',
+      correctedText: 'She goes to the office.',
+      explanation: 'Present Simple: he/she/it + глагол с -s, плюс артикль the.',
+      errorType: 'VERB_FORM',
+      microCategory: 'THIRD_PERSON_SINGULAR',
+      source: 'legacy',
+      status: 'NEW',
+      practiceStatus: 'NEW',
+      occurrenceCount: 3,
+      nextPracticeAt: future,
+      lastOccurrenceAt: past,
+    },
+  });
+
+  // B. Настоящая запланированная проверка (SCHEDULED_REVIEW, будущая дата) —
+  // единственный легитимный случай, где дата должна скрывать запись из
+  // daily session. В общем списке должна показывать "Запланировано на …".
+  await prisma.errorRecord.create({
+    data: {
+      userId: user.id,
+      originalText: 'I have went there yesterday.',
+      correctedText: 'I went there yesterday.',
+      explanation:
+        'Past Simple для завершённого действия в конкретный момент — не Present Perfect.',
+      errorType: 'VERB_TENSE',
+      microCategory: 'PAST_SIMPLE',
+      source: 'review',
+      status: 'PRACTICING',
+      practiceStatus: 'SCHEDULED_REVIEW',
+      occurrenceCount: 1,
+      successfulReviewCount: 1,
+      nextPracticeAt: future,
+      lastOccurrenceAt: past,
+      lastPracticedAt: past,
+    },
+  });
+
+  // C. Старая повреждённая запись (обе части русские) — до языкового гейта.
+  // Не должна попадать в daily session; в общем списке — значок "повреждена"
+  // и кнопка ручного удаления.
+  await prisma.errorRecord.create({
+    data: {
+      userId: user.id,
+      originalText: 'поужинали',
+      correctedText: 'ужинаем',
+      explanation: '',
+      errorType: 'OTHER',
+      microCategory: null,
+      source: 'legacy',
+      status: 'NEW',
+      practiceStatus: 'NEW',
+      occurrenceCount: 1,
+      nextPracticeAt: past,
+      lastOccurrenceAt: past,
+    },
+  });
+
+  console.log(
+    `E2E-пользователь (регрессия) готов: ${REGRESSION_EMAIL} (id=${user.id})`,
+  );
 }
 
 main()

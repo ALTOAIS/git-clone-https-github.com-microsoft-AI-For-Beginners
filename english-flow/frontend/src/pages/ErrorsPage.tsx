@@ -42,12 +42,43 @@ const PRACTICE_STATUS_TONES: Record<string, 'slate' | 'blue' | 'green' | 'amber'
 };
 
 /**
+ * Грубая клиентская эвристика "похоже на повреждённую запись" — только для
+ * UI-подсказки (значок + кнопка удаления). Реальное исключение таких
+ * записей из ежедневной практики уже применяется на бэкенде
+ * (getDailySession), это не источник истины.
+ */
+function looksNonEnglish(text: string): boolean {
+  const cyrillic = (text.match(/[а-яёА-ЯЁ]/g) ?? []).length;
+  const latin = (text.match(/[a-zA-Z]/g) ?? []).length;
+  const total = cyrillic + latin;
+  return total > 0 && cyrillic / total >= 0.5;
+}
+
+/**
+ * Минимальный набор полей, которого достаточно для карточки контекста —
+ * им удовлетворяют и ErrorSessionTask (ежедневная практика), и обычный
+ * ErrorRecord (общий список /errors), поэтому оба места используют один
+ * и тот же компонент вместо двух разных вёрсток карточки.
+ */
+interface ErrorContextCardData {
+  hasContext: boolean;
+  sourceModule?: string | null;
+  sourcePrompt?: string | null;
+  sourceContext?: string | null;
+  originalUserAnswer?: string | null;
+  originalText: string;
+  correctedText: string;
+  explanation: string;
+  additionalExample?: string | null;
+}
+
+/**
  * Карточка контекста ошибки (раздел 2 ТЗ): откуда ошибка, что было задание,
  * что ответил пользователь, в чём ошибка, как исправить, объяснение,
  * дополнительный пример, источник. Для старых записей без контекста —
  * честное сообщение вместо выдумывания.
  */
-function ErrorContextCard({ task }: { task: ErrorSessionTask }) {
+function ErrorContextCard({ task }: { task: ErrorContextCardData }) {
   const { t } = useTranslation();
   const moduleLabel = task.sourceModule
     ? t(`errors.context.sourceModule.${task.sourceModule}` as any, task.sourceModule)
@@ -158,6 +189,7 @@ function DailyTaskCard({
   };
 
   return (
+    <div data-testid="daily-practice-card">
     <Card className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Badge tone="blue">{t('errors.daily.progress', { current: index + 1, total })}</Badge>
@@ -296,6 +328,7 @@ function DailyTaskCard({
         </div>
       )}
     </Card>
+    </div>
   );
 }
 
@@ -469,6 +502,11 @@ export default function ErrorsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['errors'] }),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/errors/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['errors'] }),
+  });
+
   return (
     <div className="space-y-4">
       <PageTitle>{t('errors.title')}</PageTitle>
@@ -500,50 +538,80 @@ export default function ErrorsPage() {
         <EmptyState>{t('errors.empty')}</EmptyState>
       ) : (
         <div className="space-y-2">
-          {errors.map((error) => (
-            <Card key={error.id} className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={STATUS_TONES[error.status]}>
-                  {t(`errors.status.${error.status}`)}
-                </Badge>
-                <Badge tone="slate">
-                  {t(`errors.types.${error.errorType}` as any, error.errorType)}
-                </Badge>
-                <span className="text-xs text-slate-400">
-                  {t('errors.occurrences', { count: error.occurrenceCount })}
-                </span>
-              </div>
-              <div>
-                <div className="text-sm text-slate-500">{t('errors.yourVersion')}:</div>
-                <div className="text-red-600 line-through">{error.originalText}</div>
-              </div>
-              <div>
-                <div className="text-sm text-slate-500">{t('errors.correctVersion')}:</div>
-                <div className="font-medium text-emerald-700">{error.correctedText}</div>
-              </div>
-              {error.explanation && (
-                <p className="text-sm text-slate-600">{error.explanation}</p>
-              )}
-              {error.personalExample && (
-                <p className="text-sm italic text-slate-500">
-                  {t('errors.personalExample')}: “{error.personalExample}”
-                </p>
-              )}
-              {error.originalUserAnswer && (
-                <p className="text-xs text-slate-400">
-                  {t('errors.context.yourAnswer')}: {error.originalUserAnswer}
-                </p>
-              )}
-              {error.status !== 'RESOLVED' && (
-                <Button
-                  variant="ghost"
-                  onClick={() => resolveMutation.mutate(error.id)}
-                >
-                  ✓ {t('errors.markResolved')}
-                </Button>
-              )}
-            </Card>
-          ))}
+          {errors.map((error) => {
+            const hasContext = !!(
+              error.sourceModule ||
+              error.sourcePrompt ||
+              error.sourceContext ||
+              error.originalUserAnswer
+            );
+            const scheduledFuture =
+              error.practiceStatus === 'SCHEDULED_REVIEW' &&
+              !!error.nextPracticeAt &&
+              new Date(error.nextPracticeAt).getTime() > Date.now();
+            const suspectInvalid = looksNonEnglish(error.correctedText);
+            return (
+              <Card key={error.id} className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone={STATUS_TONES[error.status]}>
+                    {t(`errors.status.${error.status}`)}
+                  </Badge>
+                  <Badge tone="slate">
+                    {t(`errors.types.${error.errorType}` as any, error.errorType)}
+                  </Badge>
+                  <span className="text-xs text-slate-400">
+                    {t('errors.occurrences', { count: error.occurrenceCount })}
+                  </span>
+                  {scheduledFuture && (
+                    <Badge tone="blue">
+                      {t('errors.context.scheduledFor', {
+                        date: new Date(error.nextPracticeAt!).toLocaleDateString('ru-RU'),
+                      })}
+                    </Badge>
+                  )}
+                  {suspectInvalid && (
+                    <Badge tone="red">⚠ {t('errors.context.invalidRecord')}</Badge>
+                  )}
+                </div>
+                <ErrorContextCard
+                  task={{
+                    hasContext,
+                    sourceModule: error.sourceModule,
+                    sourcePrompt: error.sourcePrompt,
+                    sourceContext: error.sourceContext,
+                    originalUserAnswer: error.originalUserAnswer,
+                    originalText: error.originalText,
+                    correctedText: error.correctedText,
+                    explanation: error.explanation,
+                  }}
+                />
+                {error.personalExample && (
+                  <p className="text-sm italic text-slate-500">
+                    {t('errors.personalExample')}: “{error.personalExample}”
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {error.status !== 'RESOLVED' && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => resolveMutation.mutate(error.id)}
+                    >
+                      ✓ {t('errors.markResolved')}
+                    </Button>
+                  )}
+                  {suspectInvalid && (
+                    <Button
+                      variant="danger"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => deleteMutation.mutate(error.id)}
+                    >
+                      {t('errors.context.deleteInvalid')}
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

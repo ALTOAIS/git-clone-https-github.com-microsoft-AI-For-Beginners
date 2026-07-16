@@ -429,6 +429,9 @@ export const ru = {
         speaking: 'Разговорная практика',
         diagnostic: 'Диагностический тест',
       },
+      scheduledFor: 'Запланировано на {{date}}',
+      invalidRecord: 'Похоже, запись повреждена',
+      deleteInvalid: 'Удалить ошибочную запись',
     },
     daily: {
       intro: 'Сегодняшняя практика ошибок: {{count}} {{taskWord}} · около {{minutes}} минут',

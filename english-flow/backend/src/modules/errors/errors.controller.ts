@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -81,5 +82,10 @@ export class ErrorsController {
     @Body() dto: UpdateErrorStatusDto,
   ) {
     return this.errorsService.updateStatus(user.userId, id, dto.status);
+  }
+
+  @Delete(':id')
+  deleteRecord(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+    return this.errorsService.deleteRecord(user.userId, id);
   }
 }

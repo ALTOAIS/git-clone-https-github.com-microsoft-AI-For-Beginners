@@ -39,6 +39,62 @@ function makeRecord(overrides: Record<string, any>) {
   };
 }
 
+/**
+ * Мини-интерпретатор Prisma-style where для in-memory моков: понимает
+ * вложенные OR/AND и точечные условия по полям, которые реально использует
+ * ErrorsService (userId/practiceStatus/completedTodayDate/lastSkippedDate/
+ * nextPracticeAt). Нужен из-за вложенного OR внутри OR в getDailySession
+ * (раздел про nextPracticeAt только для SCHEDULED_REVIEW).
+ */
+function matchesWhere(r: Record<string, any>, where: any): boolean {
+  for (const [key, cond] of Object.entries(where)) {
+    if (key === 'OR') {
+      if (!(cond as any[]).some((sub) => matchesWhere(r, sub))) return false;
+      continue;
+    }
+    if (key === 'AND') {
+      if (!(cond as any[]).every((sub) => matchesWhere(r, sub))) return false;
+      continue;
+    }
+    if (key === 'userId') {
+      if (r.userId !== cond) return false;
+      continue;
+    }
+    if (key === 'completedTodayDate' || key === 'lastSkippedDate') {
+      if (cond === null) {
+        if (r[key] != null) return false;
+      } else if (cond && typeof cond === 'object' && 'not' in cond) {
+        // Prisma: {not: X} на nullable-поле матчит и NULL, и значения != X.
+        if (r[key] === (cond as any).not) return false;
+      } else if (r[key] !== cond) {
+        return false;
+      }
+      continue;
+    }
+    if (key === 'practiceStatus') {
+      if (typeof cond === 'string') {
+        if (r.practiceStatus !== cond) return false;
+      } else if (cond && typeof cond === 'object' && 'in' in cond) {
+        if (!(cond as any).in.includes(r.practiceStatus)) return false;
+      }
+      continue;
+    }
+    if (key === 'nextPracticeAt') {
+      if (cond === null) {
+        if (r.nextPracticeAt != null) return false;
+      } else if (cond && typeof cond === 'object' && 'lte' in cond) {
+        if (!(
+          r.nextPracticeAt != null && r.nextPracticeAt <= (cond as any).lte
+        )) {
+          return false;
+        }
+      }
+      continue;
+    }
+  }
+  return true;
+}
+
 /** Простой in-memory Prisma для сценариев ежедневной практики. */
 function makePrisma(records: ReturnType<typeof makeRecord>[]) {
   return {
@@ -50,45 +106,7 @@ function makePrisma(records: ReturnType<typeof makeRecord>[]) {
         Promise.resolve(records.find((r) => r.id === id) ?? null),
       ),
       findMany: jest.fn(({ where, take }: any) => {
-        let result = records.filter((r) => {
-          if (where.userId && r.userId !== where.userId) return false;
-          if ('completedTodayDate' in where) {
-            if (where.completedTodayDate === null) {
-              if (r.completedTodayDate != null) return false;
-            } else if (r.completedTodayDate !== where.completedTodayDate) {
-              return false;
-            }
-          }
-          if ('lastSkippedDate' in where) {
-            if (where.lastSkippedDate === null) {
-              if (r.lastSkippedDate != null) return false;
-            } else if (r.lastSkippedDate !== where.lastSkippedDate) {
-              return false;
-            }
-          }
-          if (
-            where.practiceStatus?.in &&
-            !where.practiceStatus.in.includes(r.practiceStatus)
-          ) {
-            return false;
-          }
-          if (where.OR) {
-            const ok = where.OR.some((cond: any) => {
-              if (cond.nextPracticeAt?.lte) {
-                return (
-                  r.nextPracticeAt != null &&
-                  r.nextPracticeAt <= cond.nextPracticeAt.lte
-                );
-              }
-              if ('nextPracticeAt' in cond && cond.nextPracticeAt === null) {
-                return r.nextPracticeAt == null;
-              }
-              return false;
-            });
-            if (!ok) return false;
-          }
-          return true;
-        });
+        let result = records.filter((r) => matchesWhere(r, where));
         if (take) result = result.slice(0, take);
         return Promise.resolve(result);
       }),
@@ -107,6 +125,11 @@ function makePrisma(records: ReturnType<typeof makeRecord>[]) {
           }
         }
         return Promise.resolve(rec);
+      }),
+      delete: jest.fn(({ where: { id } }: any) => {
+        const idx = records.findIndex((r) => r.id === id);
+        const [removed] = idx >= 0 ? records.splice(idx, 1) : [undefined];
+        return Promise.resolve(removed);
       }),
       findFirst: jest.fn(),
       create: jest.fn(),
@@ -189,6 +212,106 @@ describe('ErrorsService — ежедневная сессия (раздел 4 Т
     expect(session.completedTasks).toHaveLength(1);
     expect(session.completedTasks[0].id).toBe(record.id);
     expect(record.completedTodayDate).toBe(TODAY);
+  });
+});
+
+describe('ErrorsService — регрессия production-инцидента после PR #33', () => {
+  it('NEW-запись с nextPracticeAt в будущем (унаследованным от legacy-тренажёра) видна в daily session', async () => {
+    // Именно этот сценарий воспроизводит production-баг: practiceStatus=NEW
+    // (дефолт миграции), но nextPracticeAt в будущем — например, от старого
+    // TrainerService mode=errors (submitPractice меняет nextPracticeAt, но
+    // не practiceStatus).
+    const record = makeRecord({
+      practiceStatus: 'NEW',
+      nextPracticeAt: FUTURE,
+    });
+    const prisma = makePrisma([record]);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    const session = await service.getDailySession('u1');
+    expect(session.tasks.map((t) => t.id)).toContain(record.id);
+  });
+
+  it('пустая цель (targetCount=0) не возникает, пока есть хотя бы одна активная NEW-запись', async () => {
+    const record = makeRecord({
+      practiceStatus: 'NEW',
+      nextPracticeAt: FUTURE,
+    });
+    const prisma = makePrisma([record]);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    const session = await service.getDailySession('u1');
+    expect(session.targetCount).toBeGreaterThan(0);
+    expect(session.tasks.length).toBeGreaterThan(0);
+  });
+
+  it('PRACTICING-запись с будущим nextPracticeAt (унаследованным) тоже видна', async () => {
+    const record = makeRecord({
+      practiceStatus: 'PRACTICING',
+      nextPracticeAt: FUTURE,
+    });
+    const prisma = makePrisma([record]);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    const session = await service.getDailySession('u1');
+    expect(session.tasks.map((t) => t.id)).toContain(record.id);
+  });
+
+  it('SCHEDULED_REVIEW с будущим nextPracticeAt по-прежнему НЕ видна (расписание — единственный легитимный кейс даты)', async () => {
+    const record = makeRecord({
+      practiceStatus: 'SCHEDULED_REVIEW',
+      nextPracticeAt: FUTURE,
+    });
+    const prisma = makePrisma([record]);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    const session = await service.getDailySession('u1');
+    expect(session.tasks.map((t) => t.id)).not.toContain(record.id);
+  });
+
+  it('старая запись, где correctedText сам по себе не английский, не попадает в daily session, но остаётся в списке', async () => {
+    const record = makeRecord({
+      practiceStatus: 'NEW',
+      originalText: 'поужинали',
+      correctedText: 'ужинаем',
+      detectedLanguage: null,
+    });
+    const prisma = makePrisma([record]);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    const session = await service.getDailySession('u1');
+    expect(session.tasks.map((t) => t.id)).not.toContain(record.id);
+
+    // Запись НЕ удалена и НЕ изменена — просто исключена из выборки.
+    const stillThere = await service.list('u1');
+    expect(stillThere.map((r) => r.id)).toContain(record.id);
+  });
+
+  it('пропущенная сегодня NEW-запись не возвращается в этой же сессии, несмотря на "always due" правило для NEW', async () => {
+    const record = makeRecord({ practiceStatus: 'NEW' });
+    const prisma = makePrisma([record]);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    await service.skipDailyTask('u1', record.id);
+    const session = await service.getDailySession('u1');
+    expect(session.tasks.map((t) => t.id)).not.toContain(record.id);
+    expect(session.skippedCount).toBe(1);
+  });
+
+  it('deleteRecord удаляет запись только её владельцу и не позволяет чужому пользователю', async () => {
+    const record = makeRecord({ userId: 'u1' });
+    const prisma = makePrisma([record]);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    await expect(
+      service.deleteRecord('someone-else', record.id),
+    ).rejects.toThrow();
+    await expect(service.deleteRecord('u1', record.id)).resolves.toEqual({
+      deleted: true,
+    });
+
+    const remaining = await service.list('u1');
+    expect(remaining.map((r) => r.id)).not.toContain(record.id);
   });
 });
 
