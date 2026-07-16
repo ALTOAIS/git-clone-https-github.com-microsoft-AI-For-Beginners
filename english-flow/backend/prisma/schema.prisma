@@ -3,8 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Прямое (не через PgBouncer) подключение — используется ТОЛЬКО для
+  // `prisma migrate deploy`. Advisory lock, которым мигратор синхронизирует
+  // параллельные деплои, требует одной постоянной сессии; через pooled-эндпоинт
+  // Neon (host с "-pooler") лок зависает и мигратор падает с P1002 по таймауту.
+  // См. https://pris.ly/d/migrate-advisory-locking
+  directUrl = env("DIRECT_URL")
 }
 
 enum CefrLevel {

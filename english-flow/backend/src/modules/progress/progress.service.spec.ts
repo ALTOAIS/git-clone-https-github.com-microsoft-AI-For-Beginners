@@ -28,23 +28,27 @@ describe('ProgressService.getDailySummary', () => {
     const today = new Date();
     const prisma = buildPrisma({
       reviewAttempt: {
-        findMany: jest.fn().mockResolvedValue([{ createdAt: today }, { createdAt: today }]),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ createdAt: today }, { createdAt: today }]),
       },
       lessonAttempt: {
-        findMany: jest.fn().mockResolvedValue([
-          { completedAt: today, speakingSeconds: 120 },
-        ]),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ completedAt: today, speakingSeconds: 120 }]),
       },
       voiceAnswer: {
-        findMany: jest.fn().mockResolvedValue([{ createdAt: today, durationSec: 60 }]),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ createdAt: today, durationSec: 60 }]),
       },
       userPhrase: {
         findMany: jest.fn().mockResolvedValue([{ createdAt: today }]),
       },
       errorRecord: {
-        findMany: jest.fn().mockResolvedValue([
-          { createdAt: today, lastOccurrenceAt: today },
-        ]),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ createdAt: today, lastOccurrenceAt: today }]),
       },
     });
     const usersService = new UsersService(prisma);
@@ -81,9 +85,11 @@ describe('ProgressService.getDailySummary', () => {
     const oldDate = new Date(Date.now() - 10 * 24 * 3600 * 1000);
     const prisma = buildPrisma({
       errorRecord: {
-        findMany: jest.fn().mockResolvedValue([
-          { createdAt: oldDate, lastOccurrenceAt: oldDate },
-        ]),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            { createdAt: oldDate, lastOccurrenceAt: oldDate },
+          ]),
       },
     });
     const usersService = new UsersService(prisma);

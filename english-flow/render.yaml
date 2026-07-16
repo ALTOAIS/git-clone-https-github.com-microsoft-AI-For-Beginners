@@ -28,7 +28,18 @@ services:
     envVars:
       # Внешняя PostgreSQL. sync: false — Render запросит значение
       # при создании сервиса; в репозитории строка подключения не хранится.
+      # Для Neon сюда идёт POOLED-строка (host вида "...-pooler...") —
+      # её же приложение использует во время работы.
       - key: DATABASE_URL
+        sync: false
+      # Прямое (НЕ через PgBouncer/pooler) подключение — используется
+      # ТОЛЬКО на шаге `prisma migrate deploy` при старте контейнера.
+      # Для Neon: в Connection Details выключите тумблер "Pooled connection"
+      # (или вручную уберите "-pooler" из хоста в DATABASE_URL) и скопируйте
+      # получившуюся строку сюда. Без этой переменной миграции падают с
+      # P1002 (таймаут advisory lock) — postgres advisory lock не работает
+      # через pooled-соединение.
+      - key: DIRECT_URL
         sync: false
       # JWT-секрет генерируется Render'ом и нигде не хранится в репозитории.
       - key: JWT_ACCESS_SECRET

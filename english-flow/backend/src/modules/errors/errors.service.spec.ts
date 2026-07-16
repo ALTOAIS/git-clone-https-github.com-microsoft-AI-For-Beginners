@@ -104,7 +104,11 @@ describe('ErrorsService.recordErrors — дедупликация и объед�
       errorRecord: {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockImplementation(({ data }) => {
-          const rec = { id: `e${store.length + 1}`, occurrenceCount: 1, ...data };
+          const rec = {
+            id: `e${store.length + 1}`,
+            occurrenceCount: 1,
+            ...data,
+          };
           store.push(rec);
           return Promise.resolve(rec);
         }),
@@ -143,11 +147,14 @@ describe('ErrorsService.recordErrors — дедупликация и объед�
     ];
     const prisma = {
       errorRecord: {
-        findFirst: jest.fn().mockImplementation(() => Promise.resolve(store[0])),
+        findFirst: jest
+          .fn()
+          .mockImplementation(() => Promise.resolve(store[0])),
         create: jest.fn(),
         update: jest.fn().mockImplementation(({ data }) => {
           Object.assign(store[0], {
-            occurrenceCount: store[0].occurrenceCount + (data.occurrenceCount?.increment ?? 0),
+            occurrenceCount:
+              store[0].occurrenceCount + (data.occurrenceCount?.increment ?? 0),
             lastOccurrenceAt: data.lastOccurrenceAt,
           });
           return Promise.resolve(store[0]);
@@ -169,6 +176,8 @@ describe('ErrorsService.recordErrors — дедупликация и объед�
       'review',
     );
     expect(store[0].occurrenceCount).toBe(2);
-    expect(store[0].lastOccurrenceAt.getTime()).toBeGreaterThan(oldDate.getTime());
+    expect(store[0].lastOccurrenceAt.getTime()).toBeGreaterThan(
+      oldDate.getTime(),
+    );
   });
 });

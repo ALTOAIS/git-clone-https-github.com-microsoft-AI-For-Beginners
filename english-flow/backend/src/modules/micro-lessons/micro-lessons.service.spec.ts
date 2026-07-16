@@ -23,11 +23,13 @@ describe('MicroLessonsService.getEligible — пороги срабатыван�
     );
     const prisma = {
       errorRecord: {
-        findMany: jest.fn().mockImplementation(({ where }) =>
-          Promise.resolve(
-            where.microCategory === 'THIRD_PERSON_SINGULAR' ? records : [],
+        findMany: jest
+          .fn()
+          .mockImplementation(({ where }) =>
+            Promise.resolve(
+              where.microCategory === 'THIRD_PERSON_SINGULAR' ? records : [],
+            ),
           ),
-        ),
       },
       microLesson: {
         findFirst: jest.fn().mockResolvedValue(null),
@@ -37,7 +39,9 @@ describe('MicroLessonsService.getEligible — пороги срабатыван�
 
     const service = new MicroLessonsService(prisma, ai);
     const eligible = await service.getEligible('u1');
-    expect(eligible.find((e) => e.category === 'THIRD_PERSON_SINGULAR')).toBeUndefined();
+    expect(
+      eligible.find((e) => e.category === 'THIRD_PERSON_SINGULAR'),
+    ).toBeUndefined();
   });
 
   it('предлагает урок, когда количество ошибок достигает порога', async () => {
@@ -47,11 +51,13 @@ describe('MicroLessonsService.getEligible — пороги срабатыван�
     );
     const prisma = {
       errorRecord: {
-        findMany: jest.fn().mockImplementation(({ where }) =>
-          Promise.resolve(
-            where.microCategory === 'THIRD_PERSON_SINGULAR' ? records : [],
+        findMany: jest
+          .fn()
+          .mockImplementation(({ where }) =>
+            Promise.resolve(
+              where.microCategory === 'THIRD_PERSON_SINGULAR' ? records : [],
+            ),
           ),
-        ),
       },
       microLesson: {
         findFirst: jest.fn().mockResolvedValue(null),
@@ -74,27 +80,33 @@ describe('MicroLessonsService.getEligible — пороги срабатыван�
     );
     const prisma = {
       errorRecord: {
-        findMany: jest.fn().mockImplementation(({ where }) =>
-          Promise.resolve(
-            where.microCategory === 'THIRD_PERSON_SINGULAR' ? records : [],
+        findMany: jest
+          .fn()
+          .mockImplementation(({ where }) =>
+            Promise.resolve(
+              where.microCategory === 'THIRD_PERSON_SINGULAR' ? records : [],
+            ),
           ),
-        ),
       },
       microLesson: {
-        findFirst: jest.fn().mockImplementation(({ where }) =>
-          Promise.resolve(
-            where.category === 'THIRD_PERSON_SINGULAR'
-              ? { id: 'ml1', status: 'PENDING', createdAt: new Date(0) }
-              : null,
+        findFirst: jest
+          .fn()
+          .mockImplementation(({ where }) =>
+            Promise.resolve(
+              where.category === 'THIRD_PERSON_SINGULAR'
+                ? { id: 'ml1', status: 'PENDING', createdAt: new Date(0) }
+                : null,
+            ),
           ),
-        ),
       },
     } as unknown as PrismaService;
     const ai = {} as AiService;
 
     const service = new MicroLessonsService(prisma, ai);
     const eligible = await service.getEligible('u1');
-    expect(eligible.find((e) => e.category === 'THIRD_PERSON_SINGULAR')).toBeUndefined();
+    expect(
+      eligible.find((e) => e.category === 'THIRD_PERSON_SINGULAR'),
+    ).toBeUndefined();
   });
 
   it('предлагает урок снова после COMPLETED, если ошибки повторились после него', async () => {
@@ -120,21 +132,26 @@ describe('MicroLessonsService.getEligible — пороги срабатыван�
     const prisma = {
       errorRecord: {
         findMany: jest.fn().mockImplementation(({ where }) => {
-          if (where.microCategory !== 'THIRD_PERSON_SINGULAR') return Promise.resolve([]);
+          if (where.microCategory !== 'THIRD_PERSON_SINGULAR')
+            return Promise.resolve([]);
           const since: Date = where.OR[0].createdAt.gte;
           return Promise.resolve(
-            allRecords.filter((r) => r.createdAt >= since || r.lastOccurrenceAt >= since),
+            allRecords.filter(
+              (r) => r.createdAt >= since || r.lastOccurrenceAt >= since,
+            ),
           );
         }),
       },
       microLesson: {
-        findFirst: jest.fn().mockImplementation(({ where }) =>
-          Promise.resolve(
-            where.category === 'THIRD_PERSON_SINGULAR'
-              ? { id: 'ml1', status: 'COMPLETED', createdAt: lessonCreatedAt }
-              : null,
+        findFirst: jest
+          .fn()
+          .mockImplementation(({ where }) =>
+            Promise.resolve(
+              where.category === 'THIRD_PERSON_SINGULAR'
+                ? { id: 'ml1', status: 'COMPLETED', createdAt: lessonCreatedAt }
+                : null,
+            ),
           ),
-        ),
       },
     } as unknown as PrismaService;
     const ai = {} as AiService;
@@ -157,14 +174,23 @@ describe('MicroLessonsService.complete — подсчёт результата',
         additionalExamples: [],
         exercises: [
           { id: 'ex1', type: 'fill_blank', prompt: 'p1', answer: 'the' },
-          { id: 'ex2', type: 'correct_sentence', prompt: 'p2', answer: 'He works here.' },
+          {
+            id: 'ex2',
+            type: 'correct_sentence',
+            prompt: 'p2',
+            answer: 'He works here.',
+          },
         ],
       },
     };
     const prisma = {
       microLesson: {
         findUnique: jest.fn().mockResolvedValue(lesson),
-        update: jest.fn().mockImplementation(({ data }) => Promise.resolve({ ...lesson, ...data })),
+        update: jest
+          .fn()
+          .mockImplementation(({ data }) =>
+            Promise.resolve({ ...lesson, ...data }),
+          ),
       },
     } as unknown as PrismaService;
     const ai = {} as AiService;
@@ -176,7 +202,11 @@ describe('MicroLessonsService.complete — подсчёт результата',
     ]);
     expect(result.score).toBe(1);
     expect(result.total).toBe(2);
-    expect(result.results.find((r) => r.exerciseId === 'ex1')?.correct).toBe(true);
-    expect(result.results.find((r) => r.exerciseId === 'ex2')?.correct).toBe(false);
+    expect(result.results.find((r) => r.exerciseId === 'ex1')?.correct).toBe(
+      true,
+    );
+    expect(result.results.find((r) => r.exerciseId === 'ex2')?.correct).toBe(
+      false,
+    );
   });
 });
