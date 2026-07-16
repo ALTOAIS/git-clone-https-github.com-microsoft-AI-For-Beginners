@@ -307,6 +307,12 @@ model ErrorRecord {
   /// Локальная дата (YYYY-MM-DD), когда ошибка была отработана — основа для
   /// «Выполнено сегодня» без отдельной таблицы сессий.
   completedTodayDate      String?
+  /// Локальная дата (YYYY-MM-DD), когда ошибку в последний раз пропустили в
+  /// дневной практике — считается частью сегодняшней сессии, но НЕ считается
+  /// отработанной (не трогает successfulReviewCount/contextsPassed).
+  lastSkippedDate         String?
+  /// Сколько раз ошибку пропускали за всё время — для аналитики.
+  skipCount               Int                 @default(0)
 
   @@index([userId, status])
   @@index([userId, practiceStatus])

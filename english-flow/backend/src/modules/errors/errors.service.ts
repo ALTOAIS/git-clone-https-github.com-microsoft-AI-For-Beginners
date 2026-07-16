@@ -12,6 +12,7 @@ import {
   CATEGORY_ADDITIONAL_EXAMPLE,
   CATEGORY_RULE_DETAILS,
   buildBlankExercise,
+  buildHelpDetails,
 } from './context-examples';
 
 /** Целевой размер ежедневной практики ошибок (раздел 4 ТЗ). */
@@ -224,6 +225,29 @@ export class ErrorsService {
   }
 
   /**
+   * Момент начала следующего локального календарного дня пользователя —
+   * минимальный retryAfter для пропущенной ошибки (раздел 4 доработок):
+   * не должна вернуться в этой же дневной сессии, но и не должна прятаться
+   * дольше, чем до следующей сессии. Точность — до часа, timezone-библиотека
+   * не нужна: просто ищем первый час вперёд, где локальная дата уже другая.
+   */
+  private async nextDailySessionAt(userId: string): Promise<Date> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true },
+    });
+    const timezone = user?.timezone ?? 'Asia/Qyzylorda';
+    const today = this.usersService.localDate(new Date(), timezone);
+    for (let hours = 1; hours <= 48; hours++) {
+      const candidate = new Date(Date.now() + hours * 3600 * 1000);
+      if (this.usersService.localDate(candidate, timezone) !== today) {
+        return candidate;
+      }
+    }
+    return new Date(Date.now() + 24 * 3600 * 1000);
+  }
+
+  /**
    * Сегодняшняя практика: до DAILY_TARGET заданий. Если у пользователя
    * меньше активных ошибок, чем DAILY_TARGET, цель честно уменьшается —
    * никаких выдуманных заданий.
@@ -231,10 +255,16 @@ export class ErrorsService {
   async getDailySession(userId: string, extra = false) {
     const today = await this.today(userId);
 
-    const [completedToday, dueCandidatesRaw] = await Promise.all([
+    const [completedToday, skippedToday, dueCandidatesRaw] = await Promise.all([
       this.prisma.errorRecord.findMany({
         where: { userId, completedTodayDate: today },
         orderBy: { lastPracticedAt: 'desc' },
+      }),
+      // Пропущенные сегодня — часть сессии (продвигают к завершению), но
+      // НЕ считаются отработанными: successfulReviewCount/contextsPassed
+      // не трогаются (раздел 2 доработок).
+      this.prisma.errorRecord.findMany({
+        where: { userId, lastSkippedDate: today },
       }),
       this.prisma.errorRecord.findMany({
         where: {
@@ -243,6 +273,8 @@ export class ErrorsService {
             in: ['NEW', 'PRACTICING', 'RECURRING', 'SCHEDULED_REVIEW'],
           },
           completedTodayDate: null,
+          // nextPracticeAt уже отфильтровывает сегодняшние пропуски —
+          // skipDailyTask переносит их на следующий календарный день.
           OR: [
             { nextPracticeAt: { lte: new Date() } },
             { nextPracticeAt: null },
@@ -263,33 +295,69 @@ export class ErrorsService {
         priorityOf(a) - priorityOf(b) || b.occurrenceCount - a.occurrenceCount,
     );
 
+    // Сколько заданий сегодня уже прошли ЧЕРЕЗ сессию — исправленные и
+    // пропущенные вместе. Именно это число определяет прогресс/завершение
+    // сессии (раздел 2 доработок): пропуск засчитывается в "прошли", но не
+    // в "исправили".
+    const dispositionedCount = completedToday.length + skippedToday.length;
+
     // extra=true — добровольная доп. практика сверх дневной цели (раздел 4
     // ТЗ): цель уже выполнена, но пользователь сам просит ещё заданий.
     const cap = extra ? 10 : DAILY_TARGET;
-    const target = Math.min(cap, completedToday.length + dueCandidates.length);
-    const remaining = Math.max(target - completedToday.length, 0);
+    const target = Math.min(cap, dispositionedCount + dueCandidates.length);
+    const remaining = Math.max(target - dispositionedCount, 0);
     const pending = dueCandidates.slice(0, remaining);
 
     // completedToday всегда состоит из записей, отработанных сегодня ПРАВИЛЬНЫМ
     // ответом (submitDailyPractice попадает сюда только при correct=true) —
     // поэтому "исправлено правильным ответом" равно всем им. "Перенесено на
     // повторение" — те из них, что ещё не достигли MASTERED и получат
-    // следующую проверку позже.
+    // следующую проверку позже. Зелёный статус сессии ("завершена") означает
+    // именно "прошли все задания" — не "исправили все ошибки".
     const resolvedToday = completedToday.length;
     const scheduledToday = completedToday.filter(
       (r) => r.practiceStatus === 'SCHEDULED_REVIEW',
     ).length;
+    const skippedCount = skippedToday.length;
 
     return {
       date: today,
       targetCount: target,
       completedCount: completedToday.length,
+      skippedCount,
+      dispositionedCount,
       resolvedToday,
       scheduledToday,
-      sessionComplete: !extra && target > 0 && completedToday.length >= target,
+      sessionComplete: !extra && target > 0 && dispositionedCount >= target,
       tasks: pending.map((r) => this.serializeTask(r)),
       completedTasks: completedToday.map((r) => this.serializeTask(r)),
     };
+  }
+
+  /**
+   * Пропуск задания в ежедневной практике (раздел 4 доработок): НЕ считается
+   * успешным исправлением, НЕ увеличивает successfulReviewCount/contextsPassed
+   * (не приближает MASTERED), но НЕ прячет ошибку навсегда — nextPracticeAt
+   * переносится минимум до следующей дневной сессии, а не дальше с каждым
+   * повторным пропуском.
+   */
+  async skipDailyTask(userId: string, id: string) {
+    const record = await this.prisma.errorRecord.findUnique({ where: { id } });
+    if (!record) throw new NotFoundException('Ошибка не найдена');
+    if (record.userId !== userId) throw new ForbiddenException();
+
+    const today = await this.today(userId);
+    const nextPracticeAt = await this.nextDailySessionAt(userId);
+
+    const updated = await this.prisma.errorRecord.update({
+      where: { id },
+      data: {
+        lastSkippedDate: today,
+        skipCount: { increment: 1 },
+        nextPracticeAt,
+      },
+    });
+    return this.serializeTask(updated);
   }
 
   private serializeTask(r: {
@@ -355,6 +423,12 @@ export class ErrorsService {
             r.microCategory as keyof typeof CATEGORY_RULE_DETAILS
           ] ?? null)
         : null,
+      helpDetails: buildHelpDetails(
+        r.microCategory,
+        r.originalText,
+        r.correctedText,
+        r.explanation,
+      ),
     };
   }
 

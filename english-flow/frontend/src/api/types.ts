@@ -292,6 +292,12 @@ export interface ErrorExercise {
   answer: string;
 }
 
+export interface ErrorHelpDetails {
+  simplified: string;
+  formula?: string | null;
+  contrast: { wrong: string; right: string };
+}
+
 export interface ErrorSessionTask {
   id: string;
   practiceStatus: ErrorPracticeStatus;
@@ -310,12 +316,15 @@ export interface ErrorSessionTask {
   explanation: string;
   additionalExample?: string | null;
   ruleDetails?: string | null;
+  helpDetails: ErrorHelpDetails;
 }
 
 export interface ErrorDailySession {
   date: string;
   targetCount: number;
   completedCount: number;
+  skippedCount: number;
+  dispositionedCount: number;
   resolvedToday: number;
   scheduledToday: number;
   sessionComplete: boolean;

@@ -21,6 +21,7 @@ import {
 } from '../components/ui';
 import MicroLessonBanner from '../components/MicroLessonBanner';
 import { ruPlural } from '../lib/plural';
+import { normalizeEn } from '../lib/normalizeEn';
 
 const STATUS_TONES: Record<string, 'slate' | 'blue' | 'green' | 'amber' | 'red'> = {
   NEW: 'red',
@@ -105,10 +106,11 @@ function ErrorContextCard({ task }: { task: ErrorSessionTask }) {
 
 /**
  * Одно задание ежедневной практики: контекст + упражнение + разбор ответа.
- * Кнопка «Отработано» одновременно — проверка ответа (раздел 7 ТЗ: явного
- * отдельного «Проверить» в списке кнопок нет). Она НЕ присваивает MASTERED
- * сразу — это делает бэкенд только после нескольких успехов в разных
- * контекстах (раздел 5 ТЗ).
+ * «Проверить ответ» и «Завершить упражнение» — раздельные действия: проверка
+ * ничего не сохраняет (мгновенное локальное сравнение), а завершение — это
+ * единственный сетевой вызов, который меняет статус ошибки. Он НЕ
+ * присваивает MASTERED сразу — это делает бэкенд только после нескольких
+ * успехов в разных контекстах (раздел 5 ТЗ).
  */
 function DailyTaskCard({
   task,
@@ -126,6 +128,7 @@ function DailyTaskCard({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [answer, setAnswer] = useState('');
+  const [checked, setChecked] = useState<{ correct: boolean } | null>(null);
   const [showCorrect, setShowCorrect] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showRule, setShowRule] = useState(false);
@@ -139,8 +142,20 @@ function DailyTaskCard({
     onSuccess: (result) => setSubmitResult(result),
   });
 
+  const skipMutation = useMutation({
+    mutationFn: () => api.post(`/errors/daily-session/${task.id}/skip`),
+    onSuccess: onSkip,
+  });
+
   const instructionKey =
     task.exercise.type === 'blank' ? 'errors.daily.blankInstruction' : 'errors.daily.correctInstruction';
+
+  // «Проверить ответ»: только локальное сравнение, ничего не отправляет и не
+  // меняет статус ошибки — это делает исключительно «Завершить упражнение».
+  const check = () => {
+    if (!answer.trim()) return;
+    setChecked({ correct: normalizeEn(answer) === normalizeEn(task.exercise.answer) });
+  };
 
   return (
     <Card className="space-y-4">
@@ -161,32 +176,72 @@ function DailyTaskCard({
           </div>
           <Input
             value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
+            onChange={(e) => {
+              setAnswer(e.target.value);
+              setChecked(null);
+            }}
             placeholder={t('errors.daily.answerPlaceholder') as string}
-            onKeyDown={(e) => e.key === 'Enter' && answer.trim() && submitMutation.mutate(answer)}
+            onKeyDown={(e) => e.key === 'Enter' && (checked ? submitMutation.mutate(answer) : check())}
           />
+          {checked && (
+            <Badge tone={checked.correct ? 'green' : 'red'}>
+              {checked.correct ? t('errors.daily.checkCorrect') : t('errors.daily.checkIncorrect')}
+            </Badge>
+          )}
           {showCorrect && (
             <p className="text-sm">
               <span className="text-slate-500">{t('errors.daily.correctAnswerLabel')}: </span>
               <span className="font-medium text-emerald-700">{task.exercise.answer}</span>
             </p>
           )}
-          {showHelp && <p className="text-sm text-slate-600">{t('errors.daily.explanationDetails')}</p>}
+          {showHelp && (
+            <div className="space-y-1.5 rounded-xl bg-brand-50 p-3 text-sm">
+              <div>
+                <span className="font-medium text-brand-900">
+                  {t('errors.daily.simplifiedLabel')}:{' '}
+                </span>
+                {task.helpDetails.simplified}
+              </div>
+              {task.helpDetails.formula && (
+                <div>
+                  <span className="font-medium text-brand-900">
+                    {t('errors.daily.formulaLabel')}:{' '}
+                  </span>
+                  <span className="font-mono">{task.helpDetails.formula}</span>
+                </div>
+              )}
+              <div>
+                <span className="font-medium text-brand-900">
+                  {t('errors.daily.contrastLabel')}:{' '}
+                </span>
+                <span className="text-red-600 line-through">{task.helpDetails.contrast.wrong}</span>
+                {' → '}
+                <span className="text-emerald-700">{task.helpDetails.contrast.right}</span>
+              </div>
+            </div>
+          )}
           {showRule && task.ruleDetails && (
             <p className="text-sm text-slate-600">{task.ruleDetails}</p>
           )}
           <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => answer.trim() && submitMutation.mutate(answer)}
-              disabled={!answer.trim() || submitMutation.isPending}
-            >
-              {t('errors.daily.practiced')}
-            </Button>
+            {!checked ? (
+              <Button onClick={check} disabled={!answer.trim()}>
+                {t('errors.daily.check')}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => submitMutation.mutate(answer)}
+                disabled={submitMutation.isPending}
+              >
+                {t('errors.daily.finish')}
+              </Button>
+            )}
             <Button
               variant="secondary"
               onClick={() => {
                 setShowCorrect(true);
                 setAnswer(task.exercise.answer);
+                setChecked(null);
               }}
             >
               🔁 {t('errors.daily.repeatCorrect')}
@@ -199,7 +254,11 @@ function DailyTaskCard({
                 {t('errors.daily.moreAboutRule')}
               </Button>
             )}
-            <Button variant="ghost" onClick={onSkip}>
+            <Button
+              variant="ghost"
+              disabled={skipMutation.isPending}
+              onClick={() => skipMutation.mutate()}
+            >
               {t('errors.daily.skip')}
             </Button>
             <Button variant="ghost" onClick={() => navigate('/')}>
@@ -251,7 +310,6 @@ function DailyPracticeBlock() {
   const queryClient = useQueryClient();
   const [extra, setExtra] = useState(false);
   const [beganToday, setBeganToday] = useState(false);
-  const [skipIndex, setSkipIndex] = useState(0);
   const planCompletedRef = useRef(false);
 
   const { data: session, isLoading } = useQuery({
@@ -272,8 +330,10 @@ function DailyPracticeBlock() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.sessionComplete]);
 
-  const afterSubmit = () => {
-    setSkipIndex(0);
+  // Единая точка обновления после завершения ИЛИ пропуска задания — оба
+  // действия сохраняются на бэкенде, поэтому следующее задание сессии
+  // берётся из свежего ответа сервера, а не из локального указателя.
+  const refreshSession = () => {
     queryClient.invalidateQueries({ queryKey: ['errors-daily-session'] });
     queryClient.invalidateQueries({ queryKey: ['errors'] });
     queryClient.invalidateQueries({ queryKey: ['errors-top'] });
@@ -294,7 +354,7 @@ function DailyPracticeBlock() {
     );
   }
 
-  if (!extra && !beganToday && session.completedCount === 0 && session.tasks.length > 0) {
+  if (!extra && !beganToday && session.dispositionedCount === 0 && session.tasks.length > 0) {
     const minutes = Math.max(1, Math.round(session.targetCount * 1.3));
     return (
       <Card className="space-y-3 text-center">
@@ -310,11 +370,10 @@ function DailyPracticeBlock() {
     );
   }
 
-  const tasks = session.tasks;
-  const currentTask = tasks[Math.min(skipIndex, tasks.length - 1)];
+  const currentTask = session.tasks[0];
 
   if (!currentTask) {
-    if (session.sessionComplete || (extra && session.completedCount > 0)) {
+    if (session.sessionComplete || (extra && session.dispositionedCount > 0)) {
       return (
         <Card className="space-y-3 text-center">
           <div className="text-3xl">✅</div>
@@ -323,13 +382,18 @@ function DailyPracticeBlock() {
           </h2>
           <p className="text-slate-600">
             {t('errors.daily.completedStat', {
-              count: session.completedCount,
-              errorWord: ruPlural(session.completedCount, 'ошибка', 'ошибки', 'ошибок'),
+              count: session.dispositionedCount,
+              errorWord: ruPlural(session.dispositionedCount, 'ошибка', 'ошибки', 'ошибок'),
             })}
           </p>
           <p className="text-slate-600">
             {t('errors.daily.resolvedStat', { count: session.resolvedToday })}
           </p>
+          {session.skippedCount > 0 && (
+            <p className="text-slate-600">
+              {t('errors.daily.skippedStat', { count: session.skippedCount })}
+            </p>
+          )}
           <p className="text-slate-600">
             {t('errors.daily.scheduledStat', { count: session.scheduledToday })}
           </p>
@@ -337,6 +401,9 @@ function DailyPracticeBlock() {
             <p className="text-slate-600">
               {t('errors.daily.nextCheckStat', { days: 3, dayWord: ruPlural(3, 'день', 'дня', 'дней') })}
             </p>
+          )}
+          {session.skippedCount > 0 && (
+            <p className="text-xs text-slate-400">{t('errors.daily.skippedNote')}</p>
           )}
           <div className="flex flex-col gap-2 sm:flex-row">
             <Link to="/" className="flex-1">
@@ -350,7 +417,6 @@ function DailyPracticeBlock() {
                 onClick={() => {
                   setExtra(true);
                   setBeganToday(true);
-                  setSkipIndex(0);
                 }}
               >
                 {t('errors.daily.continueExtra')}
@@ -363,13 +429,7 @@ function DailyPracticeBlock() {
     return (
       <Card className="space-y-3 text-center">
         <p className="text-slate-600">{t('errors.daily.noErrorsToday')}</p>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            setSkipIndex(0);
-            queryClient.invalidateQueries({ queryKey: ['errors-daily-session'] });
-          }}
-        >
+        <Button variant="secondary" onClick={refreshSession}>
           {t('app.continue')}
         </Button>
       </Card>
@@ -379,15 +439,15 @@ function DailyPracticeBlock() {
   return (
     <div className="space-y-3">
       <ProgressBar
-        value={(session.completedCount / Math.max(session.targetCount, 1)) * 100}
+        value={(session.dispositionedCount / Math.max(session.targetCount, 1)) * 100}
       />
       <DailyTaskCard
         key={currentTask.id}
         task={currentTask}
-        index={session.completedCount}
+        index={session.dispositionedCount}
         total={session.targetCount}
-        onSkip={() => setSkipIndex((i) => i + 1)}
-        onContinue={afterSubmit}
+        onSkip={refreshSession}
+        onContinue={refreshSession}
       />
     </div>
   );

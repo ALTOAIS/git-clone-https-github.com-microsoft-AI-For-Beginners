@@ -27,6 +27,8 @@ function makeRecord(overrides: Record<string, any>) {
     contextsPassed: 0,
     nextPracticeAt: PAST,
     completedTodayDate: null,
+    lastSkippedDate: null,
+    skipCount: 0,
     lastPracticedAt: null,
     sourceModule: null,
     sourceEntityId: null,
@@ -54,6 +56,13 @@ function makePrisma(records: ReturnType<typeof makeRecord>[]) {
             if (where.completedTodayDate === null) {
               if (r.completedTodayDate != null) return false;
             } else if (r.completedTodayDate !== where.completedTodayDate) {
+              return false;
+            }
+          }
+          if ('lastSkippedDate' in where) {
+            if (where.lastSkippedDate === null) {
+              if (r.lastSkippedDate != null) return false;
+            } else if (r.lastSkippedDate !== where.lastSkippedDate) {
               return false;
             }
           }
@@ -85,7 +94,18 @@ function makePrisma(records: ReturnType<typeof makeRecord>[]) {
       }),
       update: jest.fn(({ where: { id }, data }: any) => {
         const rec = records.find((r) => r.id === id);
-        Object.assign(rec, data);
+        for (const [key, value] of Object.entries(data)) {
+          if (
+            value &&
+            typeof value === 'object' &&
+            'increment' in (value as any)
+          ) {
+            (rec as any)[key] =
+              ((rec as any)[key] ?? 0) + (value as any).increment;
+          } else {
+            (rec as any)[key] = value;
+          }
+        }
         return Promise.resolve(rec);
       }),
       findFirst: jest.fn(),
@@ -257,6 +277,186 @@ describe('ErrorsService — расписание повторов и предо�
     expect(record.practiceStatus).toBe('RECURRING');
     expect(record.occurrenceCount).toBe(2);
     expect(record.successfulReviewCount).toBe(0);
+  });
+});
+
+describe('ErrorsService.skipDailyTask — пропуск задания (доработки, раздел 2/4)', () => {
+  it('пропуск НЕ увеличивает successfulReviewCount и НЕ приближает MASTERED', async () => {
+    const record = makeRecord({ successfulReviewCount: 3, contextsPassed: 1 });
+    const prisma = makePrisma([record]);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    await service.skipDailyTask('u1', record.id);
+
+    expect(record.successfulReviewCount).toBe(3);
+    expect(record.contextsPassed).toBe(1);
+    expect(record.practiceStatus).toBe('NEW');
+  });
+
+  it('пропуск не считается completedTodayDate/исправлением, но помечает lastSkippedDate и увеличивает skipCount', async () => {
+    const record = makeRecord({});
+    const prisma = makePrisma([record]);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    await service.skipDailyTask('u1', record.id);
+
+    expect(record.completedTodayDate).toBeNull();
+    expect(record.lastSkippedDate).toBe(TODAY);
+    expect(record.skipCount).toBe(1);
+  });
+
+  it('пропущенная ошибка не возвращается в той же сессии и не появляется сразу после "обновления страницы"', async () => {
+    const record = makeRecord({});
+    const prisma = makePrisma([record]);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    await service.skipDailyTask('u1', record.id);
+    // "Обновление страницы" — повторный вызов getDailySession сразу после пропуска.
+    const session = await service.getDailySession('u1');
+    expect(session.tasks.map((t) => t.id)).not.toContain(record.id);
+    expect(record.nextPracticeAt.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it('повторные пропуски не увеличивают отсрочку и не прячут ошибку навсегда', async () => {
+    const record = makeRecord({});
+    const prisma = makePrisma([record]);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    await service.skipDailyTask('u1', record.id);
+    const firstDelay = record.nextPracticeAt.getTime() - Date.now();
+    // Симулируем, что ошибка снова стала актуальна (например, наступил
+    // следующий день) и её пропустили повторно.
+    record.nextPracticeAt = PAST;
+    await service.skipDailyTask('u1', record.id);
+    const secondDelay = record.nextPracticeAt.getTime() - Date.now();
+
+    expect(record.skipCount).toBe(2);
+    // Второй пропуск не откладывает ошибку сильно дальше первого —
+    // отсрочка не растёт с каждым пропуском.
+    expect(secondDelay).toBeLessThan(firstDelay + 2 * 3600 * 1000);
+  });
+
+  it('все 3 задания дневной сессии пропущены — сессия всё равно считается завершённой (но не "исправленной")', async () => {
+    const records = [makeRecord({}), makeRecord({}), makeRecord({})];
+    const prisma = makePrisma(records);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    for (const r of records) {
+      await service.skipDailyTask('u1', r.id);
+    }
+
+    const session = await service.getDailySession('u1');
+    expect(session.dispositionedCount).toBe(3);
+    expect(session.skippedCount).toBe(3);
+    expect(session.resolvedToday).toBe(0);
+    expect(session.sessionComplete).toBe(true);
+    expect(session.tasks).toHaveLength(0);
+  });
+
+  it('2 задания исправлены, 1 пропущено — сессия завершена, буквы честно разделены', async () => {
+    const records = [makeRecord({}), makeRecord({}), makeRecord({})];
+    const prisma = makePrisma(records);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    await service.submitDailyPractice(
+      'u1',
+      records[0].id,
+      records[0].correctedText,
+    );
+    await service.submitDailyPractice(
+      'u1',
+      records[1].id,
+      records[1].correctedText,
+    );
+    await service.skipDailyTask('u1', records[2].id);
+
+    const session = await service.getDailySession('u1');
+    expect(session.dispositionedCount).toBe(3);
+    expect(session.resolvedToday).toBe(2);
+    expect(session.skippedCount).toBe(1);
+    expect(session.sessionComplete).toBe(true);
+  });
+});
+
+describe('ErrorsService — граничные сценарии ежедневной сессии', () => {
+  it('пользователь "закрыл страницу посередине": прогресс сохраняется между вызовами getDailySession', async () => {
+    const records = [makeRecord({}), makeRecord({}), makeRecord({})];
+    const prisma = makePrisma(records);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    await service.submitDailyPractice(
+      'u1',
+      records[0].id,
+      records[0].correctedText,
+    );
+
+    // Первый "заход" — увидели 1 исправленную задачу.
+    const sessionA = await service.getDailySession('u1');
+    expect(sessionA.dispositionedCount).toBe(1);
+    expect(sessionA.sessionComplete).toBe(false);
+
+    // "Закрыли страницу" и открыли снова — состояние то же самое, сессия не сбрасывается.
+    const sessionB = await service.getDailySession('u1');
+    expect(sessionB.dispositionedCount).toBe(1);
+    expect(sessionB.tasks.map((t) => t.id).sort()).toEqual(
+      [records[1].id, records[2].id].sort(),
+    );
+  });
+
+  it('повторное открытие раздела после завершения снова показывает экран завершения, а не задания заново', async () => {
+    const records = [makeRecord({}), makeRecord({}), makeRecord({})];
+    const prisma = makePrisma(records);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    for (const r of records) {
+      await service.submitDailyPractice('u1', r.id, r.correctedText);
+    }
+
+    const first = await service.getDailySession('u1');
+    const second = await service.getDailySession('u1');
+    expect(first.sessionComplete).toBe(true);
+    expect(second.sessionComplete).toBe(true);
+    expect(second.tasks).toHaveLength(0);
+  });
+
+  it('ошибка снова возникла в другом модуле в тот же день после пропуска — не создаёт дубль и снова доступна для практики', async () => {
+    const record = makeRecord({});
+    const prisma = makePrisma([record]);
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    await service.skipDailyTask('u1', record.id);
+    expect(record.nextPracticeAt.getTime()).toBeGreaterThan(Date.now());
+
+    // recordErrors работает через отдельный findFirst/create/update —
+    // подключаем его к тому же mock-объекту записи.
+    (prisma as any).errorRecord.findFirst = jest.fn().mockResolvedValue(record);
+    (prisma as any).errorRecord.update = jest
+      .fn()
+      .mockImplementation(({ data }: any) => {
+        Object.assign(record, {
+          occurrenceCount:
+            record.occurrenceCount + (data.occurrenceCount?.increment ?? 0),
+          nextPracticeAt: data.nextPracticeAt ?? record.nextPracticeAt,
+        });
+        return Promise.resolve(record);
+      });
+
+    await service.recordErrors(
+      'u1',
+      [
+        {
+          original: record.originalText,
+          corrected: record.correctedText,
+          explanation: '',
+          errorType: 'VERB_FORM',
+        },
+      ],
+      'lesson',
+    );
+
+    // Не создан дубль, occurrenceCount вырос, и запись снова доступна "сегодня".
+    expect(record.occurrenceCount).toBe(2);
+    expect(record.nextPracticeAt.getTime()).toBeLessThanOrEqual(Date.now());
   });
 });
 

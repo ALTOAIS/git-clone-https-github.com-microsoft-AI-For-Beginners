@@ -30,6 +30,92 @@ export const CATEGORY_ADDITIONAL_EXAMPLE: Record<MicroCategoryString, string> =
       'An employee who reports misconduct is called a whistleblower.',
   };
 
+/**
+ * Упрощённая версия правила (1 короткое предложение) — для кнопки «Не понял
+ * объяснение» (раздел 3 доработок): основной текст ошибки уже показан в
+ * карточке, здесь — более простая формулировка того же правила, а не новый
+ * ИИ-вызов. Часть детерминированной Grammar Knowledge Base.
+ */
+export const CATEGORY_SIMPLIFIED_RULE: Record<MicroCategoryString, string> = {
+  ARTICLES:
+    'Перед одним предметом из многих — a/an, перед конкретным, уже известным — the.',
+  THIRD_PERSON_SINGULAR:
+    'После he/she/it в настоящем времени к глаголу добавляется -s.',
+  PRESENT_SIMPLE:
+    'Present Simple — для фактов и привычек. He/she/it требует -s у глагола.',
+  PRESENT_PERFECT:
+    'Present Perfect — когда результат важен сейчас, а не когда именно это было.',
+  PAST_SIMPLE:
+    'Past Simple — для завершённого действия в конкретный момент в прошлом.',
+  PREPOSITIONS:
+    'Предлог запоминается вместе с фразой целиком, не переводится дословно.',
+  WORD_ORDER:
+    'Порядок в английском: подлежащее → сказуемое → дополнение → обстоятельство.',
+  COMPLY_VS_COMPLIANCE:
+    'Comply — глагол, compliance — существительное, compliant — прилагательное.',
+  MAKE_VS_DO: 'Make — когда что-то создаётся; do — когда действие выполняется.',
+  COUNTABLE_VS_UNCOUNTABLE:
+    'У неисчисляемых слов (information, advice) нет множественного числа и -s.',
+  COLLOCATIONS:
+    'Такие сочетания слов запоминаются целиком, а не собираются по отдельности.',
+  COMPLIANCE_VOCABULARY:
+    'Профессиональные термины имеют точное значение — не путайте близкие по смыслу.',
+};
+
+/**
+ * Короткая «формула» правила — ещё компактнее упрощённого объяснения.
+ */
+export const CATEGORY_RULE_FORMULA: Record<MicroCategoryString, string> = {
+  ARTICLES: 'a/an (одно из многих) · the (то самое, известное)',
+  THIRD_PERSON_SINGULAR: 'he/she/it + глагол-s',
+  PRESENT_SIMPLE: 'he/she/it + глагол-s · остальные + базовая форма',
+  PRESENT_PERFECT: 'have/has + причастие прошедшего времени (V3)',
+  PAST_SIMPLE: 'глагол + -ed (или неправильная форма)',
+  PREPOSITIONS: 'глагол/прилагательное + фиксированный предлог',
+  WORD_ORDER: 'подлежащее → сказуемое → дополнение → время/место',
+  COMPLY_VS_COMPLIANCE:
+    'comply (глагол) · compliance (сущ.) · compliant (прил.)',
+  MAKE_VS_DO: 'make — создать/принять · do — выполнить/заняться',
+  COUNTABLE_VS_UNCOUNTABLE: 'much/a lot of + неисчисляемое (без -s)',
+  COLLOCATIONS: 'глагол + существительное — устойчивая пара',
+  COMPLIANCE_VOCABULARY: 'термин = точное значение в контексте комплаенса',
+};
+
+export interface HelpDetails {
+  /** Упрощённая версия объяснения (1 предложение). */
+  simplified: string;
+  /** Короткая формула правила, если применимо. */
+  formula: string | null;
+  /** Один контраст «неправильно → правильно» — берётся из самой ошибки. */
+  contrast: { wrong: string; right: string };
+}
+
+/**
+ * Детерминированный (без ИИ) набор данных для кнопки «Не понял объяснение»:
+ * упрощённое объяснение + формула из Grammar Knowledge Base (если категория
+ * определена), иначе — честный fallback на исходное explanation записи.
+ * Контраст всегда берётся из originalText/correctedText самой ошибки —
+ * ничего не выдумывается.
+ */
+export function buildHelpDetails(
+  microCategory: string | null,
+  originalText: string,
+  correctedText: string,
+  explanation: string,
+): HelpDetails {
+  const category = microCategory as MicroCategoryString | null;
+  const simplified =
+    (category && CATEGORY_SIMPLIFIED_RULE[category]) ||
+    explanation ||
+    'Сравните ваш вариант с правильным — отличие показано ниже.';
+  const formula = (category && CATEGORY_RULE_FORMULA[category]) || null;
+  return {
+    simplified,
+    formula,
+    contrast: { wrong: originalText, right: correctedText },
+  };
+}
+
 export interface BlankExercise {
   /** Предложение с пропуском, например "Yesterday I ___ home." */
   promptWithBlank: string;

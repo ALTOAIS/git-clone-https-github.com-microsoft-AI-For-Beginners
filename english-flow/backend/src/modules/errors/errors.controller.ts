@@ -69,6 +69,11 @@ export class ErrorsController {
     return this.errorsService.submitDailyPractice(user.userId, id, dto.answer);
   }
 
+  @Post('daily-session/:id/skip')
+  skipDailyTask(@CurrentUser() user: JwtUser, @Param('id') id: string) {
+    return this.errorsService.skipDailyTask(user.userId, id);
+  }
+
   @Patch(':id')
   updateStatus(
     @CurrentUser() user: JwtUser,
