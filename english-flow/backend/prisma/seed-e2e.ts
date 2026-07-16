@@ -2,9 +2,23 @@
  * Сидирует детерминированные данные для Playwright E2E (раздел 11 ТЗ:
  * редизайн «Мои ошибки»). Отдельный скрипт от prisma/seed.ts — не трогает
  * обычные dev/demo данные, безопасно перезапускать перед каждым прогоном.
+ *
+ * НЕ вызывается из Dockerfile/build/start/миграций — только вручную через
+ * `npm run seed:e2e`, и только при явном ALLOW_E2E_SEED=true. При
+ * NODE_ENV=production запуск отклоняется безусловно (см. src/common/seed-guard.ts).
  */
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import {
+  assertE2eSeedAllowed,
+  redactDatabaseUrl,
+} from '../src/common/seed-guard';
+
+assertE2eSeedAllowed();
+// eslint-disable-next-line no-console
+console.log(
+  `[seed-e2e] Целевая БД: ${redactDatabaseUrl(process.env.DATABASE_URL)}`,
+);
 
 const prisma = new PrismaClient();
 

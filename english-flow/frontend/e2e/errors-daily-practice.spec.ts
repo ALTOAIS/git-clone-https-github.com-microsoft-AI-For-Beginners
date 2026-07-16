@@ -15,6 +15,9 @@ test.beforeEach(() => {
   execSync('npm run seed:e2e', {
     cwd: path.resolve(dirname, '../../backend'),
     stdio: 'inherit',
+    // Явное согласие на запуск E2E-сида — см. src/common/seed-guard.ts.
+    // NODE_ENV намеренно не 'production' здесь: локальный/CI прогон Playwright.
+    env: { ...process.env, ALLOW_E2E_SEED: 'true' },
   });
 });
 
