@@ -18,7 +18,13 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 
 EXPOSE 3001
-# Миграции и сиды выполняются через Render preDeployCommand (см. render.yaml)
-# ДО старта нового инстанса — не здесь. Так исключены гонки за postgres
-# advisory lock между CMD перекрывающихся деплоев (см. комментарий в render.yaml).
-CMD ["node", "dist/main"]
+# ПРИМЕЧАНИЕ: `preDeployCommand` (Render) недоступен на бесплатном плане —
+# Render его молча игнорирует и идёт сразу build → CMD, поэтому миграции
+# ЗДЕСЬ, в CMD, а не в render.yaml. Сама причина P1002 (advisory lock не
+# работает через pooled-соединение) устранена через DIRECT_URL в
+# schema.prisma (directUrl) — `migrate deploy` использует его независимо
+# от того, откуда вызван. Остаточный риск гонки advisory lock остаётся
+# только если запустить два перекрывающихся деплоя одновременно (ручной
+# Manual Deploy поверх ещё идущего auto-deploy) — на free-плане Render не
+# даёт средства это сериализовать, поэтому просто не делайте так.
+CMD ["sh", "-c", "npx prisma migrate deploy && (node dist-seed/prisma/seed.js || true) && node dist/main"]
