@@ -11,15 +11,17 @@
   — see `grammar-source-verification.md`.
 - Grammar MVP AI documentation review: **COMPLETE** (all 12 rules have an
   AI recommendation — see `grammar-rules-human-review.md`).
-- Grammar MVP human documentation review: **`PARTIAL` — 5 of 12 rules
-  reviewed** (product owner, learner perspective, 2026-07-17:
-  `ARTICLE_THE_SPECIFIC`, `BASIC_PREPOSITION_PATTERNS` = `APPROVE`;
-  `ARTICLE_ZERO_GENERAL`, `PAST_SIMPLE_VS_PRESENT_PERFECT` = `APPROVE
-  AFTER REVISION`; `COUNTABLE_UNCOUNTABLE` = `APPROVE WITH CAVEAT`; the
-  remaining 7 rules stay `PENDING HUMAN REVIEW` — see
-  `grammar-rules-human-review.md`).
+- Grammar MVP human documentation review: **`COMPLETE` — 12 of 12 rules
+  reviewed.**
+- Grammar MVP human documentation approval: **`COMPLETE` — 12 of 12
+  approved** (product owner, learner perspective, 2026-07-17: 9 ×
+  `APPROVE`, `ARTICLE_ZERO_GENERAL` + `PAST_SIMPLE_VS_PRESENT_PERFECT` =
+  `APPROVE AFTER REVISION`, `COUNTABLE_UNCOUNTABLE` = `APPROVE WITH
+  CAVEAT` — see `grammar-rules-human-review.md`). **This is a
+  documentation-accuracy gate only** — see the "does not mean" list in
+  that document before assuming it authorizes anything else.
 - Grammar MVP production-publication decision: **NOT APPROVED** for all
-  12 rules, including the 5 just human-approved on documentation —
+  12 rules, including all 12 now human-approved on documentation —
   separate, later gate, independent of the AI recommendation and the
   human documentation decision — see `grammar-rules-human-review.md`.
 - Grammar MVP migration dry-run: **NOT EXECUTED** (plan only — see `grammar-migration-dry-run-plan.md`).
@@ -61,7 +63,7 @@ which vertical slice goes first.
 | [`risk-register.md`](./risk-register.md) | Phase 2A risk register with probability/impact/mitigation/owner/blocking status. |
 | [`decisions.md`](./decisions.md) | ADR-style decision log: accepted / deferred / rejected / open / blocking. |
 | [`grammar-mvp-decision-pack.md`](./grammar-mvp-decision-pack.md) | Grammar MVP final decisions: all 12 rule drafts (CEFR, explanations, examples, resolver hints, exercise templates), linkage decisions, deployment/rollback proposal. |
-| [`grammar-rules-human-review.md`](./grammar-rules-human-review.md) | Per-rule review table across three separate gates: AI documentation recommendation (`RECOMMEND APPROVE`/`RECOMMEND REVISE`/`RECOMMEND REJECT`), human documentation decision (5 of 12 rules reviewed — `APPROVE`/`APPROVE AFTER REVISION`/`APPROVE WITH CAVEAT`; 7 of 12 still `PENDING HUMAN REVIEW`), and production-publication decision (`NOT APPROVED` for all 12, no exceptions). |
+| [`grammar-rules-human-review.md`](./grammar-rules-human-review.md) | Per-rule review table across three separate gates: AI documentation recommendation (`RECOMMEND APPROVE`/`RECOMMEND REVISE`/`RECOMMEND REJECT`), human documentation decision (12 of 12 rules reviewed and approved — `APPROVE`/`APPROVE AFTER REVISION`/`APPROVE WITH CAVEAT`, 0 `PENDING HUMAN REVIEW`), and production-publication decision (`NOT APPROVED` for all 12, no exceptions — documentation approval does not authorize it). |
 | [`grammar-source-verification.md`](./grammar-source-verification.md) | External sources consulted for all 12 rules (mainly British Council LearnEnglish, Cambridge Dictionary Grammar) — publisher, section, what each confirms, retrieval date, URL, citation note. |
 | [`grammar-resolver-test-cases.md`](./grammar-resolver-test-cases.md) | Deterministic resolver signals per rule, diff-specific precedence (not one global ordering), conflict examples, HIGH/MEDIUM/LOW confidence rules, fallback behaviour. |
 | [`grammar-migration-dry-run-plan.md`](./grammar-migration-dry-run-plan.md) | Migration dry-run plan for Grammar MVP only — **plan, not execution; NOT EXECUTED.** |

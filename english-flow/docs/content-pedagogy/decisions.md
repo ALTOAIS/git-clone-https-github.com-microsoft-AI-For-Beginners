@@ -162,16 +162,37 @@ resolved before a named piece of implementation can start).
     arrive-in/arrive-at examples), `COUNTABLE_UNCOUNTABLE` (`APPROVE WITH
     CAVEAT` — required the contextual-countability caveat naming
     countable senses for evidence/research/feedback/software/work/
-    knowledge). The remaining 7 rules were **not** reviewed and stay
-    `PENDING HUMAN REVIEW` — this decision is not extrapolated to rules
-    the reviewer did not examine. **Human documentation `APPROVE` does
-    not authorize production seed, publication, activation, or
-    deployment**, and does not upgrade any rule's source-verification
-    status past `PARTIALLY_VERIFIED` — the `good at`/`listen to`
-    (`BASIC_PREPOSITION_PATTERNS`) and `feedback` (`COUNTABLE_UNCOUNTABLE`)
-    evidence gaps remain open regardless of this documentation approval.
-    See `grammar-rules-human-review.md` for the full per-rule table and
-    `grammar-mvp-decision-pack.md` for the revised rule content.
+    knowledge). At the time of this decision the remaining 7 rules were
+    **not** reviewed and stayed `PENDING HUMAN REVIEW` — that decision
+    was not extrapolated to rules the reviewer had not examined. **See
+    item #23 below: the remaining 7 rules have since been reviewed and
+    approved in a later round** — this item is kept as the historical
+    record of round 1 and is not itself edited to reflect that. **Human
+    documentation `APPROVE` does not authorize production seed,
+    publication, activation, or deployment**, and does not upgrade any
+    rule's source-verification status past `PARTIALLY_VERIFIED` — the
+    `good at`/`listen to` (`BASIC_PREPOSITION_PATTERNS`) and `feedback`
+    (`COUNTABLE_UNCOUNTABLE`) evidence gaps remain open regardless of
+    documentation approval. See `grammar-rules-human-review.md` for the
+    full per-rule table and `grammar-mvp-decision-pack.md` for the
+    revised rule content.
+23. **Human documentation review completed for all 12 rules — round 2.**
+    The same product owner, reviewing as a learner/user, reviewed the
+    remaining 7 rules (`ARTICLE_A_AN`, `PRESENT_SIMPLE_THIRD_PERSON`,
+    `PAST_SIMPLE_FORM`, `MODAL_BASE_VERB`, `BASIC_WORD_ORDER`,
+    `DO_DOES_DID_QUESTIONS_NEGATIVES`, `SINGULAR_PLURAL_ARTICLE_AGREEMENT`)
+    and issued `APPROVE` for all 7, stated basis: "All remaining rules
+    are OK." **Human documentation review is now `COMPLETE` — 12 of 12
+    rules reviewed, 12 of 12 approved as an `APPROVE`-family decision, 0
+    remaining `PENDING HUMAN REVIEW`.** This does **not** change: source
+    verification (`grammar-source-verification.md`, remains `PARTIAL`);
+    production publication decision (remains `NOT APPROVED` for all 12,
+    no exceptions); the `MicroCategory` mapping gap for `MODAL_BASE_VERB`/
+    `DO_DOES_DID_QUESTIONS_NEGATIVES` (`MODAL_BASE_VERB`'s human review
+    note explicitly restates this gap is unresolved); or any
+    implementation/resolver/migration blocker. See
+    `grammar-rules-human-review.md` for the complete 12-row table and
+    `grammar-mvp-decision-pack.md` for each rule's human review note.
 
 ## Deferred
 
@@ -307,9 +328,13 @@ MVP documentation itself — that is what this round's work product is.
 
 ### Blocks publication/activation (a rule going live for real users)
 
-1. **Human-approved content** — `grammar-rules-human-review.md`'s human
-   documentation decision is `PENDING HUMAN REVIEW` for all 12 rules; no
-   human has acted yet.
+1. ~~**Human-approved content**~~ — **no longer blocking as of item #23
+   above.** `grammar-rules-human-review.md`'s human documentation
+   decision is now `APPROVE`-family for all 12 rules (9 × `APPROVE`, 2 ×
+   `APPROVE AFTER REVISION`, 1 × `APPROVE WITH CAVEAT`), 0 remaining
+   `PENDING HUMAN REVIEW`. Documentation approval does **not** itself
+   unblock publication — items 2–4 below remain fully in force
+   regardless of this one closing.
 2. **Source verification reaching a stronger tier than `PARTIAL`** — not
    strictly required to publish (a product owner could accept
    `PARTIALLY_VERIFIED` sourcing as sufficient), but should be an

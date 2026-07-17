@@ -110,8 +110,8 @@ yet, and this remains an open item, not resolved here.
   1. `fill_blank`: «She works as ___ auditor.» → `an`
   2. `choice`: «He bought ___ car.» [a/an/the] → `a`
   3. `correct_sentence`: «I need a hour to review this.» → «I need an hour to review this.»
-- **sourceRefs:** `CATEGORY_SIMPLIFIED_RULE.ARTICLES` (a/an portion only, narrowed); `CATEGORY_RULE_FORMULA.ARTICLES` (narrowed); `MICRO_LESSON_GENERIC_EXERCISES.ARTICLES.choice` (adapted); British Council LearnEnglish — "Articles: 'a', 'an', 'the'" and "The indefinite article: 'a' and 'an'" (`grammar-source-verification.md` #1) — confirms the sound-not-spelling rule and the job-statement usage.
-- **Documentation review status:** see `grammar-rules-human-review.md`.
+- **sourceRefs:** `CATEGORY_SIMPLIFIED_RULE.ARTICLES` (a/an portion only, narrowed); `CATEGORY_RULE_FORMULA.ARTICLES` (narrowed); `MICRO_LESSON_GENERIC_EXERCISES.ARTICLES.choice` (adapted); British Council LearnEnglish — "Articles: 'a', 'an', 'the'" and "The indefinite article: 'a' and 'an'" (`grammar-source-verification.md` #1) — confirms the sound-not-spelling rule and the job-statement usage. Status remains `PARTIALLY_VERIFIED`, unchanged by human review.
+- **Documentation review status:** **Human documentation decision: `APPROVE`** (product owner, learner perspective, 2026-07-17) — see `grammar-rules-human-review.md`. Reviewer confirmed the draft covers: one indefinite singular countable noun; a/an choice depends on sound, not letter; `a university`, `an hour`, `an MBA`; cannot be used with plural nouns; cannot be used with the ordinary uncountable meaning; a specific, identifiable object usually requires *the* instead (see `ARTICLE_THE_SPECIFIC`). No content revision required. **Production publication decision: `NOT APPROVED`** — human documentation approval does not authorize seed, publication, activation, or deployment.
 
 ## 2. `ARTICLE_THE_SPECIFIC`
 
@@ -212,8 +212,8 @@ yet, and this remains an open item, not resolved here.
   1. `fill_blank`: «The manager usually ___ (check) reports on Monday.» → `checks`
   2. `choice`: «The department ___ this policy.» [follow/follows/following] → `follows`
   3. `fill_blank`: «She ___ (study) the new regulation every week.» → `studies`
-- **sourceRefs:** `CATEGORY_RULE_DETAILS.THIRD_PERSON_SINGULAR` (≡ `MICRO_LESSON_RULES.THIRD_PERSON_SINGULAR`, one object — see `phase-2a-audit.md`); `CATEGORY_SIMPLIFIED_RULE.THIRD_PERSON_SINGULAR`; `MICRO_LESSON_GENERIC_EXERCISES.THIRD_PERSON_SINGULAR`+`.PRESENT_SIMPLE`; Cambridge Dictionary Grammar — "Present simple (I work)", "Have", "Do" (`grammar-source-verification.md` #4) — confirms the -es-after-sibilants rule and have→has/do→does explicitly, more precisely than any legacy source.
-- **Documentation review status:** see `grammar-rules-human-review.md`.
+- **sourceRefs:** `CATEGORY_RULE_DETAILS.THIRD_PERSON_SINGULAR` (≡ `MICRO_LESSON_RULES.THIRD_PERSON_SINGULAR`, one object — see `phase-2a-audit.md`); `CATEGORY_SIMPLIFIED_RULE.THIRD_PERSON_SINGULAR`; `MICRO_LESSON_GENERIC_EXERCISES.THIRD_PERSON_SINGULAR`+`.PRESENT_SIMPLE`; Cambridge Dictionary Grammar — "Present simple (I work)", "Have", "Do" (`grammar-source-verification.md` #4) — confirms the -es-after-sibilants rule and have→has/do→does explicitly, more precisely than any legacy source. Status remains `PARTIALLY_VERIFIED`, unchanged by human review.
+- **Documentation review status:** **Human documentation decision: `APPROVE`** (product owner, learner perspective, 2026-07-17) — see `grammar-rules-human-review.md`. Reviewer confirmed the draft covers: he/she/it + -s/-es; consonant + y → -ies; do → does; have → has; after `does` the main verb returns to base form (`Does he work?`, not `Does he works?`). No content revision required. **Production publication decision: `NOT APPROVED`** — human documentation approval does not authorize seed, publication, activation, or deployment.
 
 ## 5. `PAST_SIMPLE_FORM`
 
@@ -241,8 +241,8 @@ yet, and this remains an open item, not resolved here.
   1. `fill_blank`: «We ___ (submit) the report last week.» → `submitted`
   2. `choice`: «Choose the correct past form of "go".» [goed/went/gone] → `went`
   3. `correct_sentence`: «She goed to the meeting yesterday.» → «She went to the meeting yesterday.»
-- **sourceRefs:** `CATEGORY_RULE_DETAILS.PAST_SIMPLE`; `CATEGORY_SIMPLIFIED_RULE.PAST_SIMPLE`; `CATEGORY_ADDITIONAL_EXAMPLE.PAST_SIMPLE`; `MICRO_LESSON_GENERIC_EXERCISES.PAST_SIMPLE`; British Council LearnEnglish — "Past simple", "Irregular verbs" (`grammar-source-verification.md` #5) — confirms the regular/irregular split; the "~150 irregular verbs" figure from an earlier draft was **not** sourced from this or any consulted reference and has been removed, replaced by a short curated list of the most frequent forms.
-- **Documentation review status:** see `grammar-rules-human-review.md`.
+- **sourceRefs:** `CATEGORY_RULE_DETAILS.PAST_SIMPLE`; `CATEGORY_SIMPLIFIED_RULE.PAST_SIMPLE`; `CATEGORY_ADDITIONAL_EXAMPLE.PAST_SIMPLE`; `MICRO_LESSON_GENERIC_EXERCISES.PAST_SIMPLE`; British Council LearnEnglish — "Past simple", "Irregular verbs" (`grammar-source-verification.md` #5) — confirms the regular/irregular split; the "~150 irregular verbs" figure from an earlier draft was **not** sourced from this or any consulted reference and has been removed, replaced by a short curated list of the most frequent forms. Status remains `PARTIALLY_VERIFIED`, unchanged by human review.
+- **Documentation review status:** **Human documentation decision: `APPROVE`** (product owner, learner perspective, 2026-07-17) — see `grammar-rules-human-review.md`. Reviewer confirmed the draft covers: regular verbs with -ed; the main spelling patterns; a curated list of frequent irregular verbs; after `did` the base form is used (`Did she complete?`, not `Did she completed?`); and confirmed no unsupported quantitative claim about the total number of irregular verbs was added back. No content revision required. **Production publication decision: `NOT APPROVED`** — human documentation approval does not authorize seed, publication, activation, or deployment.
 
 ## 6. `PAST_SIMPLE_VS_PRESENT_PERFECT`
 
@@ -311,8 +311,8 @@ yet, and this remains an open item, not resolved here.
   1. `fill_blank`: «Employees must ___ (report) any conflict of interest.» → `report`
   2. `choice`: «Choose the correct sentence.» [She can works from home. / She can work from home. / She can to work from home.] → `She can work from home.`
   3. `correct_sentence`: «We should reported the incident.» → «We should report the incident.»
-- **sourceRefs:** no legacy repo table covers modal verbs at all (confirmed by grep, `phase-2a-audit.md`); Cambridge Dictionary Grammar — "Modality: forms", "Modal verbs and modality", "Ought to" (`grammar-source-verification.md` #7) — confirms the entire pattern and the `ought to` exception, including Cambridge's own incorrect-usage examples.
-- **Documentation review status:** see `grammar-rules-human-review.md`.
+- **sourceRefs:** no legacy repo table covers modal verbs at all (confirmed by grep, `phase-2a-audit.md`); Cambridge Dictionary Grammar — "Modality: forms", "Modal verbs and modality", "Ought to" (`grammar-source-verification.md` #7) — confirms the entire pattern and the `ought to` exception, including Cambridge's own incorrect-usage examples. Status remains `PARTIALLY_VERIFIED`, unchanged by human review.
+- **Documentation review status:** **Human documentation decision: `APPROVE`** (product owner, learner perspective, 2026-07-17) — see `grammar-rules-human-review.md`. Reviewer confirmed the draft covers: after can/could/may/might/must/should/will/would the base form is used, without `to`, without `-s`, without past-form marking; questions and negatives are built without do/does/did; `have to` is treated separately and may use do/does/did. **Reviewer note: human approval does not resolve the existing `MicroCategory` mapping gap** — that gap continues to block automatic resolver activation for this rule, independent of documentation approval (see `decisions.md` → Blocks publication/activation). **Production publication decision: `NOT APPROVED`** — human documentation approval does not authorize seed, publication, activation, or deployment.
 
 ## 8. `BASIC_PREPOSITION_PATTERNS`
 
@@ -372,8 +372,8 @@ yet, and this remains an open item, not resolved here.
   1. reorder: «yesterday / the report / I / finished» → `I finished the report yesterday`
   2. `choice`: «Choose the correctly ordered sentence.» [Always I check the documents. / I always check the documents. / I check always the documents.] → `I always check the documents.`
   3. `correct_sentence`: «She always is late for meetings.» → «She is always late for meetings.»
-- **sourceRefs:** `CATEGORY_RULE_DETAILS.WORD_ORDER`; `CATEGORY_SIMPLIFIED_RULE.WORD_ORDER`; `CATEGORY_ADDITIONAL_EXAMPLE.WORD_ORDER`; `MICRO_LESSON_GENERIC_EXERCISES.WORD_ORDER`; British Council LearnEnglish — "How often", "Where adverbials go in a sentence" (`grammar-source-verification.md` #9) — directly confirms the "very flexible" framing used to correct the earlier absolute-rule wording, plus the `always`-in-negatives exception (new, not in legacy content).
-- **Documentation review status:** see `grammar-rules-human-review.md`.
+- **sourceRefs:** `CATEGORY_RULE_DETAILS.WORD_ORDER`; `CATEGORY_SIMPLIFIED_RULE.WORD_ORDER`; `CATEGORY_ADDITIONAL_EXAMPLE.WORD_ORDER`; `MICRO_LESSON_GENERIC_EXERCISES.WORD_ORDER`; British Council LearnEnglish — "How often", "Where adverbials go in a sentence" (`grammar-source-verification.md` #9) — directly confirms the "very flexible" framing used to correct the earlier absolute-rule wording, plus the `always`-in-negatives exception (new, not in legacy content). Status remains `PARTIALLY_VERIFIED`, unchanged by human review.
+- **Documentation review status:** **Human documentation decision: `APPROVE`** (product owner, learner perspective, 2026-07-17) — see `grammar-rules-human-review.md`. Reviewer confirmed the draft covers: basic Subject + Verb + Object order; place/time positioning after the action is a useful learner guideline, not an absolute rule; correctly-formed fronted adverbials are not an error; questions have their own separate word order; and confirmed the resolver must not classify an error solely by sentence length or by an adverbial appearing at the start of a sentence. No content revision required. **Production publication decision: `NOT APPROVED`** — human documentation approval does not authorize seed, publication, activation, or deployment.
 
 ## 10. `DO_DOES_DID_QUESTIONS_NEGATIVES`
 
@@ -401,8 +401,8 @@ yet, and this remains an open item, not resolved here.
   1. `fill_blank`: «___ you ___ (finish) the report yesterday?» → `Did / finish`
   2. `choice`: «Choose the correct question.» [Does she works on Fridays? / Does she work on Fridays? / Do she works on Fridays?] → `Does she work on Fridays?`
   3. `correct_sentence`: «Did you went to the meeting?» → «Did you go to the meeting?»
-- **sourceRefs:** no legacy repo table covers do-support at all (confirmed by grep, `phase-2a-audit.md`); Cambridge Dictionary Grammar — "Do — English Grammar Today", "Forming negative statements, questions and imperatives" (`grammar-source-verification.md` #10) — confirms the entire pattern including Cambridge's own base-form examples.
-- **Documentation review status:** see `grammar-rules-human-review.md`.
+- **sourceRefs:** no legacy repo table covers do-support at all (confirmed by grep, `phase-2a-audit.md`); Cambridge Dictionary Grammar — "Do — English Grammar Today", "Forming negative statements, questions and imperatives" (`grammar-source-verification.md` #10) — confirms the entire pattern including Cambridge's own base-form examples. Status remains `PARTIALLY_VERIFIED`, unchanged by human review.
+- **Documentation review status:** **Human documentation decision: `APPROVE`** (product owner, learner perspective, 2026-07-17) — see `grammar-rules-human-review.md`. Reviewer confirmed the draft covers: Present Simple `do/does + subject + base verb`; Past Simple `did + subject + base verb`; after do/does/did the main verb takes neither `-s` nor a past-tense form; negatives `do not`/`does not`/`did not`; do-support is not used with ordinary modal verbs; and confirmed the diff-specific precedence against `MODAL_BASE_VERB` is unchanged by this review. No content revision required. **Production publication decision: `NOT APPROVED`** — human documentation approval does not authorize seed, publication, activation, or deployment.
 
 ## 11. `COUNTABLE_UNCOUNTABLE`
 
@@ -466,8 +466,8 @@ yet, and this remains an open item, not resolved here.
   1. `fill_blank`: «We received ___ documents from the regulator.» (no article) → `""`
   2. `choice`: «Choose the correct sentence.» [She is a one of the best auditors. / She is one of the best auditors. / She is an one of the best auditors.] → `She is one of the best auditors.`
   3. `correct_sentence`: «An employees must comply with this policy.» → «Employees must comply with this policy.»
-- **sourceRefs:** no legacy repo table covers number/article agreement specifically; Cambridge Dictionary Grammar — "Nouns: singular and plural", "News", "Species" (`grammar-source-verification.md` #12) — confirms the singular-despite-`-s` word class, directly grounding the resolver-safety correction.
-- **Documentation review status:** see `grammar-rules-human-review.md`.
+- **sourceRefs:** no legacy repo table covers number/article agreement specifically; Cambridge Dictionary Grammar — "Nouns: singular and plural", "News", "Species" (`grammar-source-verification.md` #12) — confirms the singular-despite-`-s` word class, directly grounding the resolver-safety correction. Status remains `PARTIALLY_VERIFIED`, unchanged by human review.
+- **Documentation review status:** **Human documentation decision: `APPROVE`** (product owner, learner perspective, 2026-07-17) — see `grammar-rules-human-review.md`. Reviewer confirmed the draft covers: a/an is used only with a singular countable noun; a plural countable noun is never used with a/an; determiner and noun number must agree; a bare `-s`/`-es` suffix alone does not prove plurality; the counterexamples news, mathematics, species, analysis, business, class are retained; and confirmed a suffix-only signal cannot give the resolver `HIGH` confidence. No content revision required. **Production publication decision: `NOT APPROVED`** — human documentation approval does not authorize seed, publication, activation, or deployment.
 
 ---
 
