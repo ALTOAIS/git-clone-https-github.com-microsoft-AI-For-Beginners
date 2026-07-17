@@ -16,7 +16,7 @@ the Phase 2A branch `claude/phase2a-content-pedagogy-architecture`.
 | Diagnostic items | **35** | `backend/src/modules/content/diagnostic.ts` — across 6 sections (vocabulary/grammar/reading/listening/speaking/writing) |
 | `ErrorType` enum values | **12** | `backend/prisma/schema.prisma` |
 | `MicroCategory` enum values | **12** | `backend/prisma/schema.prisma`, 1:1 with `MICRO_LESSON_THRESHOLDS` in `micro-lessons/thresholds.ts` |
-| Static grammar-explanation records | **24** (12 + 12, two independent sets) | See "Confirmed content divergence" below |
+| Static grammar-explanation records | **12 categories, covered by 4 layered legacy tables** (not 24 independent records — see "Legacy content is layered, not duplicated" below) | `context-examples.ts` + `ai/fallbacks.ts` |
 | AI roles / system prompts | **12** | `backend/src/modules/ai/prompts/prompts.ts` — 12 `export const *_PROMPT` constants |
 
 Two figures previously stated in earlier roadmap discussion were **not
@@ -25,41 +25,65 @@ is 18, not 17; AI roles is 12, not 10. `english-flow/README.md` is
 updated with a minimal factual correction referencing this document (see
 the top-level PR diff).
 
-## Confirmed content divergence (not a hypothetical risk — found in running code)
+## Legacy content is layered, not duplicated — correction to an earlier audit claim
 
-Two independently-maintained Russian-language explanations of the same
-12 `MicroCategory` values exist today:
+**Correction (superseding the original Phase 2A audit statement below):**
+a direct read of `context-examples.ts` line 9 shows
 
-1. `backend/src/modules/errors/context-examples.ts` →
-   `CATEGORY_RULE_DETAILS` — used by `buildHelpDetails()`, shown in the
-   daily-practice "Не понял объяснение" panel (`errors` module).
-2. `backend/src/modules/ai/fallbacks.ts:404` → `MICRO_LESSON_RULES` —
-   used as the `ruleExplanation` fallback text when `MicroLesson`
-   generation runs without a configured AI provider.
-
-Example, same category, different text, both live in production:
-
-```
-context-examples.ts (CATEGORY_RULE_DETAILS.THIRD_PERSON_SINGULAR):
-"После he/she/it в настоящем времени к глаголу добавляется -s."
-
-ai/fallbacks.ts (MICRO_LESSON_RULES.THIRD_PERSON_SINGULAR):
-"В Present Simple к глаголу добавляется -s (или -es), если подлежащее —
-he, she, it или существительное в единственном числе («he works», «the
-company complies»). Это единственное время, где форма глагола меняется
-в зависимости от лица — легко забыть по привычке из русского языка."
+```ts
+export const CATEGORY_RULE_DETAILS = MICRO_LESSON_RULES;
 ```
 
-A third static table, `MICRO_LESSON_GENERIC_EXERCISES`
-(`ai/fallbacks.ts:431`), provides fallback exercises for the same 12
-categories and is a candidate source for MVP `ExerciseTemplate` content,
-not an explanation source.
+`CATEGORY_RULE_DETAILS` is a **re-export of the same object** as
+`MICRO_LESSON_RULES` (`ai/fallbacks.ts`), not an independent, disagreeing
+second source. The original audit compared `MICRO_LESSON_RULES` against
+text that actually lives in a third table, `CATEGORY_SIMPLIFIED_RULE`,
+while mislabeling it as `CATEGORY_RULE_DETAILS`. There is **no confirmed
+case of two contradicting detailed explanations live in production** —
+that specific claim in the original audit was incorrect and is retracted
+here, not carried forward into any other Phase 2A document.
 
-Per the roadmap's stated rule ("не считать функциональность
-реализованной только потому, что есть enum, prompt, seed или mock"),
-none of these three tables is treated as a canonical source in this
-audit — see `editorial-workflow.md` for how the canonical
-`shortExplanationRu`/`explanationRu` pair is derived instead.
+The accurate picture: `context-examples.ts` + `ai/fallbacks.ts` together
+hold **four layered, mutually-consistent tables**, each covering the same
+12 `MicroCategory` values at a different level of detail, none of them in
+conflict with the others:
+
+| Table | File | Role | Example (`THIRD_PERSON_SINGULAR`) |
+| --- | --- | --- | --- |
+| `CATEGORY_SIMPLIFIED_RULE` | `context-examples.ts` | short (1-sentence) version, used for the "Не понял объяснение" panel | «После he/she/it в настоящем времени к глаголу добавляется -s.» |
+| `CATEGORY_RULE_FORMULA` | `context-examples.ts` | compact pattern/formula | «he/she/it + глагол-s» |
+| `CATEGORY_RULE_DETAILS` = `MICRO_LESSON_RULES` | `context-examples.ts` (re-export) / `ai/fallbacks.ts` (source) | detailed version, used both for "Подробнее о правиле" and as the `MicroLesson` fallback `ruleExplanation` | «В Present Simple к глаголу добавляется -s (или -es), если подлежащее — he, she, it или существительное в единственном числе…» |
+| `CATEGORY_ADDITIONAL_EXAMPLE` | `context-examples.ts` | one extra example sentence | «He checks reports every Monday.» |
+
+A fifth table, `MICRO_LESSON_GENERIC_EXERCISES` (`ai/fallbacks.ts:431`),
+provides fallback exercises for the same 12 categories — a candidate
+source for MVP `ExerciseTemplate` content, not an explanation source.
+
+**The real problem this creates for Grammar MVP is not "reconcile two
+disagreeing texts."** It is:
+
+- content is spread across several hardcoded structures with no shared
+  identity between them beyond the `MicroCategory` key;
+- none of `CATEGORY_SIMPLIFIED_RULE`/`CATEGORY_RULE_FORMULA`/
+  `CATEGORY_RULE_DETAILS`/`CATEGORY_ADDITIONAL_EXAMPLE` carries a stable
+  `ruleCode`, CEFR level, source citation, reviewer, or version;
+- **one `MicroCategory` is too coarse and can contain several distinct
+  grammar rules** — e.g. `ARTICLES` alone must resolve to at least four
+  MVP rules (`ARTICLE_A_AN`, `ARTICLE_THE_SPECIFIC`, `ARTICLE_ZERO_GENERAL`,
+  `SINGULAR_PLURAL_ARTICLE_AGREEMENT`), and the existing tables provide
+  one blended text per category, not one per rule;
+- there is no source verification, versioning, or editorial lifecycle on
+  any of this content;
+- `errors` and `micro-lessons` both key off the wide `MicroCategory`,
+  never a specific rule.
+
+Grammar MVP's job is therefore to **formalize this layered legacy
+content into a structured, verified `GrammarRule`, and decompose each
+wide category into its constituent rules** — not to arbitrate a
+disagreement that does not actually exist. See
+`grammar-mvp-decision-pack.md` for the per-rule short/detailed pair
+derived from this layered content, and `editorial-workflow.md` for how
+each derivation is sourced and reviewed.
 
 ## Content, by module
 
@@ -67,8 +91,8 @@ audit — see `editorial-workflow.md` for how the canonical
 | --- | --- | --- | --- | --- |
 | `SEED_PHRASES` | `content/seed-phrases.ts` | 31 seed phrases, fields `english/russian/category/cefrLevel/example/hint/tags` | Yes, as backfill source | No `sense`/`partOfSpeech`/`source`/`version` |
 | `LESSON_CONTENT`/`WEEK_PLAN` | `content/lesson-content.ts`, `content/week-plan.ts` | 7 fixed day-1..7 lessons, `isValidLessonContent()` runtime validator | Yes, as a structural pattern | Lesson phrases are plain JSON text, not FK to any phrase model |
-| `CATEGORY_RULE_DETAILS` | `errors/context-examples.ts` | RU explanation, 12 `MicroCategory` | As legacy draft input only | See divergence above |
-| `MICRO_LESSON_RULES` | `ai/fallbacks.ts` | RU explanation, same 12 `MicroCategory` | As legacy draft input only | See divergence above |
+| `CATEGORY_SIMPLIFIED_RULE` | `errors/context-examples.ts` | short RU explanation, 12 `MicroCategory` | As legacy draft input for `shortExplanationRu` | See "Legacy content is layered, not duplicated" above |
+| `CATEGORY_RULE_DETAILS` = `MICRO_LESSON_RULES` | `errors/context-examples.ts` (re-export) / `ai/fallbacks.ts` (source) | detailed RU explanation, same 12 `MicroCategory` — one object, not two | As legacy draft input for `explanationRu` | Same object, not an independent source — see above |
 | `MICRO_LESSON_GENERIC_EXERCISES` | `ai/fallbacks.ts` | Fallback exercises, 12 categories | As `ExerciseTemplate` draft input | No CEFR/source |
 | `micro-category.classifier.ts` | `errors/micro-category.classifier.ts` | **Deterministic** (regex/heuristic diff over original/corrected) classification into `MicroCategory` | Yes, unchanged | This is the first stage of `GrammarRuleResolver` — see `retrieval-architecture.md` |
 | `language-detector.ts` | `errors/language-detector.ts` | Deterministic RU/EN/MIXED/EMPTY/UNCLEAR detection | Yes, unchanged | Reused as-is by Reading MVP for any free-text input |
@@ -93,3 +117,36 @@ audit — see `editorial-workflow.md` for how the canonical
 - `MICRO_LESSON_THRESHOLDS`: fully deterministic per-category error-count-over-window trigger for offering a micro-lesson.
 - `plans.service.ts buildTasks()`: deterministic daily-plan assembly by due-review/error counts — confirmed to **not** read `SkillProfile`, `User.goals`, or `User.preferredTopics`.
 - `Phrase.cefrLevel` exists in the schema but is not read by `trainer.service.ts` or `reviews.service.ts` for filtering — a currently-decorative field. Whether Phrase MVP activates it for retrieval filtering on day one, or leaves it decorative a while longer, is an open decision (see `decisions.md`).
+
+## `micro-category.classifier.ts` — precise coverage (read in full for the resolver design)
+
+`micro-category.classifier.ts` (221 lines) is a deterministic, priority-ordered
+chain of `if`-checks over `tokens(original)`/`tokens(corrected)` — not AI, not
+fuzzy matching. Precise findings that shaped `grammar-resolver-test-cases.md`:
+
+- `ARTICLES` fires when the article set (`a`/`an`/`the`) differs while the
+  non-article words match as a multiset — it does **not** distinguish which
+  article rule was broken, which is exactly why one `MicroCategory` value
+  must resolve to four MVP rule codes, not one.
+- `THIRD_PERSON_SINGULAR` only matches a literal `corrected[i] === original[i] + 's'`
+  positional pattern. It does **not** catch `do → does`, `have → has`, or
+  consonant+y → -ies (`study → studies`) — these fall through to `PRESENT_SIMPLE`
+  or `null`/`COLLOCATIONS`. The resolver for `PRESENT_SIMPLE_THIRD_PERSON`
+  compensates with its own text-level checks, not by trusting `microCategory`
+  alone.
+- **There is no branch for modal verbs or do-support in questions/negatives
+  anywhere in the file.** `do`/`does`/`did` are checked only inside the
+  `MAKE_VS_DO` branch (lexical make-vs-do confusion), not for do-support.
+  This is the concrete, code-level confirmation of the `MODAL_BASE_VERB` /
+  `DO_DOES_DID_QUESTIONS_NEGATIVES` mapping gap — these errors most often
+  fall through to `null` or the final `COLLOCATIONS` catch-all bucket
+  (`orig.length <= 4 && corr.length <= 4`).
+- `PRESENT_PERFECT` only fires when `have`/`has` is **added** in the
+  corrected text and was absent in the original — the reverse direction
+  (original wrongly contains `have`/`has`, corrected removes it, e.g. a
+  finished-time-marker misuse) is not caught by this branch at all and
+  falls through toward the `PAST_SIMPLE` `-ed` check instead.
+
+None of this is a defect to fix in Phase 2A (`Не менять classifier` was out
+of scope for this step) — it is the precise, code-grounded basis for the
+resolver hints and precedence in `grammar-resolver-test-cases.md`.

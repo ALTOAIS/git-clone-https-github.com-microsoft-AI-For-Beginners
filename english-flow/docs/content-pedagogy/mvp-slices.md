@@ -9,7 +9,7 @@ table (roadmap principle, `english-flow/README.md` → Phase 2 → "принци
 
 | Criterion | Grammar | Phrase | Reading |
 | --- | --- | --- | --- |
-| Learning value | High — fixes a *confirmed existing* defect (the two-source divergence in `phase-2a-audit.md`), not just a new feature | High, but incremental | High, but entirely unproven with real users yet |
+| Learning value | High — formalizes an *already-confirmed* gap (layered, un-versioned, category-level-only legacy content, see `phase-2a-audit.md`), not just a new feature | High, but incremental | High, but entirely unproven with real users yet |
 | Complexity | Low — reuses the `errors` module's SRS/mastery wholesale | Low–medium — needs the `phraseScope` decision first | High — the only slice with no reusable engine at all |
 | Migration risk | Low — new table, nullable FK, zero existing rows touched | Medium — touches a live, loaded table (`Phrase`) used in 4+ places | Low — no legacy to migrate, but a new UI from scratch |
 | Reuse of existing mechanics | Maximal (SRS, mastery, `contextsPassed`, the classifier) | Maximal for SRS, but needs the scope/governance split first | Minimal — only the language detector and the general Prisma-model pattern |
@@ -20,9 +20,9 @@ table (roadmap principle, `english-flow/README.md` → Phase 2 → "принци
 ### User story
 
 "When I don't understand my mistake in daily practice, I see a
-consistent, verified explanation of the specific rule I broke — not one
-of two silently-diverging texts, and not a random rule from a wide
-category."
+consistent, verified, source-cited explanation of the specific rule I
+broke — not a one-size-fits-all paragraph for a whole wide category, and
+not a randomly-picked rule out of several that could apply."
 
 ### Scope — the 12 named MVP rules
 

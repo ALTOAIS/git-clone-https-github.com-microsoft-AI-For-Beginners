@@ -37,9 +37,18 @@ resolved before a named piece of implementation can start).
    operating on real content. (`mvp-slices.md`)
 9. **Canonical grammar explanations have two lengths** —
    `shortExplanationRu` (1–2 sentences, inline error card) and
-   `explanationRu` (fuller, "Подробнее"/`MicroLesson`) — derived from
-   deliberate human reconciliation of the two diverging legacy sources,
-   never an automatic copy of either. (`editorial-workflow.md`)
+   `explanationRu` (fuller, "Подробнее"/`MicroLesson`) — derived by
+   narrowing the relevant slice of the four layered legacy tables
+   (`CATEGORY_SIMPLIFIED_RULE`/`CATEGORY_RULE_FORMULA`/
+   `CATEGORY_RULE_DETAILS`≡`MICRO_LESSON_RULES`/`CATEGORY_ADDITIONAL_EXAMPLE`)
+   down to the specific `ruleCode`, cross-checked against an external
+   source, never an automatic verbatim copy. **Correction:** an earlier
+   version of this decision described this as "reconciling two diverging
+   sources" — `CATEGORY_RULE_DETAILS` and `MICRO_LESSON_RULES` are the
+   same object (`context-examples.ts` line 9 re-exports it), not two
+   independent, disagreeing sources; see `phase-2a-audit.md` for the
+   correction and `grammar-source-verification.md` for the external
+   sources used per rule. (`editorial-workflow.md`)
 10. **`GrammarRuleResolver`, not a bare category lookup.** A
     `MicroCategory` can map to several `GrammarRule` rows; resolution
     evaluates `resolverHints` in deterministic priority order against
@@ -49,10 +58,13 @@ resolved before a named piece of implementation can start).
     no backfill required or performed for legacy rows, is in scope for
     Grammar MVP (needed for source traceability, recurrence metrics, and
     future transfer-to-new-context measurement). (`domain-model.md`)
-12. **`MicroLesson.sourceRuleIds`** (string array, server-validated) is
+12. **`MicroLesson.sourceRuleCodes`** (string array, server-validated) is
     recommended over a single nullable FK, matching the model's existing
     `sourceErrorIds: String[]` pattern and correctly modeling the
-    one-micro-lesson-to-many-rules cardinality. (`domain-model.md`)
+    one-micro-lesson-to-many-rules cardinality. Named `sourceRuleCodes`
+    (not `sourceRuleIds`) for consistency with `GrammarRule.ruleCode` as
+    the stable, human-readable identifier used everywhere else in this
+    design, including in resolver logs. (`domain-model.md`)
 13. **Reviewer metadata is `reviewedBy`/`reviewedAt`/`reviewNotes`/
     `sourceRefs`, not a `reviewerId` foreign key to `User`.** No RBAC
     exists; a reviewer need not be a product learner; no admin UI exists
@@ -78,6 +90,66 @@ resolved before a named piece of implementation can start).
     together; normal user-facing API returns only `PUBLISHED`; `ARCHIVED`
     never deletes a row or breaks user progress; `PUBLISHED` content is
     never edited directly in the production database. (`editorial-workflow.md`)
+18. **`GrammarRuleResolver` precedence is diff-specific, not one global
+    ordering.** An earlier draft proposed a single global
+    `DO_DOES_DID → MODAL` precedence for all cases. Corrected: the
+    precedence depends on which token was actually changed in the
+    diff — modal-form errors (modal retained, `to`/`-s`/past-tense
+    stripped from the following verb) resolve to `MODAL_BASE_VERB`;
+    unnecessary do-support before a retained modal (`Does she can
+    work?` → `Can she work?`) resolves to `DO_DOES_DID_QUESTIONS_NEGATIVES`
+    with `MODAL_BASE_VERB` as a logged secondary candidate; double-marking
+    after `did`/`does` (`did went` → `did go`) resolves to
+    `DO_DOES_DID_QUESTIONS_NEGATIVES`. Where the diff gives no reliable
+    distinguishing signal, `resolvedRuleCode = null`, `ambiguous = true`,
+    `LOW` confidence, legacy fallback — never a guess.
+    (`grammar-resolver-test-cases.md`)
+19. **No `HIGH` confidence from a single weak signal.** Corrected: earlier
+    resolver hints allowed `HIGH` confidence purely from a word ending in
+    `-s`/`-es`, a single signal word, sentence length, or landing in the
+    generic `COLLOCATIONS` fallback bucket. `HIGH` now requires a
+    structural diff (modal + changed verb form; `did`/`does` + changed
+    main verb; explicit article insertion/removal with a reliable number
+    signal; a known-uncountable noun from a reviewed lexicon; an exact
+    curated preposition pattern; same tokens in a changed order).
+    Suffix-only or single-signal-word matches are capped at `MEDIUM`/`LOW`
+    with fallback. In particular, `SINGULAR_PLURAL_ARTICLE_AGREEMENT`
+    no longer claims `HIGH` confidence from a bare `-s`/`-es` suffix check
+    — nouns like `business`, `class`, `analysis`, `series`, `species`,
+    `news` end in `-s`/are irregular and are not plural for this purpose
+    (confirmed via Cambridge Dictionary — `news` takes a singular verb;
+    `series`/`species` share one form for singular and plural).
+    (`grammar-resolver-test-cases.md`)
+20. **External source verification attempted for all 12 rules, not 6 —
+    status is `PARTIAL`, corrected from an earlier, wrong `DONE` claim.**
+    Primarily British Council LearnEnglish and Cambridge Dictionary
+    Grammar (per the requested source priority); Oxford Learner's
+    Dictionaries added this round for `ARTICLE_ZERO_GENERAL`'s
+    previously-missing second source. **Correction:** this session's
+    egress policy blocks `WebFetch` (and raw `curl`) to external hosts
+    generally — confirmed host-agnostic by testing Cambridge, British
+    Council, Oxford, Wikipedia, and Google, all identically blocked at
+    the proxy `CONNECT` stage — so no rule can currently reach
+    `VERIFIED_DIRECTLY` or `VERIFIED_BY_ALTERNATIVE_AUTHORITATIVE_SOURCE`;
+    every rule is `PARTIALLY_VERIFIED` (search-indexed snippets only).
+    See `grammar-source-verification.md` for the 4-tier status
+    definition, the full citation list, and two content corrections the
+    search surfaced that were not in any legacy content: `much` reads as
+    formal/literary in affirmative sentences (Cambridge Dictionary) —
+    `a lot of` is the more natural default; and `arrive home/here/there`
+    take no preposition at all (Cambridge Dictionary), a nuance absent
+    from the original `BASIC_PREPOSITION_PATTERNS` draft.
+21. **Three gates for Grammar MVP rules, not one — corrected from an
+    earlier two-gate framing that itself conflated AI recommendation
+    with human decision.** `grammar-rules-human-review.md` tracks (1) AI
+    documentation recommendation — this review pass's own judgment,
+    explicitly labeled as AI output, never worded as "approved"; (2)
+    human documentation decision — an actual human reviewer's call,
+    `PENDING HUMAN REVIEW` for all 12 rules until a human acts; (3)
+    production publication decision — is the rule cleared to be seeded
+    as `PUBLISHED` content real users will see, `NOT APPROVED` for all 12
+    rules regardless of gates 1 or 2. None of the three is inferred from
+    another.
 
 ## Deferred
 
@@ -137,12 +209,27 @@ resolved before a named piece of implementation can start).
    `status != NEW`.** Rejected — would understate real learner
    vocabulary substantially. Left as an open design task instead of a
    premature final answer. (`domain-model.md`)
-10. **Automatically treating either legacy grammar-explanation source
-    (`CATEGORY_RULE_DETAILS` or `MICRO_LESSON_RULES`) as canonical.**
-    Rejected — the two sources are confirmed to disagree; canonicalizing
-    one without review would just formalize an arbitrary, unreviewed
-    choice. Both are legacy drafts feeding a human-reviewed merge instead.
+10. **Treating any single layered legacy table (`CATEGORY_SIMPLIFIED_RULE`/
+    `CATEGORY_RULE_FORMULA`/`CATEGORY_RULE_DETAILS`/
+    `CATEGORY_ADDITIONAL_EXAMPLE`) as sufficient on its own, without
+    external verification or decomposition to rule-level.** Rejected —
+    each table is one paragraph per wide `MicroCategory`, not per
+    `ruleCode`, and none carries a source citation. **Correction:** this
+    was previously framed as "the two sources disagree" — they do not;
+    `CATEGORY_RULE_DETAILS` is a re-export of `MICRO_LESSON_RULES`, the
+    same object (see `phase-2a-audit.md`). The actual reason none of the
+    four tables is canonical on its own is that they are category-level,
+    unsourced, and unreviewed — not that they conflict.
     (`editorial-workflow.md`)
+11. **CEFR sub-levels (`A1_PLUS`, `A2_PLUS`, `B1_PLUS`) invented for
+    Grammar MVP drafts.** Not applicable — direct verification of
+    `backend/prisma/schema.prisma` confirms `CefrLevel` already contains
+    `A1`, `A1_PLUS`, `A2`, `A2_PLUS`, `B1`, `B1_PLUS`, `B2`, `C1` as real
+    enum values, not invented ones. An instruction to avoid them in this
+    review round was based on an incorrect premise about the schema;
+    corrected here rather than silently followed — see
+    `grammar-mvp-decision-pack.md` for the per-rule CEFR assignment,
+    which continues to use these real enum values where they fit best.
 
 ## Open (non-blocking)
 
@@ -153,9 +240,12 @@ resolved before a named piece of implementation can start).
    `MODAL_BASE_VERB` (rule #7) and `DO_DOES_DID_QUESTIONS_NEGATIVES`
    (rule #10), which don't map cleanly to any of the current 12
    `MicroCategory` values — see `mvp-slices.md`. This is open for Phase
-   2A documentation purposes but will need resolving before Grammar MVP
-   implementation can seed those two specific rules (see "Blocking"
-   below for the implementation-time version of this question).
+   2A documentation purposes and does not block writing these two rules'
+   documentation or importing them as `DRAFT` rows via the editorial
+   CLI; it will need resolving before the resolver can auto-activate or
+   publish those two specific rules for real users (see "Blocking" →
+   "Blocks publication/activation" for the corrected, narrower scope of
+   this gap).
 3. Whether `ReadingContent.tokenizedVocabularyProfile` should be
    recomputed whenever a learner's known-vocabulary signal changes, or
    whether coverage should be computed fully on-the-fly without any
@@ -166,20 +256,65 @@ resolved before a named piece of implementation can start).
 
 ## Blocking (must be resolved before named implementation can start)
 
-1. **Canonical text per MVP rule (which parts of `CATEGORY_RULE_DETAILS`
-   vs. `MICRO_LESSON_RULES` to keep, per rule).** Blocks: authoring the
-   12 rules' seed content. Does not block: the schema/migration itself.
-2. **Confirmation that the Phrase MVP migration plan's guarantee
-   (`UserPhrase`/`ReviewAttempt` untouched) has been dry-run and verified
-   before it touches any environment with real user data.** Blocks:
-   Phrase MVP implementation start.
-3. **The `PhraseScope` split must exist before Phrase MVP content
+**Corrected this round:** blockers are now split by which stage they
+actually block, per an explicit instruction that the `MicroCategory`
+mapping gap for rules #7/#10 was previously mis-described as a single
+undifferentiated blocker. It does not block drafting or importing those
+two rules as `DRAFT` — only their resolver activation for real users.
+
+### Blocks documentation commit
+
+**Empty.** Nothing currently blocks committing the Phase 2A / Grammar
+MVP documentation itself — that is what this round's work product is.
+
+### Blocks Grammar implementation (schema, migration, code, tests)
+
+1. **Canonical text per MVP rule** — content-documentation drafts and
+   source-verification attempts are complete (status `PARTIAL`, see
+   item #20 above); this alone does not unblock implementation.
+2. **The `GrammarRuleResolver`'s final implementation** — the
+   diff-specific precedence and morphology-safety design in
+   `grammar-resolver-test-cases.md` is a plan, not code; nothing has
+   been built or unit-tested yet.
+3. **The migration itself** — `grammar-migration-dry-run-plan.md` is a
+   plan only, explicitly `NOT EXECUTED`; no migration file exists.
+4. **Tests** — none exist yet for any part of Grammar MVP (resolver,
+   migration, editorial CLI).
+5. **The editorial CLI** — does not exist yet; needed to import the 12
+   `DRAFT` rows once documentation is human-approved.
+
+### Blocks publication/activation (a rule going live for real users)
+
+1. **Human-approved content** — `grammar-rules-human-review.md`'s human
+   documentation decision is `PENDING HUMAN REVIEW` for all 12 rules; no
+   human has acted yet.
+2. **Source verification reaching a stronger tier than `PARTIAL`** — not
+   strictly required to publish (a product owner could accept
+   `PARTIALLY_VERIFIED` sourcing as sufficient), but should be an
+   explicit part of the go/no-go decision, not silently assumed away.
+3. **The `MicroCategory` mapping gap for `MODAL_BASE_VERB` (rule #7) and
+   `DO_DOES_DID_QUESTIONS_NEGATIVES` (rule #10)** (see "Open" #2) —
+   **corrected scope:** this blocks the resolver from ever
+   auto-activating these two rules for a real user's error, and blocks
+   publishing them as `PUBLISHED`. It does **not** block writing their
+   documentation (already done) or importing them as `DRAFT` rows via
+   the editorial CLI once it exists — those are documentation/import
+   operations, not activation.
+4. **Production seed/publish approval for all 12 Grammar MVP rules** —
+   separate and later than the human documentation decision; **`NOT
+   APPROVED`** for all 12 as of this round, tracked per rule in
+   `grammar-rules-human-review.md`.
+
+### Blocks Phrase MVP
+
+1. **Confirmation that the Phrase MVP migration plan's guarantee
+   (`UserPhrase`/`ReviewAttempt` untouched) has been dry-run and verified**
+   before it touches any environment with real user data.
+2. **The `PhraseScope` split must exist before Phrase MVP content
    migration**, otherwise governance fields would be meaninglessly
-   applied to personal, non-curated phrases. Blocks: Phrase MVP.
-4. **The lexical-coverage/known-vocabulary-signal design task.** Blocks:
-   Reading MVP implementation start only — does not block Grammar or
-   Phrase MVP.
-5. **Resolution of the `MicroCategory` mapping gap for rules #7 and #10**
-   (see "Open" #2 above) — this becomes blocking specifically at the
-   point of seeding those two rules' content, not for the rest of
-   Grammar MVP.
+   applied to personal, non-curated phrases.
+
+### Blocks Reading MVP
+
+1. **The lexical-coverage/known-vocabulary-signal design task** — does
+   not block Grammar or Phrase MVP.
