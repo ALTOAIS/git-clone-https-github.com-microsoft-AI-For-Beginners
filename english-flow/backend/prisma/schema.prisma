@@ -131,6 +131,35 @@ enum DetectedLanguage {
   UNCLEAR
 }
 
+/// Жизненный цикл редакторского контента GrammarRule. contentStatus —
+/// единственный источник истины для runtime-активации: резолвер читает
+/// только PUBLISHED, ARCHIVED исключается из автоматического подбора.
+/// Нет отдельного isActive и нет перехода PUBLISHED -> DRAFT.
+enum GrammarContentStatus {
+  DRAFT
+  REVIEWED
+  PUBLISHED
+  ARCHIVED
+}
+
+/// Статус внешней проверки источника правила — жёсткий publication gate:
+/// только VERIFIED_DIRECTLY/VERIFIED_BY_ALTERNATIVE_AUTHORITATIVE_SOURCE
+/// допускают публикацию. Полные ссылки/evidence — только в Git.
+enum SourceVerificationStatus {
+  NOT_VERIFIED
+  PARTIALLY_VERIFIED
+  VERIFIED_DIRECTLY
+  VERIFIED_BY_ALTERNATIVE_AUTHORITATIVE_SOURCE
+}
+
+enum GrammarExampleType {
+  CORRECT
+  INCORRECT
+  CONTRAST
+  CONTEXT
+  EXCEPTION
+}
+
 model User {
   id                       String    @id @default(cuid())
   email                    String    @unique
@@ -261,62 +290,73 @@ model LessonAttempt {
 }
 
 model ErrorRecord {
-  id              String         @id @default(cuid())
-  userId          String
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  originalText    String
-  correctedText   String
-  explanation     String
-  errorType       ErrorType      @default(OTHER)
-  microCategory   MicroCategory?
-  source          String         @default("lesson")
-  personalExample String?
-  occurrenceCount Int            @default(1)
-  status          ErrorStatus    @default(NEW)
-  nextPracticeAt  DateTime?
+  id               String         @id @default(cuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalText     String
+  correctedText    String
+  explanation      String
+  errorType        ErrorType      @default(OTHER)
+  microCategory    MicroCategory?
+  source           String         @default("lesson")
+  personalExample  String?
+  occurrenceCount  Int            @default(1)
+  status           ErrorStatus    @default(NEW)
+  nextPracticeAt   DateTime?
   /// Момент последнего появления ошибки (создание или повтор) — отдельно от updatedAt,
   /// который меняется и при ручных изменениях статуса (например, "отметить решённой").
-  lastOccurrenceAt DateTime      @default(now())
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  lastOccurrenceAt DateTime       @default(now())
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   // --- Контекст исходного задания (UX-редизайн «Мои ошибки») ---
   // Для записей, созданных до этой миграции, все поля ниже — null;
   // фронтенд обязан показывать честный fallback, а не выдумывать контекст.
   /// lesson | review | trainer | speaking | diagnostic
-  sourceModule        String?
+  sourceModule       String?
   /// id урока/диалога/фразы — если применимо
-  sourceEntityId      String?
+  sourceEntityId     String?
   /// исходное задание/вопрос/RU-фраза, которую нужно было выразить
-  sourcePrompt        String?
+  sourcePrompt       String?
   /// доп. контекст: сценарий, название урока, последний вопрос ИИ
-  sourceContext       String?
+  sourceContext      String?
   /// полный ответ ученика целиком (originalText/correctedText — это фрагмент)
-  originalUserAnswer  String?
+  originalUserAnswer String?
 
   /// Результат детерминированной классификации языка ответа при создании записи
-  detectedLanguage    DetectedLanguage?
+  detectedLanguage DetectedLanguage?
 
   // --- Жизненный цикл ежедневной практики ---
-  practiceStatus         ErrorPracticeStatus @default(NEW)
-  lastPracticedAt         DateTime?
+  practiceStatus        ErrorPracticeStatus @default(NEW)
+  lastPracticedAt       DateTime?
   /// Успешных повторных проверок подряд (используется для интервала и MASTERED)
-  successfulReviewCount   Int                 @default(0)
+  successfulReviewCount Int                 @default(0)
   /// Сколько из успехов было на ДРУГОМ (не исходном) предложении — гейт MASTERED
-  contextsPassed          Int                 @default(0)
+  contextsPassed        Int                 @default(0)
   /// Локальная дата (YYYY-MM-DD), когда ошибка была отработана — основа для
   /// «Выполнено сегодня» без отдельной таблицы сессий.
-  completedTodayDate      String?
+  completedTodayDate    String?
   /// Локальная дата (YYYY-MM-DD), когда ошибку в последний раз пропустили в
   /// дневной практике — считается частью сегодняшней сессии, но НЕ считается
   /// отработанной (не трогает successfulReviewCount/contextsPassed).
-  lastSkippedDate         String?
+  lastSkippedDate       String?
   /// Сколько раз ошибку пропускали за всё время — для аналитики.
-  skipCount               Int                 @default(0)
+  skipCount             Int                 @default(0)
+
+  // --- Grammar MVP (persistence foundation only — resolver не реализован) ---
+  /// Устанавливается GrammarRuleResolver только при HIGH-confidence
+  /// автоматическом назначении PUBLISHED-правила. Legacy-записи и все
+  /// записи без назначения остаются null — backfill не требуется.
+  grammarRuleId          String?
+  grammarRule            GrammarRule? @relation(fields: [grammarRuleId], references: [id], onDelete: SetNull)
+  /// Версия резолвера на момент назначения grammarRuleId — durable audit
+  /// trail, не FK. Заполняется только вместе с grammarRuleId.
+  grammarResolverVersion String?
 
   @@index([userId, status])
   @@index([userId, practiceStatus])
   @@index([userId, microCategory])
+  @@index([grammarRuleId])
 }
 
 model Conversation {
@@ -422,16 +462,65 @@ model MicroLesson {
 }
 
 model VoiceBenchmark {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  month         String
-  prompt        String
-  transcript    String
-  wordCount     Int      @default(0)
-  durationSec   Int      @default(0)
-  audioDataUrl  String?
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month        String
+  prompt       String
+  transcript   String
+  wordCount    Int      @default(0)
+  durationSec  Int      @default(0)
+  audioDataUrl String?
+  createdAt    DateTime @default(now())
 
   @@unique([userId, month])
+}
+
+/// Grammar MVP — persistence foundation only (implementation slice 1).
+/// Учебный контент; логика подбора правила (GrammarRuleResolver) в этот
+/// слайс не входит и в этих моделях не хранится — см.
+/// english-flow/docs/content-pedagogy/grammar-prisma-model-proposal.md.
+/// Не хранит microCategories/resolverHints/isActive/publicationVersion/
+/// reviewedBy/reviewedAt/reviewNotes/sourceRefs/publishedBy — намеренно,
+/// см. документ выше для обоснования по каждому полю.
+model GrammarRule {
+  id                       String                   @id @default(cuid())
+  ruleCode                 String                   @unique
+  titleRu                  String
+  titleEn                  String?
+  shortExplanationRu       String
+  explanationRu            String
+  formula                  String?
+  cefrLevel                CefrLevel
+  contentStatus            GrammarContentStatus     @default(DRAFT)
+  sourceVerificationStatus SourceVerificationStatus @default(NOT_VERIFIED)
+  contentVersion           Int                      @default(1)
+  /// Версия JSON-контракта exerciseTemplates — обязательное, без default,
+  /// т.к. таблица новая и каждая строка создаётся уже с известной версией.
+  exerciseSchemaVersion    String
+  exerciseTemplates        Json
+  publishedAt              DateTime?
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+
+  examples     GrammarRuleExample[]
+  errorRecords ErrorRecord[]
+
+  @@index([contentStatus])
+}
+
+model GrammarRuleExample {
+  id            String             @id @default(cuid())
+  grammarRuleId String
+  grammarRule   GrammarRule        @relation(fields: [grammarRuleId], references: [id], onDelete: Cascade)
+  exampleType   GrammarExampleType
+  sentence      String
+  correction    String?
+  explanation   String?
+  context       String?
+  sortOrder     Int                @default(0)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([grammarRuleId, sortOrder])
 }
