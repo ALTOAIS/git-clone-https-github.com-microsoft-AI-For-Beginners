@@ -45,12 +45,18 @@ ErrorRecord.originalText / correctedText
     `resolverHints` (small ordered list of {conditionType, pattern,
     priority} stored as validated JSON on GrammarRule — see
     domain-model.md) against the actual originalText/correctedText/diff
-    of this specific ErrorRecord. Condition types are simple and
-    deterministic — e.g. "correctedText added a token matching /^(a|an)$/
-    where originalText had none," "correctedText added 'the'," "original
-    had an article before a token ending in -s / a known-uncountable
-    noun." No LLM involved in this stage.
-    First rule whose hint(s) match wins.
+    of this specific ErrorRecord. Condition types are structural, not
+    single weak signals — see `grammar-resolver-test-cases.md` for the
+    full per-rule signal table and worked conflict examples. A word
+    merely ending in `-s`/`-es` is **not** by itself a reliable plural
+    signal (`business`, `class`, `news`, `series`, `species` end in -s
+    without being plural — see `grammar-resolver-test-cases.md`), so
+    hints that depend on number must combine the suffix with additional
+    context or accept reduced (`MEDIUM`/`LOW`) confidence. No LLM
+    involved in this stage.
+    First rule whose hint(s) match wins, in the diff-specific precedence
+    order defined per rule in `grammar-resolver-test-cases.md` (not one
+    single global ordering — see `decisions.md`).
         │
         ├── match found ──────────────► ErrorRecord.grammarRuleId = rule.id
         │
@@ -75,9 +81,10 @@ problem with an unconditioned `LIMIT 1`, not the `LIMIT 1` syntax itself.
 1. A specific `GrammarRule` matched by the resolver → its
    `shortExplanationRu`/`explanationRu`.
 2. No specific match, but the category is one of the 12 MVP categories →
-   legacy static text (`context-examples.ts` / `MICRO_LESSON_RULES`,
-   whichever the human review decided is canonical for that category —
-   see `editorial-workflow.md`).
+   the existing layered legacy static text (`context-examples.ts`'s
+   `CATEGORY_SIMPLIFIED_RULE`/`CATEGORY_RULE_DETAILS`, the latter being
+   the same object as `ai/fallbacks.ts`'s `MICRO_LESSON_RULES` — see
+   `phase-2a-audit.md`), unchanged, exactly as it works today.
 3. Category outside MVP scope entirely → unchanged legacy behavior, no
    difference from what exists in production today.
 

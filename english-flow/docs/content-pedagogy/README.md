@@ -1,6 +1,33 @@
 # Content & Pedagogy Engine — Phase 2A documentation
 
-**Status: Phase 2A (Architecture, Governance and Editorial Foundation) — architecture accepted with corrections, DOCUMENTED ONLY.**
+**Status:**
+- Phase 2 (product roadmap): `PLANNED / NOT STARTED` (`english-flow/README.md`, unchanged).
+- Phase 2A architecture: accepted with corrections, DOCUMENTED ONLY.
+- Grammar MVP direct source verification: **`PARTIAL`** — corrected this
+  round from a wrong earlier `DONE` claim; this session's egress policy
+  blocks direct page fetches to external hosts entirely (confirmed
+  host-agnostic against 5 unrelated domains), so all 12 rules are
+  `PARTIALLY_VERIFIED` (search-indexed snippets), none `VERIFIED_DIRECTLY`
+  — see `grammar-source-verification.md`.
+- Grammar MVP AI documentation review: **COMPLETE** (all 12 rules have an
+  AI recommendation — see `grammar-rules-human-review.md`).
+- Grammar MVP human documentation review: **`COMPLETE` — 12 of 12 rules
+  reviewed.**
+- Grammar MVP human documentation approval: **`COMPLETE` — 12 of 12
+  approved** (product owner, learner perspective, 2026-07-17: 9 ×
+  `APPROVE`, `ARTICLE_ZERO_GENERAL` + `PAST_SIMPLE_VS_PRESENT_PERFECT` =
+  `APPROVE AFTER REVISION`, `COUNTABLE_UNCOUNTABLE` = `APPROVE WITH
+  CAVEAT` — see `grammar-rules-human-review.md`). **This is a
+  documentation-accuracy gate only** — see the "does not mean" list in
+  that document before assuming it authorizes anything else.
+- Grammar MVP production-publication decision: **NOT APPROVED** for all
+  12 rules, including all 12 now human-approved on documentation —
+  separate, later gate, independent of the AI recommendation and the
+  human documentation decision — see `grammar-rules-human-review.md`.
+- Grammar MVP migration dry-run: **NOT EXECUTED** (plan only — see `grammar-migration-dry-run-plan.md`).
+- Grammar MVP resolver implementation/tests: **NOT STARTED** (design
+  only — see `grammar-resolver-test-cases.md`, `retrieval-architecture.md`).
+- Grammar MVP implementation (schema, migration, seeds, code): **NOT STARTED.**
 
 > ⚠️ **Implementation has not started.** No Prisma schema was changed, no
 > migration exists, no `GrammarRule`/`PhraseEntry`/`ReadingContent` records
@@ -26,7 +53,7 @@ which vertical slice goes first.
 
 | File | Contents |
 | --- | --- |
-| [`phase-2a-audit.md`](./phase-2a-audit.md) | Factual audit of the current codebase — content inventory, data models, AI layer, learning logic, with exact file references. Includes the confirmed divergence between the two existing legacy grammar-explanation sources. |
+| [`phase-2a-audit.md`](./phase-2a-audit.md) | Factual audit of the current codebase — content inventory, data models, AI layer, learning logic, with exact file references. Includes a correction: the legacy grammar-explanation content is layered across four tables at different levels of detail, not two independent, disagreeing sources — see "Legacy content is layered, not duplicated" in that document. |
 | [`domain-model.md`](./domain-model.md) | Proposed data model for `GrammarRule`/`GrammarRuleExample`/`ReadingContent`/`PhraseScope`, alternatives considered, and the accepted recommendation for each. No Prisma syntax. |
 | [`retrieval-architecture.md`](./retrieval-architecture.md) | `GrammarRuleResolver` design, the three MVP retrieval flows (Grammar/Phrase/Reading), deterministic/AI boundary, fallback, source validation, observability. |
 | [`editorial-workflow.md`](./editorial-workflow.md) | Content lifecycle (`DRAFT → REVIEWED → PUBLISHED → ARCHIVED`), CLI-only workflow for MVP, validation rules, Git-backed versioning, archive/rollback. |
@@ -35,6 +62,11 @@ which vertical slice goes first.
 | [`metrics-observability.md`](./metrics-observability.md) | Metric formulas, what's measurable today vs. what needs a new field, minimal baseline logging plan. |
 | [`risk-register.md`](./risk-register.md) | Phase 2A risk register with probability/impact/mitigation/owner/blocking status. |
 | [`decisions.md`](./decisions.md) | ADR-style decision log: accepted / deferred / rejected / open / blocking. |
+| [`grammar-mvp-decision-pack.md`](./grammar-mvp-decision-pack.md) | Grammar MVP final decisions: all 12 rule drafts (CEFR, explanations, examples, resolver hints, exercise templates), linkage decisions, deployment/rollback proposal. |
+| [`grammar-rules-human-review.md`](./grammar-rules-human-review.md) | Per-rule review table across three separate gates: AI documentation recommendation (`RECOMMEND APPROVE`/`RECOMMEND REVISE`/`RECOMMEND REJECT`), human documentation decision (12 of 12 rules reviewed and approved — `APPROVE`/`APPROVE AFTER REVISION`/`APPROVE WITH CAVEAT`, 0 `PENDING HUMAN REVIEW`), and production-publication decision (`NOT APPROVED` for all 12, no exceptions — documentation approval does not authorize it). |
+| [`grammar-source-verification.md`](./grammar-source-verification.md) | External sources consulted for all 12 rules (mainly British Council LearnEnglish, Cambridge Dictionary Grammar) — publisher, section, what each confirms, retrieval date, URL, citation note. |
+| [`grammar-resolver-test-cases.md`](./grammar-resolver-test-cases.md) | Deterministic resolver signals per rule, diff-specific precedence (not one global ordering), conflict examples, HIGH/MEDIUM/LOW confidence rules, fallback behaviour. |
+| [`grammar-migration-dry-run-plan.md`](./grammar-migration-dry-run-plan.md) | Migration dry-run plan for Grammar MVP only — **plan, not execution; NOT EXECUTED.** |
 
 ## Relationship to the main roadmap
 

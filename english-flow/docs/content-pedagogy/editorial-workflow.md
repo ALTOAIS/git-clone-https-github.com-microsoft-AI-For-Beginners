@@ -131,30 +131,49 @@ computed (not manually entered — computed automatically from `body`);
 `license` actually matches the real source of the text; whether an
 AI-assisted draft text is stylistically appropriate.
 
-## Canonical grammar explanations — how the two legacy texts are resolved
+## Canonical grammar explanations — formalizing layered legacy content, not resolving a conflict
 
-Neither `CATEGORY_RULE_DETAILS` (`context-examples.ts`) nor
-`MICRO_LESSON_RULES` (`ai/fallbacks.ts`) is automatically canonical.
-Both are treated strictly as **legacy drafts** feeding into the review
-process for each of the 12 MVP rules:
+**Correction:** an earlier version of this document described
+`CATEGORY_RULE_DETAILS` and `MICRO_LESSON_RULES` as two independent,
+disagreeing sources requiring reconciliation. Direct code reading
+(`context-examples.ts` line 9: `export const CATEGORY_RULE_DETAILS =
+MICRO_LESSON_RULES;`) shows they are **the same object** — there is no
+conflict between them to resolve. See `phase-2a-audit.md` → "Legacy
+content is layered, not duplicated" for the full correction.
 
-1. For the MVP rule's category, read both legacy texts side by side.
+None of the four existing tables (`CATEGORY_SIMPLIFIED_RULE`,
+`CATEGORY_RULE_FORMULA`, `CATEGORY_RULE_DETAILS`/`MICRO_LESSON_RULES`,
+`CATEGORY_ADDITIONAL_EXAMPLE`) is treated as automatically canonical —
+not because they disagree, but because none of them carries a stable
+`ruleCode`, CEFR level, source citation, or review status, and because a
+single `MicroCategory` entry in these tables must be **decomposed** into
+several MVP rules (one `MicroCategory` is coarser than one `ruleCode`).
+All four are treated as **layered legacy drafts** feeding into the
+review process for each of the 12 MVP rules:
+
+1. For the MVP rule's category, read the relevant slice of all four
+   legacy tables (not just two).
 2. Draft a new `shortExplanationRu` (1–2 sentences, for the inline error
-   card — closer in length to the current `CATEGORY_RULE_DETAILS` style)
-   and a new `explanationRu` (the fuller "Подробнее"/`MicroLesson` text —
-   closer in depth to the current `MICRO_LESSON_RULES` style, but
-   reconciled against `CATEGORY_RULE_DETAILS` so the two are never
-   contradictory).
-3. Explicitly note in `sourceRefs` which legacy text(s) informed the
-   draft and what, if anything, was changed or corrected.
+   card — built from `CATEGORY_SIMPLIFIED_RULE`/`CATEGORY_RULE_FORMULA`,
+   narrowed to this specific rule where the legacy text covers a wider
+   category) and a new `explanationRu` (the fuller "Подробнее"/
+   `MicroLesson` text — built from `CATEGORY_RULE_DETAILS`, likewise
+   narrowed and, where the rule has no legacy coverage at all —
+   `MODAL_BASE_VERB`, `DO_DOES_DID_QUESTIONS_NEGATIVES`, and others —
+   written fresh against an external source, see
+   `grammar-source-verification.md`).
+3. Explicitly note in `sourceRefs` which legacy table(s) and/or external
+   source(s) informed the draft, and what was narrowed, corrected, or
+   added.
 4. The row starts life at `contentStatus = DRAFT` regardless of how much
    of the legacy text was reused verbatim — reusing existing wording does
    not skip human review.
 
-This directly resolves the confirmed content divergence documented in
-`phase-2a-audit.md` (the `THIRD_PERSON_SINGULAR` example) — the two
-inconsistent legacy texts stop being two independent sources of truth
-and become inputs to one reviewed canonical pair per rule.
+This formalizes the layered legacy content documented in
+`phase-2a-audit.md` into one reviewed, source-cited, rule-specific pair
+per `ruleCode` — see `grammar-mvp-decision-pack.md` for the resulting 12
+drafts and `grammar-source-verification.md` for the external sources
+consulted alongside the legacy tables.
 
 ## Git-backed versioning
 

@@ -70,8 +70,8 @@ system is built later.
 | `ruleCode` | string | No, unique | Stable identifier, e.g. `ARTICLE_A_AN` — see `mvp-slices.md` for the 12 MVP codes |
 | `cefrLevel` | enum (reuses existing `CefrLevel`) | No | |
 | `titleRu` / `titleEn` | string | No | |
-| `shortExplanationRu` | string, 1–2 sentences | No | Shown inline on the error card — replaces today's single-length `context-examples.ts` text |
-| `explanationRu` | string, longer form | No | Shown in "Подробнее" / inside `MicroLesson` — replaces today's `MICRO_LESSON_RULES` text |
+| `shortExplanationRu` | string, 1–2 sentences | No | Shown inline on the error card — formalizes today's `CATEGORY_SIMPLIFIED_RULE` text (`context-examples.ts`) into a per-rule field |
+| `explanationRu` | string, longer form | No | Shown in "Подробнее" / inside `MicroLesson` — formalizes today's `CATEGORY_RULE_DETAILS` (a re-export of `MICRO_LESSON_RULES`, same object) into a per-rule field |
 | `pattern` | string | No | Form/structure summary, e.g. "modal + base verb, no *to*, no tense marking" |
 | `usageConditions` | string | Yes | |
 | `signalWords` | string array | Yes | |
