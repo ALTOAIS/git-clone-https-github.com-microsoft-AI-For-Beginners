@@ -145,11 +145,33 @@ resolved before a named piece of implementation can start).
     documentation recommendation — this review pass's own judgment,
     explicitly labeled as AI output, never worded as "approved"; (2)
     human documentation decision — an actual human reviewer's call,
-    `PENDING HUMAN REVIEW` for all 12 rules until a human acts; (3)
-    production publication decision — is the rule cleared to be seeded
-    as `PUBLISHED` content real users will see, `NOT APPROVED` for all 12
-    rules regardless of gates 1 or 2. None of the three is inferred from
-    another.
+    `PENDING HUMAN REVIEW` until a human acts; (3) production publication
+    decision — is the rule cleared to be seeded as `PUBLISHED` content
+    real users will see, `NOT APPROVED` for all 12 rules regardless of
+    gates 1 or 2. None of the three is inferred from another.
+22. **First real human documentation review recorded — 5 of 12 rules,
+    not all 12.** A product owner, reviewing as a learner/user, issued
+    documentation decisions for the 5 rules flagged highest-risk:
+    `ARTICLE_THE_SPECIFIC` (`APPROVE`), `ARTICLE_ZERO_GENERAL` (`APPROVE
+    AFTER REVISION` — required the four-way comparison table and the
+    singular-countable-noun constraint before approval), `PAST_SIMPLE_VS_
+    PRESENT_PERFECT` (`APPROVE AFTER REVISION` — required the
+    four-situation Present Perfect framework and the no-date-≠-
+    automatically-Present-Perfect constraint before approval),
+    `BASIC_PREPOSITION_PATTERNS` (`APPROVE` — required the explicit
+    arrive-in/arrive-at examples), `COUNTABLE_UNCOUNTABLE` (`APPROVE WITH
+    CAVEAT` — required the contextual-countability caveat naming
+    countable senses for evidence/research/feedback/software/work/
+    knowledge). The remaining 7 rules were **not** reviewed and stay
+    `PENDING HUMAN REVIEW` — this decision is not extrapolated to rules
+    the reviewer did not examine. **Human documentation `APPROVE` does
+    not authorize production seed, publication, activation, or
+    deployment**, and does not upgrade any rule's source-verification
+    status past `PARTIALLY_VERIFIED` — the `good at`/`listen to`
+    (`BASIC_PREPOSITION_PATTERNS`) and `feedback` (`COUNTABLE_UNCOUNTABLE`)
+    evidence gaps remain open regardless of this documentation approval.
+    See `grammar-rules-human-review.md` for the full per-rule table and
+    `grammar-mvp-decision-pack.md` for the revised rule content.
 
 ## Deferred
 
