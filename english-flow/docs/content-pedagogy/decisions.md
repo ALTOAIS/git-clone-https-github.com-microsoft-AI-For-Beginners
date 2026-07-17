@@ -193,6 +193,214 @@ resolved before a named piece of implementation can start).
     implementation/resolver/migration blocker. See
     `grammar-rules-human-review.md` for the complete 12-row table and
     `grammar-mvp-decision-pack.md` for each rule's human review note.
+24. **`MicroCategory` strategy for `MODAL_BASE_VERB`/`DO_DOES_DID_QUESTIONS_NEGATIVES` — corrected within this same round, not carried forward as written.**
+    ~~The initial version of this item recommended tagging
+    `MODAL_BASE_VERB.microCategories = [PREPOSITIONS,
+    THIRD_PERSON_SINGULAR, PAST_SIMPLE]` and
+    `DO_DOES_DID_QUESTIONS_NEGATIVES.microCategories =
+    [THIRD_PERSON_SINGULAR, PRESENT_SIMPLE]` as a mapping to apply.~~
+    **That recommendation was wrong and is retracted, not softened.**
+    Those legacy categories are not semantically true of either rule —
+    they are an artifact of the legacy classifier's coarse,
+    vocabulary-short-circuited heuristics misrouting specific error
+    *shapes*, not evidence of a real grammatical relationship. Presenting
+    them as a tagging recommendation would have created a fake
+    multi-category mapping, the same class of error
+    (`CATEGORY_RULE_DETAILS`/`MICRO_LESSON_RULES`, applied to schema
+    instead of content) this whole document set exists to eliminate.
+
+    **Corrected decision:** legacy `MicroCategory` stays exactly as-is —
+    coarse, backward-compatible, unrenamed, unextended, never treated as
+    an accurate grammar-rule identifier. `GrammarRule.ruleCode` is a
+    genuinely independent, more precise classification with no
+    obligation to align with `MicroCategory` at all.
+    `MODAL_BASE_VERB.microCategories` and
+    `DO_DOES_DID_QUESTIONS_NEGATIVES.microCategories` stay **empty
+    arrays** — correct, not unresolved. This is made possible by a
+    corresponding pipeline correction (`grammar-resolver-contract.md`):
+    the resolver's candidate-set query is no longer filtered by
+    `microCategories` at all (`WHERE contentStatus = 'PUBLISHED'` only,
+    trivial at 12–15 rows) — `existingMicroCategory` becomes one weak,
+    optional input signal a rule's own `resolverHints` may reference,
+    never a mandatory filter that gates candidacy.
+
+    The classifier-tracing work itself (running the real, unmodified
+    `classifyMicroCategory()` against worked examples via a temporary
+    Jest spec, created and deleted in this session) is **kept and
+    correctly relabeled**: `MODAL_BASE_VERB`'s errors legacy-classify as
+    `PREPOSITIONS`/`THIRD_PERSON_SINGULAR`/`PAST_SIMPLE` depending on
+    pattern; `DO_DOES_DID_QUESTIONS_NEGATIVES`'s legacy-classify as
+    `THIRD_PERSON_SINGULAR`/`PRESENT_SIMPLE`/`null`. These are **legacy
+    classifier compatibility findings and regression-test inputs**, not
+    semantic tags and not a mapping recommendation — see
+    `grammar-resolver-contract.md`'s corrected precedence matrix.
+
+    The `null` case (`did`+irregular verb) is **reclassified from
+    "implementation blocker" to "activation-quality risk."** Under the
+    corrected (non-category-gated) pipeline, `DO_DOES_DID_QUESTIONS_NEGATIVES`
+    *is* a structural candidate for this diff — whether it resolves
+    depends on `resolverHints` design and diff-extraction quality, an
+    implementation/test question addressed once real code exists, not a
+    schema-level unreachability. See "Blocking" below for the corrected
+    scope.
+25. **`GrammarRuleResolver` interface accepted as a design contract, not
+    implemented — candidate-set logic corrected within this round (see
+    item #24).** `resolve(input): output`, pure deterministic function,
+    no AI call inside it anywhere, 3 distinct `fallbackReason` values
+    (`NO_CANDIDATES`/`AMBIGUOUS_TIE`/`NO_STRUCTURAL_MATCH`) replacing the
+    single implicit "no match" case in earlier drafts.
+    `NO_CANDIDATES`'s meaning corrected: it now means the `PUBLISHED`
+    catalog is empty, not "no rule tagged this category" (that framing
+    assumed the now-removed category filter). Input's diff contract
+    concretized as `GrammarDiff`/`DiffOperation[]` — token-level
+    insert/delete/replace/move, buildable without any new NLP dependency
+    (confirmed none exists in `backend/package.json`); grammatical
+    features explicitly deferred. See `grammar-resolver-contract.md`.
+26. **Exact additive migration SQL drafted, matching the real style of
+    the 5 existing migration files — still not executed, field list
+    corrected to 19 Tier-1 fields (see item #28 below), then further
+    corrected to 16 scalar fields and 5 steps, not 6 (see item #29).**
+    Original 6 steps: 3 new enums (governance × 2 + example types × 1),
+    `GrammarRule`, `GrammarRuleExample`, `ErrorRecord.grammarRuleId`,
+    `MicroLesson.sourceRuleCodes`. See
+    `grammar-migration-execution-plan.md`, which now also states the
+    Postgres enum-value-rollback limitation and splits rollback into 4
+    categories (application/feature-deactivation/data-preserving/schema),
+    explicitly warning that the per-step `DROP` SQL is safe only in a
+    genuine pre-data rehearsal, never once real editorial content
+    exists. This is additive detail on top of the already-accepted
+    `grammar-migration-dry-run-plan.md`, not a replacement for it.
+27. **Import / publish / activation formally defined as three separate,
+    idempotent operations — no single seed command does all three.**
+    Import is keyed by `ruleCode` and safe to design against now (human
+    documentation review is `COMPLETE`); publish requires the
+    still-`NOT APPROVED` production-publication gate; activation
+    additionally requires resolver code to exist. See
+    `grammar-implementation-readiness.md` decision #9.
+28. **`GrammarRule` field count corrected from 22 to 19 Tier-1 fields —
+    not a cosmetic trim, each remaining field tied to a stated runtime
+    need, each removed field given a concrete future trigger.**
+    `reviewNotes`, `sourceRefs` (full citation text), and `publishedBy`
+    moved out of the runtime schema (Git/editorial-metadata-only, each
+    with a named trigger for re-adding); `publicationVersion` and
+    `isActive` remain explicitly rejected, not deferred (both would
+    create a second, competing source of truth alongside
+    `contentVersion`/`contentStatus` respectively). Publication state
+    machine formalized: `DRAFT → REVIEWED → PUBLISHED → ARCHIVED`, no
+    `PUBLISHED → REVIEWED` backward step, correcting a published rule
+    re-enters at `DRAFT` on the **same** row via a `contentVersion` bump
+    (never a new row, never an `ARCHIVED → REVIEWED` transition). Source
+    verification storage: Option B (compact DB enum, full citations
+    Git-only) explicitly chosen over Option A (Git-only, no DB gate) and
+    Option C (full metadata duplicated into DB). Exercise JSON given a
+    concrete versioned schema (`exerciseSchemaVersion`, discriminated
+    union) with one real gap flagged (`BASIC_WORD_ORDER`'s informal
+    `reorder` exercise has no matching type in `ai.types.ts`'s existing
+    `MicroLessonExercise` union — not resolved, flagged). `MicroLesson.sourceRuleCodes`
+    re-evaluated on its own integrity trade-offs (not assumed from the
+    `sourceErrorIds` precedent alone) and declared explicitly
+    informational, not authoritative, made safe by a new rule:
+    **`ruleCode` is immutable once a row has ever reached `PUBLISHED`.**
+    See `grammar-prisma-model-proposal.md` for the full field-by-tier
+    breakdown and every sub-decision's reasoning.
+29. **Final architecture closure pass — corrects items #26 and #28 above
+    on five specific points, each a deliberate reversal, not a
+    refinement.** All five are detailed in
+    `grammar-implementation-readiness.md` and their respective sibling
+    documents; recorded here as the decision-log entry.
+
+    - **`GrammarRule.microCategories` removed entirely, not kept as an
+      empty array.** Item #24's "empty arrays, correct not unresolved"
+      position is itself superseded: with no confirmed reader for the
+      field, even for the 10 rules that do have a genuine category, it
+      is not persisted at all. Legacy compatibility is fully carried by
+      the untouched `ErrorRecord.microCategory`; `ErrorRecord.grammarRuleId`
+      is the independent new axis. Future trigger: a proven
+      analytics/query use case, an approved semantic taxonomy, or an
+      admin-search requirement.
+    - **`GrammarRule.resolverHints` removed entirely.** Deterministic
+      matching logic for each `ruleCode` lives in version-controlled
+      TypeScript matcher functions, not a DB JSON column — this narrows
+      item #4's general "governance fields live on the content model"
+      framing specifically for `GrammarRule`'s matching logic, which is
+      code, not editorial content. Future trigger: an editorial UI, non-
+      developer editors needing pattern control, a versioned schema with
+      a safe rollout mechanism, and regression tests for content-driven
+      rules.
+    - **Field count corrected again, 19 Tier-1 fields (item #28) → 16
+      scalar fields.** `reviewedBy`/`reviewedAt` are removed from the DB
+      entirely, not merely deferred to a "Tier 2, Git-metadata" bucket as
+      item #28 described — `contentStatus = REVIEWED` is the compact DB
+      signal, full reviewer identity and history stay in Git, and a
+      conceptual (not yet built) machine-readable import manifest is what
+      a future publish CLI would check. `microCategories` and
+      `resolverHints` also removed (see above). `titleEn` is nullable,
+      not required. `exerciseSchemaVersion` added as a required field
+      with no default.
+    - **Source verification is a hard publication gate, reversing the
+      "not strictly required to publish" position in "Blocks
+      publication/activation" item #2 below.** `NOT_VERIFIED`/
+      `PARTIALLY_VERIFIED` forbid `publish` outright; only
+      `VERIFIED_DIRECTLY`/`VERIFIED_BY_ALTERNATIVE_AUTHORITATIVE_SOURCE`
+      may pass. No `--force`. Since all 12 rules are currently `PARTIAL`,
+      none can pass `publish` today under this corrected rule — a
+      stricter, more accurate statement than the earlier "could accept
+      `PARTIALLY_VERIFIED`" framing. `grammar-mvp-decision-pack.md` (out
+      of this round's editable scope) still contains the older framing —
+      a known, flagged, not-yet-fixed cross-document inconsistency.
+    - **Publication lifecycle: no `PUBLISHED → DRAFT`, reversing item
+      #28's "re-enters at DRAFT on the same row via a contentVersion
+      bump."** That design would have temporarily removed a rule from
+      the resolver's candidate set while it was being corrected. Corrected:
+      the existing `PUBLISHED` row keeps serving throughout Git-side
+      review of a correction; `publish` then atomically updates the same
+      row's content in place, bumps `contentVersion`, and the row's
+      `contentStatus` never leaves `PUBLISHED`. Archive
+      (`PUBLISHED → ARCHIVED`) and gated reactivation
+      (`ARCHIVED → PUBLISHED`, full re-gate required) are otherwise
+      unchanged from item #28.
+    - **`ErrorRecord.grammarResolverVersion` added, reversing the prior
+      log-only position for `resolverVersion`.** Persisted alongside
+      `grammarRuleId` on assignment — nullable, no FK, no index — because
+      observability-log retention is shorter than `ErrorRecord`'s
+      lifetime and a resolver-logic change would otherwise leave no way
+      to explain a historical assignment. `confidence` is explicitly not
+      added to `ErrorRecord` — no concrete use case.
+    - **`MicroLesson.sourceRuleCodes` deferred entirely, reversing item
+      #12's original recommendation and item #28's "informational, not
+      authoritative" refinement of it.** Re-checked against
+      `micro-lessons.service.ts`'s actual `serialize()` method: no
+      current MVP flow reads any lesson→rule linkage. A field with no
+      confirmed reader is not added speculatively; the migration is 5
+      steps, not 6 (this field's step is removed, not just reordered).
+    - **`GrammarDiff`'s `MOVE` operation type removed**, narrowing item
+      #25's `insert/delete/replace/move` list to `INSERT`/`DELETE`/
+      `REPLACE` only — no tested move-detector exists; word-order changes
+      are represented as a paired `DELETE`+`INSERT`. Added
+      `diffSchemaVersion`/`extractorVersion`/`reliability` fields; a
+      diff's `reliability` below `HIGH` now forbids automatic assignment
+      regardless of matcher confidence.
+    - **Exercise JSON's `reorder` gap (flagged, not resolved, in item
+      #28) is now definitively excluded from MVP**, not merely flagged —
+      `BASIC_WORD_ORDER` must be represented using the 3 real, existing
+      types (`fill_blank`/`choice`/`correct_sentence`) until a new type
+      has a TypeScript type, Zod schema, backend validation, frontend
+      renderer, and tests, none of which exist.
+    - **Automatic `grammarRuleId` assignment policy concretized**: `HIGH`
+      confidence, unambiguous, a matching `PUBLISHED` and non-`ARCHIVED`
+      row, and diff `reliability = HIGH`, all required simultaneously.
+      `MEDIUM`/`LOW` leaves `grammarRuleId` null; an unresolvable
+      `ruleCode` yields `fallbackReason = 'UNKNOWN_RULE_CODE'`, not a
+      runtime exception — a new fallback reason alongside item #25's
+      original three.
+
+    None of the above changes the status of Grammar MVP implementation
+    (`NOT STARTED`), the migration dry-run (`NOT EXECUTED`), production
+    publication (`NOT APPROVED`), or human documentation review
+    (`COMPLETE — 12 of 12`) — this item corrects the technical design
+    only. See `grammar-prisma-model-proposal.md`,
+    `grammar-resolver-contract.md`, `grammar-migration-execution-plan.md`,
+    and `grammar-test-strategy.md` for full detail.
 
 ## Deferred
 
@@ -279,16 +487,20 @@ resolved before a named piece of implementation can start).
 1. Whether `Phrase.cefrLevel` (currently unused by any retrieval filter)
    is activated for Phrase MVP retrieval filtering on day one, or stays
    decorative a while longer.
-2. Whether `MicroCategory` needs two new enum values for
-   `MODAL_BASE_VERB` (rule #7) and `DO_DOES_DID_QUESTIONS_NEGATIVES`
-   (rule #10), which don't map cleanly to any of the current 12
-   `MicroCategory` values — see `mvp-slices.md`. This is open for Phase
-   2A documentation purposes and does not block writing these two rules'
-   documentation or importing them as `DRAFT` rows via the editorial
-   CLI; it will need resolving before the resolver can auto-activate or
-   publish those two specific rules for real users (see "Blocking" →
-   "Blocks publication/activation" for the corrected, narrower scope of
-   this gap).
+2. ~~Whether `MicroCategory` needs two new enum values for
+   `MODAL_BASE_VERB`/`DO_DOES_DID_QUESTIONS_NEGATIVES`~~ — **fully closed
+   this round, no longer open, see item #24 in "Accepted."** No new enum
+   values, and — corrected from an earlier same-round draft — **no
+   tagging of either rule's `microCategories` with legacy categories
+   either**; both stay empty arrays, by design, permanently, not as an
+   interim state awaiting an "implementation task." What remains
+   genuinely open is unrelated to this closed question: whether to ever
+   fix the separate, confirmed legacy-classifier gap for the `did`+
+   irregular-verb do-support pattern (routes to no category at all —
+   see `grammar-resolver-contract.md`), which has no proposed fix in
+   scope for this round and, per the pipeline correction, is no longer
+   even a `MicroCategory`-mapping question — it's a diff-matching
+   question for whenever resolver code is written.
 3. Whether `ReadingContent.tokenizedVocabularyProfile` should be
    recomputed whenever a learner's known-vocabulary signal changes, or
    whether coverage should be computed fully on-the-fly without any
@@ -312,19 +524,42 @@ MVP documentation itself — that is what this round's work product is.
 
 ### Blocks Grammar implementation (schema, migration, code, tests)
 
-1. **Canonical text per MVP rule** — content-documentation drafts and
-   source-verification attempts are complete (status `PARTIAL`, see
-   item #20 above); this alone does not unblock implementation.
-2. **The `GrammarRuleResolver`'s final implementation** — the
-   diff-specific precedence and morphology-safety design in
-   `grammar-resolver-test-cases.md` is a plan, not code; nothing has
-   been built or unit-tested yet.
-3. **The migration itself** — `grammar-migration-dry-run-plan.md` is a
-   plan only, explicitly `NOT EXECUTED`; no migration file exists.
-4. **Tests** — none exist yet for any part of Grammar MVP (resolver,
-   migration, editorial CLI).
+1. ~~**Canonical text per MVP rule**~~ — content-documentation drafts,
+   source-verification attempts, and human documentation review are all
+   complete (`PARTIAL`/`COMPLETE`/`COMPLETE` respectively, see items
+   #20/#23 above); this alone does not unblock implementation, but it is
+   no longer itself a gap.
+2. **The `GrammarRuleResolver`'s final implementation** — a full
+   interface contract now exists (`grammar-resolver-contract.md`, item
+   #25), including a code-verified precedence matrix; nothing has been
+   built or unit-tested yet. The contract does not reduce this blocker,
+   it makes what needs building precise.
+3. **The migration itself** — exact expected SQL for all 6 steps now
+   exists (`grammar-migration-execution-plan.md`, item #26), matching
+   the real style of the 5 existing migrations; `prisma migrate
+   dev`/`deploy` has still not been run against any database.
+4. **Tests** — a full minimum test matrix now exists
+   (`grammar-test-strategy.md`, ~70+ resolver unit cases alone); no test
+   *files* exist yet for any part of Grammar MVP (resolver, migration,
+   editorial CLI).
 5. **The editorial CLI** — does not exist yet; needed to import the 12
-   `DRAFT` rows once documentation is human-approved.
+   `DRAFT` rows now that human documentation review is `COMPLETE`
+   (12/12) — import itself remains safe to build against, per item #27's
+   three-operation separation; publish/activate remain separately
+   gated.
+6. ~~**The `did`+irregular-verb do-support classifier gap — blocks implementation.**~~
+   **Reclassified this round (item #24's correction): this is not an
+   implementation blocker.** Under the corrected, non-category-gated
+   resolver pipeline, `DO_DOES_DID_QUESTIONS_NEGATIVES` is a structural
+   candidate for this diff regardless of the legacy classifier's `null`
+   output — whether it actually resolves is a matcher-design (item #29:
+   matching logic is TypeScript, not a `resolverHints` DB field) and
+   diff-extraction-quality question, addressable once resolver code
+   exists, not something that prevents building the schema, migration,
+   `DRAFT` import, resolver interface, or unit test suite. Moved to
+   "Blocks or limits activation quality" — see
+   `grammar-resolver-contract.md`'s "Reclassified" section for the full
+   does-not-block/does-block split.
 
 ### Blocks publication/activation (a rule going live for real users)
 
@@ -335,19 +570,31 @@ MVP documentation itself — that is what this round's work product is.
    `PENDING HUMAN REVIEW`. Documentation approval does **not** itself
    unblock publication — items 2–4 below remain fully in force
    regardless of this one closing.
-2. **Source verification reaching a stronger tier than `PARTIAL`** — not
-   strictly required to publish (a product owner could accept
-   `PARTIALLY_VERIFIED` sourcing as sufficient), but should be an
-   explicit part of the go/no-go decision, not silently assumed away.
-3. **The `MicroCategory` mapping gap for `MODAL_BASE_VERB` (rule #7) and
-   `DO_DOES_DID_QUESTIONS_NEGATIVES` (rule #10)** (see "Open" #2) —
-   **corrected scope:** this blocks the resolver from ever
-   auto-activating these two rules for a real user's error, and blocks
-   publishing them as `PUBLISHED`. It does **not** block writing their
-   documentation (already done) or importing them as `DRAFT` rows via
-   the editorial CLI once it exists — those are documentation/import
-   operations, not activation.
-4. **Production seed/publish approval for all 12 Grammar MVP rules** —
+2. **Source verification reaching `VERIFIED_DIRECTLY` or
+   `VERIFIED_BY_ALTERNATIVE_AUTHORITATIVE_SOURCE`** — **corrected in
+   item #29: this is now a hard publication gate, not a judgment call.**
+   `NOT_VERIFIED`/`PARTIALLY_VERIFIED` forbid `publish` outright, no
+   override. Since all 12 rules are currently `PARTIAL`
+   (`grammar-source-verification.md`), none can pass `publish` today.
+3. ~~**The `MicroCategory` mapping gap for `MODAL_BASE_VERB`/`DO_DOES_DID_QUESTIONS_NEGATIVES`**~~
+   — **fully resolved this round, corrected (item #24): there is no gap
+   to close.** `microCategories` staying empty for these two rules is
+   the correct, final design — not a placeholder awaiting an
+   "implementation task" to apply tags (an earlier same-round draft of
+   this item said exactly that, and was itself wrong — no tags are ever
+   applied, by design). What blocks activation for these two rules is
+   identical to what blocks every rule: the resolver doesn't exist yet,
+   and (specifically for `DO_DOES_DID_QUESTIONS_NEGATIVES`'s `did`+
+   irregular-verb pattern) its own TypeScript matcher's (item #29:
+   matching logic is code, not a `resolverHints` DB field) quality for
+   that pattern is unverified until real code and tests exist — an activation-quality
+   question (see "Blocks Grammar implementation," reclassified item
+   above), not a documentation or schema blocker.
+4. **The `GrammarRuleResolver`'s diff-extractor
+   (`computeGrammarDiff`/`GrammarDiff`) must actually be implemented and
+   validated against real error text before activation** — a concrete
+   contract exists (`grammar-resolver-contract.md`) but no code.
+5. **Production seed/publish approval for all 12 Grammar MVP rules** —
    separate and later than the human documentation decision; **`NOT
    APPROVED`** for all 12 as of this round, tracked per rule in
    `grammar-rules-human-review.md`.

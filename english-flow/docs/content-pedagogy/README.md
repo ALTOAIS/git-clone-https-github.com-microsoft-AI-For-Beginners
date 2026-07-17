@@ -24,9 +24,17 @@
   12 rules, including all 12 now human-approved on documentation —
   separate, later gate, independent of the AI recommendation and the
   human documentation decision — see `grammar-rules-human-review.md`.
-- Grammar MVP migration dry-run: **NOT EXECUTED** (plan only — see `grammar-migration-dry-run-plan.md`).
+- Grammar MVP migration dry-run: **NOT EXECUTED** (plan only — see
+  `grammar-migration-dry-run-plan.md` for the risk/rollback plan and
+  `grammar-migration-execution-plan.md` for the exact SQL expectation).
 - Grammar MVP resolver implementation/tests: **NOT STARTED** (design
-  only — see `grammar-resolver-test-cases.md`, `retrieval-architecture.md`).
+  only — see `grammar-resolver-test-cases.md`,
+  `grammar-resolver-contract.md`, `retrieval-architecture.md`).
+- Grammar MVP implementation readiness: design pass complete, through a
+  final architecture closure round — see
+  `grammar-implementation-readiness.md` for the 16 final technical
+  decisions. **This does not change any status below it** — implementation
+  is still **NOT STARTED**, no code/schema/migration exists.
 - Grammar MVP implementation (schema, migration, seeds, code): **NOT STARTED.**
 
 > ⚠️ **Implementation has not started.** No Prisma schema was changed, no
@@ -67,6 +75,11 @@ which vertical slice goes first.
 | [`grammar-source-verification.md`](./grammar-source-verification.md) | External sources consulted for all 12 rules (mainly British Council LearnEnglish, Cambridge Dictionary Grammar) — publisher, section, what each confirms, retrieval date, URL, citation note. |
 | [`grammar-resolver-test-cases.md`](./grammar-resolver-test-cases.md) | Deterministic resolver signals per rule, diff-specific precedence (not one global ordering), conflict examples, HIGH/MEDIUM/LOW confidence rules, fallback behaviour. |
 | [`grammar-migration-dry-run-plan.md`](./grammar-migration-dry-run-plan.md) | Migration dry-run plan for Grammar MVP only — **plan, not execution; NOT EXECUTED.** |
+| [`grammar-implementation-readiness.md`](./grammar-implementation-readiness.md) | Entry point for the implementation-readiness design pass: the 16 final technical decisions (through the final architecture closure round), code-verified findings, open questions, implementation/publication blockers, self-review. |
+| [`grammar-prisma-model-proposal.md`](./grammar-prisma-model-proposal.md) | Field-by-field `GrammarRule`/`GrammarRuleExample` Prisma proposal (16 scalar fields, minimal Tier-1 model — no `microCategories`/`resolverHints`/`reviewedBy`/`reviewedAt`), `ErrorRecord`/`MicroLesson` linkage, governance enums, JSON-vs-table decision — checked against the actual `schema.prisma`, not prior docs. |
+| [`grammar-resolver-contract.md`](./grammar-resolver-contract.md) | `GrammarRuleResolver` TypeScript interface (design only), version-controlled TypeScript matcher functions (not a DB `resolverHints` field), and the diff-specific precedence matrix, with `classifyMicroCategory()` behavior verified by actually running it against the worked examples. |
+| [`grammar-migration-execution-plan.md`](./grammar-migration-execution-plan.md) | Exact expected SQL for the 5 additive migration steps, mirroring the real style of the 5 existing migration files — **plan, not execution; NOT EXECUTED.** |
+| [`grammar-test-strategy.md`](./grammar-test-strategy.md) | Minimum test matrix before merge: schema/migration, ~70+ resolver unit test cases per rule, integration, editorial-validation. |
 
 ## Relationship to the main roadmap
 
