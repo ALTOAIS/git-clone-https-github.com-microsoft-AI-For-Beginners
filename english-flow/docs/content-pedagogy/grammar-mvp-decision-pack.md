@@ -14,14 +14,30 @@ repeat the prose.
 
 - **`ErrorRecord.grammarRuleId`**: nullable, `onDelete: SetNull`, no
   backfill for legacy rows — accepted, unchanged this round.
-- **`MicroLesson.sourceRuleCodes`**: string array, server-validated,
-  matching the existing `sourceErrorIds: String[]` pattern — accepted,
-  renamed from an earlier `sourceRuleIds` draft for consistency with
-  `ruleCode` as the stable identifier used everywhere else.
+  **`ErrorRecord.grammarResolverVersion`**: nullable `String?`, durable
+  resolver-audit metadata persisted alongside `grammarRuleId` on
+  assignment — added in the implementation-readiness round's final
+  architecture closure, not log-only (`grammar-prisma-model-proposal.md`).
+- **`MicroLesson.sourceRuleCodes`**: **corrected — deferred entirely,
+  not part of the Grammar MVP migration.** An earlier draft of this
+  recap accepted a `string[]` field renamed from `sourceRuleIds`; the
+  implementation-readiness round's final architecture closure
+  re-checked `micro-lessons.service.ts`'s actual `serialize()` method,
+  found no current MVP flow reads any lesson→rule linkage, and deferred
+  the field rather than adding it speculatively — see
+  `grammar-implementation-readiness.md` decision #3.
 - **Multiple rules per error**: single primary `grammarRuleId`; secondary
   candidates are logged by the resolver (`candidateRuleCodes[]`) but not
   persisted as a formal relation — accepted, unchanged this round (see
   `decisions.md` for the rejected join-table/JSON-array alternatives).
+- **`GrammarRule.microCategories` / `.resolverHints`**: **not persisted
+  at all** — corrected in the implementation-readiness round's final
+  architecture closure. Legacy `MicroCategory` stays a separate, coarse
+  classification (`ErrorRecord.microCategory`, untouched); matching
+  logic lives in version-controlled TypeScript matcher functions, not a
+  DB JSON column. The "related MicroCategory" annotations per rule below
+  are informational cross-references only, never a persisted mapping —
+  see `grammar-prisma-model-proposal.md`.
 
 ## CEFR levels — schema-verified, but **the level itself is a product proposal, not an externally verified fact**
 
@@ -312,7 +328,7 @@ yet, and this remains an open item, not resolved here.
   2. `choice`: «Choose the correct sentence.» [She can works from home. / She can work from home. / She can to work from home.] → `She can work from home.`
   3. `correct_sentence`: «We should reported the incident.» → «We should report the incident.»
 - **sourceRefs:** no legacy repo table covers modal verbs at all (confirmed by grep, `phase-2a-audit.md`); Cambridge Dictionary Grammar — "Modality: forms", "Modal verbs and modality", "Ought to" (`grammar-source-verification.md` #7) — confirms the entire pattern and the `ought to` exception, including Cambridge's own incorrect-usage examples. Status remains `PARTIALLY_VERIFIED`, unchanged by human review.
-- **Documentation review status:** **Human documentation decision: `APPROVE`** (product owner, learner perspective, 2026-07-17) — see `grammar-rules-human-review.md`. Reviewer confirmed the draft covers: after can/could/may/might/must/should/will/would the base form is used, without `to`, without `-s`, without past-form marking; questions and negatives are built without do/does/did; `have to` is treated separately and may use do/does/did. **Reviewer note: human approval does not resolve the existing `MicroCategory` mapping gap** — that gap continues to block automatic resolver activation for this rule, independent of documentation approval (see `decisions.md` → Blocks publication/activation). **Production publication decision: `NOT APPROVED`** — human documentation approval does not authorize seed, publication, activation, or deployment.
+- **Documentation review status:** **Human documentation decision: `APPROVE`** (product owner, learner perspective, 2026-07-17) — see `grammar-rules-human-review.md`. Reviewer confirmed the draft covers: after can/could/may/might/must/should/will/would the base form is used, without `to`, without `-s`, without past-form marking; questions and negatives are built without do/does/did; `have to` is treated separately and may use do/does/did. **Reviewer note, corrected in the implementation-readiness round: there is no `MicroCategory` mapping gap to resolve** — `GrammarRule` has no `microCategories` field at all, so no mapping is ever pending for this rule. What actually blocks this rule's resolver activation is the same as every rule: the hard source-verification publication gate (`sourceVerificationStatus = PARTIALLY_VERIFIED`, publication forbidden until it reaches `VERIFIED_DIRECTLY`/`VERIFIED_BY_ALTERNATIVE_AUTHORITATIVE_SOURCE`) and the resolver/matcher not existing yet — independent of documentation approval (see `decisions.md` → Blocks publication/activation). **Production publication decision: `NOT APPROVED`** — human documentation approval does not authorize seed, publication, activation, or deployment.
 
 ## 8. `BASIC_PREPOSITION_PATTERNS`
 

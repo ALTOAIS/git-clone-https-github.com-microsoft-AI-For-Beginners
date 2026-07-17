@@ -26,6 +26,17 @@ Accepted enum, used identically on `GrammarRule`, `GrammarRuleExample`
 MVP (see `mvp-slices.md`), scoped to `PhraseScope: CURATED_LIBRARY` rows
 only.
 
+> **`GrammarRule` diverges from `reviewedBy`/`reviewedAt`/`reviewNotes`/
+> `sourceRefs` below, corrected in the implementation-readiness round.**
+> For `GrammarRule` specifically, none of these four fields is persisted
+> in the DB — Git is the source of truth for reviewer identity/notes/
+> sourcing, `contentStatus = REVIEWED` is the compact DB signal a human
+> gate passed, and a proposed machine-readable import manifest is what a
+> future publish CLI checks. See `grammar-prisma-model-proposal.md`'s
+> "Review metadata stays in Git" section. This general shared-lifecycle
+> shape is unchanged for `ReadingContent`/`Phrase`, which remain out of
+> scope for this correction.
+
 - `contentStatus` — enum, one of `DRAFT` / `REVIEWED` / `PUBLISHED` /
   `ARCHIVED`. Required, defaults to `DRAFT`.
 - `version` — integer, required, starts at 1. See `editorial-workflow.md`
@@ -64,6 +75,20 @@ schema coupling that would need to be undone if a real editor-accounts
 system is built later.
 
 ## GrammarRule
+
+> **This section's field list is the original, prose-level sketch and is
+> superseded, not current.** `grammar-prisma-model-proposal.md` is the
+> exact, field-by-field Prisma proposal (types, defaults, constraints,
+> rationale, checked against the real `schema.prisma`) — read that
+> document for implementation-ready detail. **Specifically superseded by
+> the implementation-readiness round's final architecture closure:**
+> `microCategories` and `resolverHints` below are **not** persisted at
+> all in the final model (matching logic lives in version-controlled
+> TypeScript matcher functions, not DB JSON); `reviewedBy`/`reviewedAt`
+> are also not persisted (Git is the source of truth, see the note
+> above). This section is kept only for the original architecture-level
+> rationale behind the retrieval-model fix below, not as a current field
+> list.
 
 | Field | Type (prose) | Nullable | Purpose |
 | --- | --- | --- | --- |
@@ -120,9 +145,11 @@ resolve to at least four different MVP rules: `ARTICLE_A_AN`,
 `SINGULAR_PLURAL_ARTICLE_AGREEMENT`. An unconditioned `LIMIT 1` would
 return an arbitrary one of these — sometimes the wrong explanation for
 the actual mistake. The corrected design (`GrammarRuleResolver`, full
-detail in `retrieval-architecture.md`) evaluates each candidate rule's
-`resolverHints` against the actual `originalText`/`correctedText` diff,
-in deterministic priority order, and only falls back to a
+detail in `retrieval-architecture.md` and, for the final corrected
+contract, `grammar-resolver-contract.md`) evaluates each candidate
+rule's own version-controlled TypeScript matcher against the actual
+`originalText`/`correctedText` diff, in deterministic priority order,
+and only falls back to a
 category-level generic explanation (still not a random row) when no
 specific rule matches.
 
@@ -153,6 +180,19 @@ specific rule matches.
   parallel to the existing `contextsPassed` mechanism.
 
 ### `MicroLesson` — nullable FK vs. `sourceRuleIds` array: recommendation
+
+> **Superseded by the implementation-readiness round's final decision:
+> this linkage is deferred entirely, not added to the Grammar MVP
+> migration.** The array-vs-FK cardinality reasoning below is still
+> correct as *architecture*, and `sourceRuleCodes` (the field's final
+> proposed name, keyed on `ruleCode` rather than an internal `id`) is
+> the option that would be chosen **if** the field were added — but
+> re-checking `micro-lessons.service.ts`'s actual `serialize()` method
+> found no current MVP flow that reads any lesson→rule linkage at all.
+> A field with no confirmed reader is not persisted speculatively. See
+> `grammar-prisma-model-proposal.md`'s "`MicroLesson.sourceRuleCodes` —
+> final decision: deferred entirely" section and
+> `grammar-implementation-readiness.md` decision #3.
 
 Two options were considered:
 
