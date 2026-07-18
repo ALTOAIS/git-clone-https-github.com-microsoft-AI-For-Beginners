@@ -46,14 +46,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production-db
-    # The job must not execute at all unless both the actor and the typed
-    # confirmation phrase match exactly (case-sensitive, exact equality —
-    # no loose/partial matching). If this evaluates false, GitHub skips the
-    # job entirely; the environment's Required Reviewer gate below never
-    # even gets reached, and PRODUCTION_DIRECT_URL is never exposed.
+    # The job must not execute at all unless the actor, the typed
+    # confirmation phrase, AND the branch this workflow_dispatch was fired
+    # from all match exactly (case-sensitive, exact equality — no
+    # loose/partial matching). This third condition mirrors, inside the
+    # workflow itself, the `production-db` GitHub Environment's own
+    # "Selected branches and tags: claude/compliance-risk-hub-mvp-vn86he"
+    # restriction — defense in depth, not a replacement for it. If this
+    # evaluates false, GitHub skips the job entirely; the environment's
+    # Required Reviewer gate below never even gets reached, and
+    # PRODUCTION_DIRECT_URL is never exposed.
     if: >-
       github.actor == 'ALTOAIS' &&
-      github.event.inputs.confirmation == 'MIGRATE_GRAMMAR_MVP_2BDA732C'
+      github.event.inputs.confirmation == 'MIGRATE_GRAMMAR_MVP_2BDA732C' &&
+      github.ref == 'refs/heads/claude/compliance-risk-hub-mvp-vn86he'
     steps:
       - name: Checkout pinned application commit
         # actions/checkout v4.3.1 (immutable commit, not the mutable v4 tag)
