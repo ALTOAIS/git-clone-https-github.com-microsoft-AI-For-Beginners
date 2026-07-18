@@ -14,6 +14,7 @@ const mainNav = [
 const secondaryNav = [
   { to: '/phrases', key: 'phrases', icon: '💬' },
   { to: '/errors', key: 'errors', icon: '✏️' },
+  { to: '/grammar', key: 'grammar', icon: '📚' },
   { to: '/progress', key: 'progress', icon: '📈' },
   { to: '/settings', key: 'settings', icon: '⚙️' },
 ] as const;
