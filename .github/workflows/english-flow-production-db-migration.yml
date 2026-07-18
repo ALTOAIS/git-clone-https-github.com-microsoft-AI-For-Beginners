@@ -1,0 +1,713 @@
+name: English Flow — Production DB Migration (Guarded)
+
+# Manual-only, tightly guarded workflow to apply exactly one already-merged,
+# additive Prisma migration (20260717170856_add_grammar_mvp_schema) to the
+# production Neon database for English Flow.
+#
+# This workflow does NOT deploy the application, does NOT run seeds, and
+# does NOT import or publish any GrammarRule content. It only runs
+# `prisma migrate deploy` against the pinned application commit, guarded by
+# an explicit actor check, an explicit confirmation phrase, a GitHub
+# Environment approval gate, a deterministic pre-flight check of both the
+# repository's own migration files (including checksums) and the
+# database's migration history, and fail-closed post-migration
+# verification — no step in this workflow reports success unless it
+# actually verified success.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: >-
+          Type the exact confirmation phrase to proceed:
+          MIGRATE_GRAMMAR_MVP_2BDA732C
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: english-flow-production-db-migration
+  cancel-in-progress: false
+
+env:
+  # Pinned application commit — the migration job checks out exactly this
+  # SHA regardless of which branch the workflow file itself lives on, so
+  # the manual-dispatch branch selector in the GitHub UI can never change
+  # which application/migration code actually runs.
+  TARGET_SHA: 2bda732cf58c893168d9502037c5636c9351d87d
+  REQUIRED_CONFIRMATION: MIGRATE_GRAMMAR_MVP_2BDA732C
+  EXPECTED_MIGRATION: 20260717170856_add_grammar_mvp_schema
+
+jobs:
+  migrate:
+    name: Guarded production DB migration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production-db
+    # The job must not execute at all unless the actor, the typed
+    # confirmation phrase, AND the branch this workflow_dispatch was fired
+    # from all match exactly (case-sensitive, exact equality — no
+    # loose/partial matching). This third condition mirrors, inside the
+    # workflow itself, the `production-db` GitHub Environment's own
+    # "Selected branches and tags: claude/compliance-risk-hub-mvp-vn86he"
+    # restriction — defense in depth, not a replacement for it. If this
+    # evaluates false, GitHub skips the job entirely; the environment's
+    # Required Reviewer gate below never even gets reached, and
+    # PRODUCTION_DIRECT_URL is never exposed.
+    if: >-
+      github.actor == 'ALTOAIS' &&
+      github.event.inputs.confirmation == 'MIGRATE_GRAMMAR_MVP_2BDA732C' &&
+      github.ref == 'refs/heads/claude/compliance-risk-hub-mvp-vn86he'
+    steps:
+      - name: Checkout pinned application commit
+        # actions/checkout v4.3.1 (immutable commit, not the mutable v4 tag)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          persist-credentials: false
+
+      - name: Verify checked-out commit matches pinned SHA
+        run: |
+          actual="$(git rev-parse HEAD)"
+          if [ "$actual" != "$TARGET_SHA" ]; then
+            echo "::error::Checked-out commit ($actual) does not match pinned SHA ($TARGET_SHA)."
+            exit 1
+          fi
+          echo "Verified HEAD == $TARGET_SHA"
+
+      - name: Initialize job summary
+        run: |
+          mkdir -p "${{ runner.temp }}/summary"
+          {
+            echo "# English Flow — Production DB Migration"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Actor | \`${{ github.actor }}\` |"
+            echo "| Pinned target SHA | \`$TARGET_SHA\` |"
+            echo "| Expected migration | \`$EXPECTED_MIGRATION\` |"
+          } > "${{ runner.temp }}/summary/00-header.md"
+
+      - name: Verify repository migration set (pinned commit, no DB needed)
+        id: repo_migrations
+        working-directory: english-flow/backend/prisma/migrations
+        run: |
+          # Pure filesystem check against the checked-out pinned commit —
+          # runs before any dependency install or DB connection so a bad
+          # repository state fails fast. Only real migration directories
+          # are compared; incidental files at this level (migration_lock.toml)
+          # are excluded by -type d.
+          expected_sorted="$(printf '%s\n' \
+            20260713181704_init \
+            20260715113915_voice_answer \
+            20260715193458_motivation_microlessons \
+            20260716072729_errors_module_redesign \
+            20260716102513_errors_skip_tracking \
+            20260717170856_add_grammar_mvp_schema \
+            | sort)"
+
+          actual_sorted="$(find . -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)"
+
+          {
+            echo "## Repository migration-set preflight (pinned commit, filesystem only)"
+            echo ""
+          } > "${{ runner.temp }}/summary/01-repo-migrations.md"
+
+          if [ "$actual_sorted" != "$expected_sorted" ]; then
+            echo "::error::Repository migration directory set does not match the expected 6 migrations."
+            echo "--- expected ---"
+            echo "$expected_sorted"
+            echo "--- actual (pinned commit) ---"
+            echo "$actual_sorted"
+            {
+              echo "**STOP: migration directory set mismatch.**"
+              echo ""
+              echo "Expected:"
+              echo '```'
+              echo "$expected_sorted"
+              echo '```'
+              echo "Actual (from pinned commit):"
+              echo '```'
+              echo "$actual_sorted"
+              echo '```'
+            } >> "${{ runner.temp }}/summary/01-repo-migrations.md"
+            exit 1
+          fi
+
+          if [ ! -f "./$EXPECTED_MIGRATION/migration.sql" ]; then
+            echo "::error::Target migration.sql ($EXPECTED_MIGRATION) is missing from the pinned commit."
+            echo "**STOP: target migration.sql missing.**" >> "${{ runner.temp }}/summary/01-repo-migrations.md"
+            exit 1
+          fi
+
+          echo "Repository migration set matches expected exactly (6 directories); target migration.sql present."
+          {
+            echo "- Directory set matches expected 6 migrations exactly: **yes**"
+            echo "- Target migration.sql present: **yes**"
+            echo ""
+          } >> "${{ runner.temp }}/summary/01-repo-migrations.md"
+
+      - name: Setup Node
+        # actions/setup-node v4.4.0 (immutable commit, not the mutable v4 tag)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: english-flow/backend/package-lock.json
+
+      - name: Install dependencies (deterministic, from committed lockfile)
+        working-directory: english-flow/backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: english-flow/backend
+        run: npx prisma generate
+
+      - name: Validate production connection target
+        working-directory: english-flow/backend
+        env:
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          cat > ./.ci-validate.cjs <<'VALIDATE_EOF'
+          const raw = process.env.DIRECT_URL;
+          if (!raw) {
+            console.error('::error::DIRECT_URL secret is not set.');
+            process.exit(1);
+          }
+
+          let url;
+          try {
+            url = new URL(raw);
+          } catch (e) {
+            console.error('::error::PRODUCTION_DIRECT_URL is not a valid URL.');
+            process.exit(1);
+          }
+
+          if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
+            console.error('::error::Connection string is not a PostgreSQL URL (unexpected protocol).');
+            process.exit(1);
+          }
+
+          const hostname = url.hostname.toLowerCase();
+          if (!hostname.endsWith('.neon.tech') && hostname !== 'neon.tech') {
+            console.error('::error::Hostname does not belong to Neon (expected *.neon.tech).');
+            process.exit(1);
+          }
+
+          if (hostname.includes('-pooler')) {
+            console.error('::error::Refusing a pooled (-pooler) Neon endpoint for prisma migrate deploy — a direct, non-pooled connection is required for the advisory lock.');
+            process.exit(1);
+          }
+
+          const dbName = url.pathname.replace(/^\//, '');
+          if (!dbName) {
+            console.error('::error::Database name is empty in the connection string.');
+            process.exit(1);
+          }
+
+          const sslmode = url.searchParams.get('sslmode');
+          if (!sslmode || sslmode.toLowerCase() === 'disable') {
+            console.error('::error::Connection string does not request a secure (sslmode) connection.');
+            process.exit(1);
+          }
+
+          const hostLabels = hostname.split('.');
+          const maskedHostSuffix = hostLabels.slice(-4).join('.');
+          const maskedIdentity = `host=...${maskedHostSuffix} db=${dbName}`;
+
+          console.log('Production connection target validated (Neon, direct, non-pooled, TLS).');
+          console.log('Masked identity: ' + maskedIdentity);
+
+          require('fs').writeFileSync(
+            process.env.SUMMARY_FRAGMENT_PATH,
+            [
+              '## Connection validation',
+              '',
+              '- Hostname belongs to Neon: yes',
+              '- Non-pooled (direct) endpoint: yes',
+              '- Database name non-empty: yes',
+              '- TLS/SSL requested: yes',
+              `- Masked identity: \`${maskedIdentity}\``,
+              '',
+            ].join('\n'),
+          );
+          VALIDATE_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/02-connection.md" node ./.ci-validate.cjs
+          rm -f ./.ci-validate.cjs
+
+      - name: Pre-migration status (informational)
+        id: status_pre
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          set +e
+          npx prisma migrate status > "${{ runner.temp }}/migrate-status-pre.txt" 2>&1
+          code=$?
+          set -e
+          cat "${{ runner.temp }}/migrate-status-pre.txt"
+          {
+            echo "## Pre-migration \`prisma migrate status\`"
+            echo ""
+            echo '```'
+            cat "${{ runner.temp }}/migrate-status-pre.txt"
+            echo '```'
+            echo ""
+            echo "_(exit code $code — informational only; the deterministic guard in the next step is authoritative, not this exit code. Post-migration status later in this run IS authoritative.)_"
+            echo ""
+          } > "${{ runner.temp }}/summary/03-status-pre.md"
+
+      - name: Deterministic pre-migration guard (history + checksums + row count)
+        id: guard
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          cat > ./.ci-guard.cjs <<'GUARD_EOF'
+          const { PrismaClient } = require('@prisma/client');
+          const fs = require('fs');
+          const path = require('path');
+          const crypto = require('crypto');
+
+          const EXPECTED_PRIOR = [
+            '20260713181704_init',
+            '20260715113915_voice_answer',
+            '20260715193458_motivation_microlessons',
+            '20260716072729_errors_module_redesign',
+            '20260716102513_errors_skip_tracking',
+          ];
+          const TARGET = '20260717170856_add_grammar_mvp_schema';
+          const MIGRATIONS_DIR = path.join(__dirname, 'prisma', 'migrations');
+          const summaryLines = ['## Pre-migration deterministic guard', ''];
+
+          function fail(message) {
+            console.error('::error::' + message);
+            summaryLines.push(`- **STOP:** ${message}`);
+            fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH, summaryLines.join('\n') + '\n');
+            process.exit(1);
+          }
+
+          function sha256File(filePath) {
+            return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+          }
+
+          async function main() {
+            const prisma = new PrismaClient();
+            try {
+              const rows = await prisma.$queryRawUnsafe(
+                'SELECT migration_name, started_at, finished_at, rolled_back_at, checksum FROM "_prisma_migrations" ORDER BY started_at ASC;',
+              );
+              const byName = new Map(rows.map((r) => [r.migration_name, r]));
+
+              summaryLines.push('| Migration | State |', '| --- | --- |');
+              for (const r of rows) {
+                const state = r.rolled_back_at ? 'ROLLED_BACK' : r.finished_at ? 'APPLIED' : 'PENDING/INCOMPLETE';
+                summaryLines.push(`| \`${r.migration_name}\` | ${state} |`);
+              }
+              summaryLines.push('');
+
+              const missing = EXPECTED_PRIOR.filter((name) => !byName.has(name));
+              if (missing.length > 0) {
+                fail(`Missing expected prior migration(s) in database history: ${missing.join(', ')}.`);
+              }
+
+              const notClean = EXPECTED_PRIOR.filter((name) => {
+                const r = byName.get(name);
+                return !r.finished_at || r.rolled_back_at;
+              });
+              if (notClean.length > 0) {
+                fail(`Prior migration(s) not cleanly applied (failed or rolled back): ${notClean.join(', ')}.`);
+              }
+
+              const known = new Set([...EXPECTED_PRIOR, TARGET]);
+              const unexpected = rows.filter((r) => !known.has(r.migration_name));
+              if (unexpected.length > 0) {
+                fail(
+                  `Unexpected migration(s) present in database history that do not exist in the repository: ${unexpected
+                    .map((r) => r.migration_name)
+                    .join(', ')}. Possible repository/database drift.`,
+                );
+              }
+
+              // Checksum verification for every already-applied prior migration.
+              // Prisma's own `_prisma_migrations.checksum` is the plain SHA-256
+              // hex digest of the migration.sql file bytes at the time it was
+              // applied — the exact same algorithm used here. A mismatch means
+              // the file was edited after being applied, or a genuine history
+              // mismatch; either way this is a hard stop, never auto-repaired.
+              summaryLines.push('| Migration | Checksum match |', '| --- | --- |');
+              const checksumMismatches = [];
+              for (const name of EXPECTED_PRIOR) {
+                const filePath = path.join(MIGRATIONS_DIR, name, 'migration.sql');
+                if (!fs.existsSync(filePath)) {
+                  fail(
+                    `Prior migration \`${name}\` is applied in the database but its migration.sql is missing from the checked-out repository.`,
+                  );
+                }
+                const localChecksum = sha256File(filePath);
+                const dbChecksum = byName.get(name).checksum;
+                const matches = localChecksum === dbChecksum;
+                summaryLines.push(`| \`${name}\` | ${matches ? 'yes' : 'NO'} |`);
+                if (!matches) {
+                  checksumMismatches.push(name);
+                }
+              }
+              summaryLines.push('');
+              if (checksumMismatches.length > 0) {
+                fail(
+                  `Checksum mismatch for already-applied migration(s): ${checksumMismatches.join(
+                    ', ',
+                  )}. The migration.sql in the checked-out repository does not match what Prisma recorded when the migration was applied — requires manual investigation, not automatic repair (migrate resolve is never used by this workflow).`,
+                );
+              }
+
+              if (byName.has(TARGET)) {
+                const t = byName.get(TARGET);
+                if (t.finished_at && !t.rolled_back_at) {
+                  console.log('Target migration is already applied.');
+                  summaryLines.push(
+                    `**Target migration \`${TARGET}\` is already applied. Stopping without running \`prisma migrate deploy\`.**`,
+                    '',
+                  );
+                  fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH, summaryLines.join('\n') + '\n');
+                  fs.appendFileSync(process.env.GITHUB_OUTPUT, 'already_applied=true\n');
+                  return;
+                }
+                fail(
+                  `Target migration \`${TARGET}\` exists in history but is not cleanly finished (failed or rolled back) — requires manual investigation, not automatic repair.`,
+                );
+              }
+
+              // Target must be genuinely pending: absent from DB history
+              // (checked above) and its migration.sql must actually exist so
+              // `prisma migrate deploy` has real content to apply.
+              const targetFilePath = path.join(MIGRATIONS_DIR, TARGET, 'migration.sql');
+              if (!fs.existsSync(targetFilePath)) {
+                fail(`Target migration \`${TARGET}\`'s migration.sql is missing from the checked-out repository.`);
+              }
+
+              const countRows = await prisma.$queryRawUnsafe('SELECT COUNT(*)::int AS count FROM "ErrorRecord";');
+              const preCount = countRows[0].count;
+
+              summaryLines.push(
+                'Guard result: all prior migrations applied cleanly with matching checksums, target migration is pending, no unexpected drift detected.',
+                '',
+                `Pre-migration \`ErrorRecord\` row count: **${preCount}**`,
+                '',
+              );
+              fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH, summaryLines.join('\n') + '\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, 'already_applied=false\n');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `pre_error_record_count=${preCount}\n`);
+            } finally {
+              await prisma.$disconnect();
+            }
+          }
+
+          main().catch((e) => {
+            fail('Guard script threw an unexpected exception: ' + (e && e.message ? e.message : String(e)));
+          });
+          GUARD_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/04-guard.md" node ./.ci-guard.cjs
+          rm -f ./.ci-guard.cjs
+
+      - name: Run migration (prisma migrate deploy)
+        id: migrate
+        if: steps.guard.outputs.already_applied == 'false'
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          set +e
+          npx prisma migrate deploy > "${{ runner.temp }}/migrate-deploy.txt" 2>&1
+          code=$?
+          set -e
+          cat "${{ runner.temp }}/migrate-deploy.txt"
+          {
+            echo "## \`prisma migrate deploy\`"
+            echo ""
+            echo '```'
+            cat "${{ runner.temp }}/migrate-deploy.txt"
+            echo '```'
+            echo ""
+          } > "${{ runner.temp }}/summary/05-migrate-deploy.md"
+
+          if [ "$code" -ne 0 ]; then
+            echo "::error::prisma migrate deploy failed (exit $code). Not retrying, not repairing, not restoring. See job summary for the captured output."
+            echo "deploy_succeeded=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "deploy_succeeded=true" >> "$GITHUB_OUTPUT"
+
+      - name: Post-migration status (authoritative)
+        id: status_post
+        if: steps.migrate.outputs.deploy_succeeded == 'true'
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          set +e
+          npx prisma migrate status > "${{ runner.temp }}/migrate-status-post.txt" 2>&1
+          status_code=$?
+          set -e
+          cat "${{ runner.temp }}/migrate-status-post.txt"
+          {
+            echo "## Post-migration \`prisma migrate status\` (authoritative)"
+            echo ""
+            echo '```'
+            cat "${{ runner.temp }}/migrate-status-post.txt"
+            echo '```'
+            echo ""
+            echo "_(exit code $status_code)_"
+            echo ""
+          } > "${{ runner.temp }}/summary/06-status-post.md"
+
+          if [ "$status_code" -ne 0 ]; then
+            echo "::error::Post-migration 'prisma migrate status' exited non-zero ($status_code). Migration state is NOT confirmed up to date. Not attempting automatic repair (no migrate resolve, no db push, no reset). Treating this run as failed."
+            echo "status_ok=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "status_ok=true" >> "$GITHUB_OUTPUT"
+
+      - name: Post-migration schema and data-safety verification (fail-closed)
+        id: post_verify
+        if: steps.status_post.outputs.status_ok == 'true'
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          cat > ./.ci-verify.cjs <<'VERIFY_EOF'
+          const { PrismaClient } = require('@prisma/client');
+          const fs = require('fs');
+
+          const EXPECTED_TARGET = '20260717170856_add_grammar_mvp_schema';
+          const EXPECTED_TABLES = ['GrammarRule', 'GrammarRuleExample'];
+          const EXPECTED_ENUMS = ['GrammarContentStatus', 'SourceVerificationStatus', 'GrammarExampleType'];
+          const EXPECTED_INDEXES = [
+            'GrammarRule_ruleCode_key',
+            'GrammarRule_contentStatus_idx',
+            'GrammarRuleExample_grammarRuleId_sortOrder_idx',
+            'ErrorRecord_grammarRuleId_idx',
+          ];
+
+          const lines = ['## Post-migration schema metadata verification (read-only, fail-closed)', ''];
+          const failures = [];
+
+          function assertCheck(label, passed) {
+            lines.push(`- ${label}: **${passed ? 'yes' : 'NO'}**`);
+            if (!passed) failures.push(label);
+          }
+
+          async function main() {
+            const prisma = new PrismaClient();
+            try {
+              const appliedTarget = await prisma.$queryRawUnsafe(
+                'SELECT finished_at, rolled_back_at FROM "_prisma_migrations" WHERE migration_name = $1;',
+                EXPECTED_TARGET,
+              );
+              const targetApplied =
+                appliedTarget.length === 1 && appliedTarget[0].finished_at && !appliedTarget[0].rolled_back_at;
+              assertCheck(`Target migration \`${EXPECTED_TARGET}\` applied cleanly`, targetApplied);
+
+              const tables = await prisma.$queryRawUnsafe(
+                `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ANY($1);`,
+                EXPECTED_TABLES,
+              );
+              const foundTables = new Set(tables.map((t) => t.table_name));
+              for (const t of EXPECTED_TABLES) {
+                assertCheck(`Table \`${t}\` exists`, foundTables.has(t));
+              }
+
+              const enums = await prisma.$queryRawUnsafe(
+                `SELECT typname FROM pg_type WHERE typtype = 'e' AND typname = ANY($1);`,
+                EXPECTED_ENUMS,
+              );
+              const foundEnums = new Set(enums.map((e) => e.typname));
+              for (const e of EXPECTED_ENUMS) {
+                assertCheck(`Enum \`${e}\` exists`, foundEnums.has(e));
+              }
+
+              const cols = await prisma.$queryRawUnsafe(
+                `SELECT column_name, is_nullable FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'ErrorRecord' AND column_name = ANY($1);`,
+                ['grammarRuleId', 'grammarResolverVersion'],
+              );
+              for (const colName of ['grammarRuleId', 'grammarResolverVersion']) {
+                const c = cols.find((x) => x.column_name === colName);
+                const nullable = c ? c.is_nullable === 'YES' : false;
+                assertCheck(`\`ErrorRecord.${colName}\` present and nullable`, nullable);
+              }
+
+              const idx = await prisma.$queryRawUnsafe(
+                `SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND indexname = ANY($1);`,
+                EXPECTED_INDEXES,
+              );
+              const foundIdx = new Set(idx.map((i) => i.indexname));
+              for (const name of EXPECTED_INDEXES) {
+                assertCheck(`Index \`${name}\` exists`, foundIdx.has(name));
+              }
+
+              const fks = await prisma.$queryRawUnsafe(
+                `SELECT conname, confdeltype FROM pg_constraint WHERE conname = ANY($1);`,
+                ['ErrorRecord_grammarRuleId_fkey', 'GrammarRuleExample_grammarRuleId_fkey'],
+              );
+              const fkMap = new Map(fks.map((f) => [f.conname, f.confdeltype]));
+              assertCheck(
+                '`ErrorRecord` → `GrammarRule` FK is ON DELETE SET NULL',
+                fkMap.get('ErrorRecord_grammarRuleId_fkey') === 'n',
+              );
+              assertCheck(
+                '`GrammarRuleExample` → `GrammarRule` FK is ON DELETE CASCADE',
+                fkMap.get('GrammarRuleExample_grammarRuleId_fkey') === 'c',
+              );
+
+              lines.push('');
+
+              // Data safety — read-only counts only, never row contents.
+              const postCountRows = await prisma.$queryRawUnsafe('SELECT COUNT(*)::int AS count FROM "ErrorRecord";');
+              const postCount = postCountRows[0].count;
+              const nonNullGrammarRuleIdRows = await prisma.$queryRawUnsafe(
+                'SELECT COUNT(*)::int AS count FROM "ErrorRecord" WHERE "grammarRuleId" IS NOT NULL;',
+              );
+              const nonNullResolverVersionRows = await prisma.$queryRawUnsafe(
+                'SELECT COUNT(*)::int AS count FROM "ErrorRecord" WHERE "grammarResolverVersion" IS NOT NULL;',
+              );
+              const grammarRuleCountRows = await prisma.$queryRawUnsafe('SELECT COUNT(*)::int AS count FROM "GrammarRule";');
+              const grammarRuleExampleCountRows = await prisma.$queryRawUnsafe(
+                'SELECT COUNT(*)::int AS count FROM "GrammarRuleExample";',
+              );
+
+              const preCountRaw = process.env.PRE_ERROR_RECORD_COUNT;
+              const preCount = Number(preCountRaw);
+              const preCountValid = preCountRaw !== undefined && preCountRaw !== '' && Number.isFinite(preCount);
+              const countPreserved = preCountValid && postCount === preCount;
+
+              lines.push(
+                '## Data safety (read-only counts only)',
+                '',
+                `- Pre-migration \`ErrorRecord\` count: **${preCountValid ? preCount : 'unknown (missing from guard step)'}**`,
+                `- Post-migration \`ErrorRecord\` count: **${postCount}**`,
+                '',
+              );
+              assertCheck('ErrorRecord count preserved under this workflow\'s safety model (pre == post)', countPreserved);
+              assertCheck('No existing ErrorRecord rows have non-null grammarRuleId', nonNullGrammarRuleIdRows[0].count === 0);
+              assertCheck(
+                'No existing ErrorRecord rows have non-null grammarResolverVersion',
+                nonNullResolverVersionRows[0].count === 0,
+              );
+              assertCheck('GrammarRule row count is 0', grammarRuleCountRows[0].count === 0);
+              assertCheck('GrammarRuleExample row count is 0', grammarRuleExampleCountRows[0].count === 0);
+
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `schema_verified=${failures.length === 0}\n`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `error_record_count_preserved=${countPreserved}\n`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `grammar_rule_count=${grammarRuleCountRows[0].count}\n`);
+              fs.appendFileSync(
+                process.env.GITHUB_OUTPUT,
+                `grammar_rule_example_count=${grammarRuleExampleCountRows[0].count}\n`,
+              );
+
+              if (failures.length > 0) {
+                lines.push('', `**STOP: ${failures.length} assertion(s) failed:**`, ...failures.map((f) => `- ${f}`), '');
+                console.error('::error::Post-migration verification failed (' + failures.length + ' assertion(s)): ' + failures.join('; '));
+              }
+
+              fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH, lines.join('\n') + '\n');
+
+              if (failures.length > 0) {
+                process.exit(1);
+              }
+            } finally {
+              await prisma.$disconnect();
+            }
+          }
+
+          main().catch((e) => {
+            console.error('::error::Post-migration verification threw an unexpected exception: ' + (e && e.message ? e.message : String(e)));
+            lines.push(`- **Verification script failed:** ${e && e.message ? e.message : String(e)}`);
+            fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH, lines.join('\n') + '\n');
+            process.exit(1);
+          });
+          VERIFY_EOF
+
+          PRE_ERROR_RECORD_COUNT="${{ steps.guard.outputs.pre_error_record_count }}" \
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/07-verify.md" \
+          node ./.ci-verify.cjs
+          rm -f ./.ci-verify.cjs
+
+      - name: Old application health check (read-only, no deploy)
+        id: health
+        if: always()
+        run: |
+          set +e
+          http_code=$(curl -sS -o "${{ runner.temp }}/health-response.json" -w "%{http_code}" \
+            --max-time 15 https://english-flow-api.onrender.com/api/health)
+          curl_exit=$?
+          set -e
+
+          # Bounded, safe body capture — never dump an unlimited response body.
+          body="(no body captured)"
+          if [ -f "${{ runner.temp }}/health-response.json" ]; then
+            full_size="$(wc -c < "${{ runner.temp }}/health-response.json" | tr -d ' ')"
+            body="$(head -c 500 "${{ runner.temp }}/health-response.json")"
+            if [ "$full_size" -gt 500 ]; then
+              body="${body} ... (truncated, ${full_size} bytes total)"
+            fi
+          fi
+
+          healthy="false"
+          if [ "$curl_exit" -eq 0 ] && [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            healthy="true"
+          fi
+
+          echo "HTTP status: $http_code"
+          echo "curl exit: $curl_exit"
+          echo "Healthy (2xx): $healthy"
+
+          {
+            echo "## Old (currently deployed) application health check"
+            echo ""
+            echo "No new backend was deployed — this checks the application that was already"
+            echo "running in production before and during this migration."
+            echo ""
+            echo "- URL: \`https://english-flow-api.onrender.com/api/health\`"
+            echo "- curl exit code: $curl_exit"
+            echo "- HTTP status: **$http_code**"
+            echo "- Healthy (2xx): **$healthy**"
+            echo "- Response body (bounded, first 500 bytes only):"
+            echo '```'
+            echo "$body"
+            echo '```'
+            echo ""
+          } > "${{ runner.temp }}/summary/08-health.md"
+
+          # Fail-closed only when this run actually deployed a migration —
+          # in that case the currently-serving application must genuinely be
+          # healthy afterward. If nothing was deployed this run (target was
+          # already applied, or an earlier guard/preflight step already
+          # stopped the job), this check stays informational and does not
+          # add a second failure on top of — or mask — the original one.
+          if [ "${{ steps.migrate.outputs.deploy_succeeded }}" = "true" ] && [ "$healthy" != "true" ]; then
+            echo "::error::Health check failed after a successful migration this run (curl_exit=$curl_exit, http_code=$http_code). The migration and its own verification succeeded, but the currently-deployed application is not responding healthy — investigate immediately."
+            exit 1
+          fi
+
+      - name: Publish job summary
+        if: always()
+        run: |
+          {
+            for f in "${{ runner.temp }}/summary"/*.md; do
+              [ -f "$f" ] && cat "$f"
+            done
+            echo "## Explicit confirmations"
+            echo ""
+            echo "- NO SEED EXECUTED — this workflow contains no seed/db-seed command."
+            echo "- NO CONTENT IMPORTED — no GrammarRule content was created or published."
+            echo "- NO RENDER DEPLOY EXECUTED — this workflow never calls Render's API or triggers a deploy."
+          } >> "$GITHUB_STEP_SUMMARY"
