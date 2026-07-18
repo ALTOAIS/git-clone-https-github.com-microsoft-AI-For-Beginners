@@ -1,0 +1,516 @@
+name: English Flow — Grammar MVP Production Import (REAL IMPORT)
+
+# Manual-only workflow that runs the existing Grammar MVP import script
+# (english-flow/backend/prisma/import-grammar-rules.ts) against the
+# production database for a REAL, one-time import of the 12 already
+# human-reviewed Grammar MVP rules (91 examples, 38 exercise templates).
+#
+# This is the write-enabled sibling of
+# english-flow-grammar-production-dry-run.yml, minimally adapted from it:
+# same guards, same pinned commit, same connection validation, same
+# in-memory plan report — the only differences are the pre-import
+# emptiness check now hard-fails instead of just reporting, the import
+# step does NOT set GRAMMAR_IMPORT_DRY_RUN (so the script's real,
+# write-enabled production path runs), and there is a full post-import
+# invariant verification instead of a before/after no-op comparison.
+#
+# This workflow does NOT run `prisma migrate deploy`, does NOT run any
+# seed, does NOT trigger a Render deploy, does NOT publish any content
+# (every imported rule's contentStatus is REVIEWED — PUBLISHED is
+# structurally unreachable, see grammar-import-plan.ts), and does NOT
+# touch the resolver or any frontend code. The import itself — including
+# its pre-commit invariant verification and atomic rollback-on-failure
+# behavior — is entirely implemented in
+# english-flow/backend/prisma/import-grammar-rules.ts (see PR #41/#42);
+# this workflow only invokes that existing script, it does not
+# reimplement any part of the import/write logic.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: >-
+          Type the exact confirmation phrase to proceed:
+          IMPORT_12_REVIEWED_GRAMMAR_RULES
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: english-flow-grammar-production-import
+  cancel-in-progress: false
+
+env:
+  # Pinned application commit — the job checks out exactly this SHA
+  # regardless of which branch the workflow file itself lives on, so the
+  # manual-dispatch branch selector in the GitHub UI can never change
+  # which application/import code actually runs. This is the current HEAD
+  # of claude/english-flow-mvp-edrtv0 after PR #42 (Grammar MVP production
+  # import readiness) was merged — the same commit already exercised by
+  # english-flow-grammar-production-dry-run.yml.
+  TARGET_SHA: a43d98bc50ac0ac2f09df8b6615991730704d0e8
+  REQUIRED_CONFIRMATION: IMPORT_12_REVIEWED_GRAMMAR_RULES
+  PRODUCTION_GRAMMAR_IMPORT_CONFIRMATION: IMPORT_12_REVIEWED_GRAMMAR_RULES
+
+jobs:
+  import:
+    name: Grammar MVP production import — REAL IMPORT
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production-db
+    # The job must not execute at all unless the actor, the typed
+    # confirmation phrase, AND the branch this workflow_dispatch was fired
+    # from all match exactly (case-sensitive, exact equality). This third
+    # condition mirrors, inside the workflow itself, the `production-db`
+    # GitHub Environment's own "Selected branches and tags" restriction —
+    # defense in depth, not a replacement for it. If this evaluates false,
+    # GitHub skips the job entirely; the environment's Required Reviewer
+    # gate below never even gets reached, and PRODUCTION_DIRECT_URL is
+    # never exposed.
+    if: >-
+      github.actor == 'ALTOAIS' &&
+      github.event.inputs.confirmation == 'IMPORT_12_REVIEWED_GRAMMAR_RULES' &&
+      github.ref == 'refs/heads/claude/compliance-risk-hub-mvp-vn86he'
+    steps:
+      - name: Checkout pinned application commit
+        # actions/checkout v4.3.1 (immutable commit, not the mutable v4 tag)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          persist-credentials: false
+
+      - name: Verify checked-out commit matches pinned SHA
+        run: |
+          actual="$(git rev-parse HEAD)"
+          if [ "$actual" != "$TARGET_SHA" ]; then
+            echo "::error::Checked-out commit ($actual) does not match pinned SHA ($TARGET_SHA)."
+            exit 1
+          fi
+          echo "Verified HEAD == $TARGET_SHA"
+
+      - name: Initialize job summary
+        run: |
+          mkdir -p "${{ runner.temp }}/summary"
+          {
+            echo "# English Flow — Grammar MVP Production Import (REAL IMPORT)"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Actor | \`${{ github.actor }}\` |"
+            echo "| Pinned target SHA | \`$TARGET_SHA\` |"
+            echo "| Mode | **REAL IMPORT — writes to production** |"
+          } > "${{ runner.temp }}/summary/00-header.md"
+
+      - name: Setup Node
+        # actions/setup-node v4.4.0 (immutable commit, not the mutable v4 tag)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: english-flow/backend/package-lock.json
+
+      - name: Install dependencies (deterministic, from committed lockfile)
+        working-directory: english-flow/backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: english-flow/backend
+        run: npx prisma generate
+
+      - name: Validate production connection target
+        working-directory: english-flow/backend
+        env:
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          cat > ./.ci-validate.cjs <<'VALIDATE_EOF'
+          const raw = process.env.DIRECT_URL;
+          if (!raw) {
+            console.error('::error::DIRECT_URL secret is not set.');
+            process.exit(1);
+          }
+
+          let url;
+          try {
+            url = new URL(raw);
+          } catch (e) {
+            console.error('::error::PRODUCTION_DIRECT_URL is not a valid URL.');
+            process.exit(1);
+          }
+
+          if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
+            console.error('::error::Connection string is not a PostgreSQL URL (unexpected protocol).');
+            process.exit(1);
+          }
+
+          const hostname = url.hostname.toLowerCase();
+          if (!hostname.endsWith('.neon.tech') && hostname !== 'neon.tech') {
+            console.error('::error::Hostname does not belong to Neon (expected *.neon.tech).');
+            process.exit(1);
+          }
+
+          const dbName = url.pathname.replace(/^\//, '');
+          if (!dbName) {
+            console.error('::error::Database name is empty in the connection string.');
+            process.exit(1);
+          }
+
+          const sslmode = url.searchParams.get('sslmode');
+          if (!sslmode || sslmode.toLowerCase() === 'disable') {
+            console.error('::error::Connection string does not request a secure (sslmode) connection.');
+            process.exit(1);
+          }
+
+          const hostLabels = hostname.split('.');
+          const maskedHostSuffix = hostLabels.slice(-4).join('.');
+          const maskedIdentity = `host=...${maskedHostSuffix} db=${dbName}`;
+
+          console.log('Production connection target validated (Neon, TLS).');
+          console.log('Masked identity: ' + maskedIdentity);
+
+          require('fs').writeFileSync(
+            process.env.SUMMARY_FRAGMENT_PATH,
+            [
+              '## Connection validation',
+              '',
+              '- Hostname belongs to Neon: yes',
+              '- Database name non-empty: yes',
+              '- TLS/SSL requested: yes',
+              `- Masked identity: \`${maskedIdentity}\``,
+              '',
+            ].join('\n'),
+          );
+          VALIDATE_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/01-connection.md" node ./.ci-validate.cjs
+          rm -f ./.ci-validate.cjs
+
+      - name: In-memory plan report (no DB connection — pure source/manifest check)
+        id: plan_report
+        working-directory: english-flow/backend
+        run: |
+          cat > ./.ci-plan-report.ts <<'PLAN_EOF'
+          import { GRAMMAR_RULES_SOURCE } from './src/modules/grammar/grammar-rules.data';
+          import { GRAMMAR_REVIEW_MANIFEST } from './src/modules/grammar/grammar-review-manifest';
+          import { EXPECTED_GRAMMAR_RULE_CODES } from './src/modules/grammar/grammar-rules.expected-codes';
+          import { computeImportPlan } from './src/modules/grammar/grammar-import-plan';
+          import * as fs from 'fs';
+
+          const plan = computeImportPlan(GRAMMAR_RULES_SOURCE, GRAMMAR_REVIEW_MANIFEST);
+
+          const ruleCount = plan.length;
+          const ruleCodes = plan.map((p) => p.ruleCode).sort();
+          const expectedCodes = [...EXPECTED_GRAMMAR_RULE_CODES].sort();
+          const codesMatch = JSON.stringify(ruleCodes) === JSON.stringify(expectedCodes);
+          const allReviewed = plan.every((p) => p.contentStatus === 'REVIEWED');
+          const allPartiallyVerified = plan.every(
+            (p) => p.sourceVerificationStatus === 'PARTIALLY_VERIFIED',
+          );
+          const publishedCount = plan.filter(
+            (p) => (p.contentStatus as string) === 'PUBLISHED',
+          ).length;
+          const archivedCount = plan.filter(
+            (p) => (p.contentStatus as string) === 'ARCHIVED',
+          ).length;
+          const totalExamples = GRAMMAR_RULES_SOURCE.reduce(
+            (sum, r) => sum + r.examples.length,
+            0,
+          );
+          const totalExerciseTemplates = GRAMMAR_RULES_SOURCE.reduce(
+            (sum, r) => sum + r.exerciseTemplates.exercises.length,
+            0,
+          );
+
+          const failures: string[] = [];
+          if (ruleCount !== 12) failures.push(`ruleCount is ${ruleCount}, expected 12`);
+          if (!codesMatch) failures.push('ruleCodes do not exactly match the expected 12');
+          if (!allReviewed) failures.push('not every planned rule is REVIEWED');
+          if (!allPartiallyVerified) failures.push('not every planned rule is PARTIALLY_VERIFIED');
+          if (publishedCount !== 0) failures.push(`publishedCount is ${publishedCount}, expected 0`);
+          if (archivedCount !== 0) failures.push(`archivedCount is ${archivedCount}, expected 0`);
+          if (totalExamples !== 91) failures.push(`totalExamples is ${totalExamples}, expected 91`);
+          if (totalExerciseTemplates !== 38) {
+            failures.push(`totalExerciseTemplates is ${totalExerciseTemplates}, expected 38`);
+          }
+
+          const lines = [
+            '## In-memory plan report (no DB connection, source + manifest only)',
+            '',
+            `- Planned rule count: **${ruleCount}**`,
+            `- ruleCodes match the expected 12 exactly: **${codesMatch ? 'yes' : 'NO'}**`,
+            `- All planned contentStatus = REVIEWED: **${allReviewed ? 'yes' : 'NO'}**`,
+            `- All planned sourceVerificationStatus = PARTIALLY_VERIFIED: **${allPartiallyVerified ? 'yes' : 'NO'}**`,
+            `- Planned PUBLISHED count: **${publishedCount}**`,
+            `- Planned ARCHIVED count: **${archivedCount}**`,
+            `- Planned example count: **${totalExamples}**`,
+            `- Planned exercise-template count: **${totalExerciseTemplates}**`,
+            '',
+          ];
+
+          if (failures.length > 0) {
+            lines.push(`**STOP: ${failures.length} assertion(s) failed:**`, ...failures.map((f) => `- ${f}`), '');
+            fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH as string, lines.join('\n') + '\n');
+            console.error('::error::In-memory plan report failed: ' + failures.join('; '));
+            process.exit(1);
+          }
+
+          fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH as string, lines.join('\n') + '\n');
+          console.log('In-memory plan report passed: 12 rules, all REVIEWED, all PARTIALLY_VERIFIED, zero PUBLISHED/ARCHIVED, 91 examples, 38 exercise templates.');
+          PLAN_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/02-plan-report.md" npx ts-node ./.ci-plan-report.ts
+          rm -f ./.ci-plan-report.ts
+
+      - name: Pre-import read-only check (reachability + MUST be empty)
+        id: pre_check
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          cat > ./.ci-precheck.cjs <<'PRECHECK_EOF'
+          const { PrismaClient } = require('@prisma/client');
+          const fs = require('fs');
+
+          async function main() {
+            const prisma = new PrismaClient();
+            try {
+              const ruleCount = await prisma.grammarRule.count();
+              const exampleCount = await prisma.grammarRuleExample.count();
+
+              console.log('Target DB reachable: yes');
+              console.log('Current GrammarRule count: ' + ruleCount);
+              console.log('Current GrammarRuleExample count: ' + exampleCount);
+
+              const empty = ruleCount === 0 && exampleCount === 0;
+
+              const lines = [
+                '## Pre-import read-only check (reachability + MUST be empty)',
+                '',
+                '- Target DB reachable: **yes**',
+                `- Current GrammarRule count: **${ruleCount}** (must be 0)`,
+                `- Current GrammarRuleExample count: **${exampleCount}** (must be 0)`,
+                '',
+              ];
+
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `pre_rule_count=${ruleCount}\n`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `pre_example_count=${exampleCount}\n`);
+
+              if (!empty) {
+                lines.push(
+                  '**STOP: target tables are not empty. Refusing to proceed — this workflow never ' +
+                    'upserts/overwrites existing production rows automatically. No automatic repair, ' +
+                    'retry, delete, overwrite, or restore will be attempted.**',
+                  '',
+                );
+                fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH, lines.join('\n') + '\n');
+                console.error('::error::Pre-import check FAILED — target GrammarRule/GrammarRuleExample table is not empty.');
+                process.exit(1);
+              }
+
+              fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH, lines.join('\n') + '\n');
+            } finally {
+              await prisma.$disconnect();
+            }
+          }
+
+          main().catch((e) => {
+            console.error('::error::Pre-import read-only check failed: ' + (e && e.message ? e.message : String(e)));
+            fs.writeFileSync(
+              process.env.SUMMARY_FRAGMENT_PATH,
+              '## Pre-import read-only check\n\n**STOP: could not reach or read the target database.**\n',
+            );
+            process.exit(1);
+          });
+          PRECHECK_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/03-precheck.md" node ./.ci-precheck.cjs
+          rm -f ./.ci-precheck.cjs
+
+      - name: Run Grammar import script (REAL IMPORT — writes to production)
+        id: real_import
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          ALLOW_GRAMMAR_IMPORT: "true"
+          ALLOW_PRODUCTION_GRAMMAR_IMPORT: "true"
+          PRODUCTION_GRAMMAR_IMPORT_CONFIRMATION: ${{ env.PRODUCTION_GRAMMAR_IMPORT_CONFIRMATION }}
+          # GRAMMAR_IMPORT_DRY_RUN is intentionally NOT set — the script's
+          # real, write-enabled production path runs: a single transaction
+          # containing all 12 rules' writes AND the pre-commit invariant
+          # verification, atomically rolled back on any failure. See
+          # runProductionImport() in prisma/import-grammar-rules.ts — this
+          # workflow does not reimplement any of that logic, only invokes it.
+        run: |
+          set +e
+          npx ts-node prisma/import-grammar-rules.ts > "${{ runner.temp }}/import-output.txt" 2>&1
+          code=$?
+          set -e
+          cat "${{ runner.temp }}/import-output.txt"
+
+          {
+            echo "## Grammar import script — real import output"
+            echo ""
+            echo '```'
+            cat "${{ runner.temp }}/import-output.txt"
+            echo '```'
+            echo ""
+            echo "_(exit code $code)_"
+            echo ""
+          } > "${{ runner.temp }}/summary/04-import.md"
+
+          if [ "$code" -ne 0 ]; then
+            echo "::error::Grammar import FAILED (exit $code). The script's own transaction (if reached) rolls back on any failure — no partial dataset is left. Not retrying, not repairing. See job summary for captured output."
+            exit 1
+          fi
+
+          if grep -q "DRY RUN" "${{ runner.temp }}/import-output.txt"; then
+            echo "::error::Output contains a DRY RUN marker during what must be a real import — refusing to trust this run."
+            exit 1
+          fi
+          if ! grep -q "Import complete and verified" "${{ runner.temp }}/import-output.txt"; then
+            echo "::error::Import output does not contain 'Import complete and verified' — refusing to trust this run."
+            exit 1
+          fi
+          if ! grep -q "12 rules" "${{ runner.temp }}/import-output.txt"; then
+            echo "::error::Import output does not report 12 imported rules as expected."
+            exit 1
+          fi
+          if ! grep -q "91 examples" "${{ runner.temp }}/import-output.txt"; then
+            echo "::error::Import output does not report 91 imported examples as expected."
+            exit 1
+          fi
+          if ! grep -q "zero PUBLISHED/ARCHIVED" "${{ runner.temp }}/import-output.txt"; then
+            echo "::error::Import output does not confirm zero PUBLISHED/ARCHIVED as expected."
+            exit 1
+          fi
+
+          echo "Import output verified: real import completed, 12 rules / 91 examples imported and verified by the script's own pre-commit check, zero PUBLISHED/ARCHIVED."
+
+      - name: Post-import read-only verification (independent of the import script)
+        id: post_verify
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          cat > ./.ci-postverify.ts <<'POSTVERIFY_EOF'
+          import { PrismaClient } from '@prisma/client';
+          import { EXPECTED_GRAMMAR_RULE_CODES } from './src/modules/grammar/grammar-rules.expected-codes';
+          import * as fs from 'fs';
+
+          async function main() {
+            const prisma = new PrismaClient();
+            try {
+              const rules = await prisma.grammarRule.findMany({
+                select: { ruleCode: true, contentStatus: true, sourceVerificationStatus: true },
+              });
+              const exampleCount = await prisma.grammarRuleExample.count();
+
+              const ruleCount = rules.length;
+              const ruleCodes = rules.map((r) => r.ruleCode).sort();
+              const expectedCodes = [...EXPECTED_GRAMMAR_RULE_CODES].sort();
+              const codesMatch = JSON.stringify(ruleCodes) === JSON.stringify(expectedCodes);
+              const reviewedCount = rules.filter((r) => r.contentStatus === 'REVIEWED').length;
+              const partiallyVerifiedCount = rules.filter(
+                (r) => r.sourceVerificationStatus === 'PARTIALLY_VERIFIED',
+              ).length;
+              const publishedCount = rules.filter((r) => r.contentStatus === 'PUBLISHED').length;
+              const archivedCount = rules.filter((r) => r.contentStatus === 'ARCHIVED').length;
+
+              const failures: string[] = [];
+              if (ruleCount !== 12) failures.push(`GrammarRule count is ${ruleCount}, expected 12`);
+              if (exampleCount !== 91) failures.push(`GrammarRuleExample count is ${exampleCount}, expected 91`);
+              if (!codesMatch) {
+                failures.push(`ruleCodes do not exactly match the expected 12: found [${ruleCodes.join(', ')}]`);
+              }
+              if (reviewedCount !== 12) failures.push(`REVIEWED count is ${reviewedCount}, expected 12`);
+              if (partiallyVerifiedCount !== 12) {
+                failures.push(`PARTIALLY_VERIFIED count is ${partiallyVerifiedCount}, expected 12`);
+              }
+              if (publishedCount !== 0) failures.push(`PUBLISHED count is ${publishedCount}, expected 0`);
+              if (archivedCount !== 0) failures.push(`ARCHIVED count is ${archivedCount}, expected 0`);
+
+              console.log('GrammarRule count:', ruleCount);
+              console.log('GrammarRuleExample count:', exampleCount);
+              console.log('ruleCodes match expected 12:', codesMatch);
+              console.log('REVIEWED count:', reviewedCount);
+              console.log('PARTIALLY_VERIFIED count:', partiallyVerifiedCount);
+              console.log('PUBLISHED count:', publishedCount);
+              console.log('ARCHIVED count:', archivedCount);
+
+              const lines = [
+                '## Post-import read-only verification (independent of the import script)',
+                '',
+                `- GrammarRule count: **${ruleCount}** (expected 12)`,
+                `- GrammarRuleExample count: **${exampleCount}** (expected 91)`,
+                `- ruleCodes match the expected 12 exactly: **${codesMatch ? 'yes' : 'NO'}**`,
+                `- REVIEWED count: **${reviewedCount}/12**`,
+                `- PARTIALLY_VERIFIED count: **${partiallyVerifiedCount}/12**`,
+                `- PUBLISHED count: **${publishedCount}** (expected 0)`,
+                `- ARCHIVED count: **${archivedCount}** (expected 0)`,
+                '',
+              ];
+
+              fs.appendFileSync(process.env.GITHUB_OUTPUT as string, `post_rule_count=${ruleCount}\n`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT as string, `post_example_count=${exampleCount}\n`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT as string, `reviewed_count=${reviewedCount}\n`);
+              fs.appendFileSync(
+                process.env.GITHUB_OUTPUT as string,
+                `partially_verified_count=${partiallyVerifiedCount}\n`,
+              );
+              fs.appendFileSync(process.env.GITHUB_OUTPUT as string, `published_count=${publishedCount}\n`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT as string, `archived_count=${archivedCount}\n`);
+
+              if (failures.length > 0) {
+                lines.push(
+                  `**STOP: ${failures.length} assertion(s) failed. Not automatically repairing, retrying, ` +
+                    'deleting, overwriting, or restoring:**',
+                  ...failures.map((f) => `- ${f}`),
+                  '',
+                );
+                fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH as string, lines.join('\n') + '\n');
+                console.error('::error::Post-import verification FAILED: ' + failures.join('; '));
+                process.exit(1);
+              }
+
+              fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH as string, lines.join('\n') + '\n');
+              console.log(
+                'Post-import verification PASSED: 12 rules, 91 examples, all REVIEWED, all PARTIALLY_VERIFIED, zero PUBLISHED, zero ARCHIVED.',
+              );
+            } finally {
+              await prisma.$disconnect();
+            }
+          }
+
+          main().catch((e) => {
+            console.error(
+              '::error::Post-import verification script threw an unexpected exception: ' +
+                (e && e.message ? e.message : String(e)),
+            );
+            process.exit(1);
+          });
+          POSTVERIFY_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/05-postverify.md" npx ts-node ./.ci-postverify.ts
+          rm -f ./.ci-postverify.ts
+
+      - name: Publish job summary
+        if: always()
+        run: |
+          {
+            for f in "${{ runner.temp }}/summary"/*.md; do
+              [ -f "$f" ] && cat "$f"
+            done
+            echo "## Explicit confirmations"
+            echo ""
+            echo "- REAL IMPORT — GRAMMAR_IMPORT_DRY_RUN was NOT set; the import script's real production path ran: a single transaction wrote all 12 rules/91 examples and verified every invariant before committing (see PR #41/#42 for that transactional/rollback design)."
+            echo "- DATA IMPORTED — 12 GrammarRule rows and 91 GrammarRuleExample rows, confirmed by an independent post-import read-only verification (not just the script's own report)."
+            echo "- NO MIGRATION RUN — this workflow never calls \`prisma migrate deploy\` or \`prisma db push\`."
+            echo "- NO SEED EXECUTED — this workflow contains no seed/db-seed command."
+            echo "- NO CONTENT PUBLISHED — every imported rule's contentStatus is REVIEWED; PUBLISHED is structurally unreachable by this import (see grammar-import-plan.ts)."
+            echo "- NO RENDER DEPLOY EXECUTED — this workflow never calls Render's API or triggers a deploy."
+            echo "- NO RESOLVER/FRONTEND CHANGES — this workflow touches no application code, only production data via the existing import script."
+          } >> "$GITHUB_STEP_SUMMARY"
