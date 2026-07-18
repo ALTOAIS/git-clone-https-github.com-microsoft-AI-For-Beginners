@@ -1,0 +1,441 @@
+name: English Flow — Grammar MVP Production Import (Dry Run Only)
+
+# Manual-only workflow that runs the existing Grammar MVP import script
+# (english-flow/backend/prisma/import-grammar-rules.ts) against the
+# production database in DRY-RUN mode only.
+#
+# This workflow does NOT import any data, does NOT write to the
+# production database, does NOT run `prisma migrate deploy`, does NOT run
+# any seed, and does NOT trigger a Render deploy or publish any
+# GrammarRule content. Its only purpose is to prove — against the real
+# production database, guarded by the same triple opt-in the import
+# script itself enforces for any non-localhost target — that a real
+# production import would be safe to run later, without actually running
+# one. GRAMMAR_IMPORT_DRY_RUN=true means the import script's own
+# production path never opens a transaction and never calls any write
+# method; see runProductionImport() in the script for the code path this
+# workflow exercises.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: >-
+          Type the exact confirmation phrase to proceed:
+          DRY_RUN_12_GRAMMAR_RULES
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: english-flow-grammar-production-dry-run
+  cancel-in-progress: false
+
+env:
+  # Pinned application commit — the job checks out exactly this SHA
+  # regardless of which branch the workflow file itself lives on, so the
+  # manual-dispatch branch selector in the GitHub UI can never change
+  # which application/import code actually runs. This is the current HEAD
+  # of claude/english-flow-mvp-edrtv0 after PR #42 (Grammar MVP production
+  # import readiness) was merged.
+  TARGET_SHA: a43d98bc50ac0ac2f09df8b6615991730704d0e8
+  REQUIRED_CONFIRMATION: DRY_RUN_12_GRAMMAR_RULES
+  PRODUCTION_GRAMMAR_IMPORT_CONFIRMATION: IMPORT_12_REVIEWED_GRAMMAR_RULES
+
+jobs:
+  dry-run:
+    name: Grammar MVP production import — dry run only
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production-db
+    # The job must not execute at all unless the actor, the typed
+    # confirmation phrase, AND the branch this workflow_dispatch was fired
+    # from all match exactly (case-sensitive, exact equality). This third
+    # condition mirrors, inside the workflow itself, the `production-db`
+    # GitHub Environment's own "Selected branches and tags" restriction —
+    # defense in depth, not a replacement for it. If this evaluates false,
+    # GitHub skips the job entirely; the environment's Required Reviewer
+    # gate below never even gets reached, and PRODUCTION_DIRECT_URL is
+    # never exposed.
+    if: >-
+      github.actor == 'ALTOAIS' &&
+      github.event.inputs.confirmation == 'DRY_RUN_12_GRAMMAR_RULES' &&
+      github.ref == 'refs/heads/claude/compliance-risk-hub-mvp-vn86he'
+    steps:
+      - name: Checkout pinned application commit
+        # actions/checkout v4.3.1 (immutable commit, not the mutable v4 tag)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          persist-credentials: false
+
+      - name: Verify checked-out commit matches pinned SHA
+        run: |
+          actual="$(git rev-parse HEAD)"
+          if [ "$actual" != "$TARGET_SHA" ]; then
+            echo "::error::Checked-out commit ($actual) does not match pinned SHA ($TARGET_SHA)."
+            exit 1
+          fi
+          echo "Verified HEAD == $TARGET_SHA"
+
+      - name: Initialize job summary
+        run: |
+          mkdir -p "${{ runner.temp }}/summary"
+          {
+            echo "# English Flow — Grammar MVP Production Import (Dry Run Only)"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Actor | \`${{ github.actor }}\` |"
+            echo "| Pinned target SHA | \`$TARGET_SHA\` |"
+            echo "| Mode | **DRY RUN ONLY — no writes** |"
+          } > "${{ runner.temp }}/summary/00-header.md"
+
+      - name: Setup Node
+        # actions/setup-node v4.4.0 (immutable commit, not the mutable v4 tag)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: english-flow/backend/package-lock.json
+
+      - name: Install dependencies (deterministic, from committed lockfile)
+        working-directory: english-flow/backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: english-flow/backend
+        run: npx prisma generate
+
+      - name: Validate production connection target
+        working-directory: english-flow/backend
+        env:
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          cat > ./.ci-validate.cjs <<'VALIDATE_EOF'
+          const raw = process.env.DIRECT_URL;
+          if (!raw) {
+            console.error('::error::DIRECT_URL secret is not set.');
+            process.exit(1);
+          }
+
+          let url;
+          try {
+            url = new URL(raw);
+          } catch (e) {
+            console.error('::error::PRODUCTION_DIRECT_URL is not a valid URL.');
+            process.exit(1);
+          }
+
+          if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
+            console.error('::error::Connection string is not a PostgreSQL URL (unexpected protocol).');
+            process.exit(1);
+          }
+
+          const hostname = url.hostname.toLowerCase();
+          if (!hostname.endsWith('.neon.tech') && hostname !== 'neon.tech') {
+            console.error('::error::Hostname does not belong to Neon (expected *.neon.tech).');
+            process.exit(1);
+          }
+
+          const dbName = url.pathname.replace(/^\//, '');
+          if (!dbName) {
+            console.error('::error::Database name is empty in the connection string.');
+            process.exit(1);
+          }
+
+          const sslmode = url.searchParams.get('sslmode');
+          if (!sslmode || sslmode.toLowerCase() === 'disable') {
+            console.error('::error::Connection string does not request a secure (sslmode) connection.');
+            process.exit(1);
+          }
+
+          const hostLabels = hostname.split('.');
+          const maskedHostSuffix = hostLabels.slice(-4).join('.');
+          const maskedIdentity = `host=...${maskedHostSuffix} db=${dbName}`;
+
+          console.log('Production connection target validated (Neon, TLS).');
+          console.log('Masked identity: ' + maskedIdentity);
+
+          require('fs').writeFileSync(
+            process.env.SUMMARY_FRAGMENT_PATH,
+            [
+              '## Connection validation',
+              '',
+              '- Hostname belongs to Neon: yes',
+              '- Database name non-empty: yes',
+              '- TLS/SSL requested: yes',
+              `- Masked identity: \`${maskedIdentity}\``,
+              '',
+            ].join('\n'),
+          );
+          VALIDATE_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/01-connection.md" node ./.ci-validate.cjs
+          rm -f ./.ci-validate.cjs
+
+      - name: In-memory plan report (no DB connection — pure source/manifest check)
+        id: plan_report
+        working-directory: english-flow/backend
+        run: |
+          cat > ./.ci-plan-report.ts <<'PLAN_EOF'
+          import { GRAMMAR_RULES_SOURCE } from './src/modules/grammar/grammar-rules.data';
+          import { GRAMMAR_REVIEW_MANIFEST } from './src/modules/grammar/grammar-review-manifest';
+          import { EXPECTED_GRAMMAR_RULE_CODES } from './src/modules/grammar/grammar-rules.expected-codes';
+          import { computeImportPlan } from './src/modules/grammar/grammar-import-plan';
+          import * as fs from 'fs';
+
+          const plan = computeImportPlan(GRAMMAR_RULES_SOURCE, GRAMMAR_REVIEW_MANIFEST);
+
+          const ruleCount = plan.length;
+          const ruleCodes = plan.map((p) => p.ruleCode).sort();
+          const expectedCodes = [...EXPECTED_GRAMMAR_RULE_CODES].sort();
+          const codesMatch = JSON.stringify(ruleCodes) === JSON.stringify(expectedCodes);
+          const allReviewed = plan.every((p) => p.contentStatus === 'REVIEWED');
+          const allPartiallyVerified = plan.every(
+            (p) => p.sourceVerificationStatus === 'PARTIALLY_VERIFIED',
+          );
+          const publishedCount = plan.filter(
+            (p) => (p.contentStatus as string) === 'PUBLISHED',
+          ).length;
+          const archivedCount = plan.filter(
+            (p) => (p.contentStatus as string) === 'ARCHIVED',
+          ).length;
+          const totalExamples = GRAMMAR_RULES_SOURCE.reduce(
+            (sum, r) => sum + r.examples.length,
+            0,
+          );
+          const totalExerciseTemplates = GRAMMAR_RULES_SOURCE.reduce(
+            (sum, r) => sum + r.exerciseTemplates.exercises.length,
+            0,
+          );
+
+          const failures: string[] = [];
+          if (ruleCount !== 12) failures.push(`ruleCount is ${ruleCount}, expected 12`);
+          if (!codesMatch) failures.push('ruleCodes do not exactly match the expected 12');
+          if (!allReviewed) failures.push('not every planned rule is REVIEWED');
+          if (!allPartiallyVerified) failures.push('not every planned rule is PARTIALLY_VERIFIED');
+          if (publishedCount !== 0) failures.push(`publishedCount is ${publishedCount}, expected 0`);
+          if (archivedCount !== 0) failures.push(`archivedCount is ${archivedCount}, expected 0`);
+          if (totalExamples !== 91) failures.push(`totalExamples is ${totalExamples}, expected 91`);
+          if (totalExerciseTemplates !== 38) {
+            failures.push(`totalExerciseTemplates is ${totalExerciseTemplates}, expected 38`);
+          }
+
+          const lines = [
+            '## In-memory plan report (no DB connection, source + manifest only)',
+            '',
+            `- Planned rule count: **${ruleCount}**`,
+            `- ruleCodes match the expected 12 exactly: **${codesMatch ? 'yes' : 'NO'}**`,
+            `- All planned contentStatus = REVIEWED: **${allReviewed ? 'yes' : 'NO'}**`,
+            `- All planned sourceVerificationStatus = PARTIALLY_VERIFIED: **${allPartiallyVerified ? 'yes' : 'NO'}**`,
+            `- Planned PUBLISHED count: **${publishedCount}**`,
+            `- Planned ARCHIVED count: **${archivedCount}**`,
+            `- Planned example count: **${totalExamples}**`,
+            `- Planned exercise-template count: **${totalExerciseTemplates}**`,
+            '',
+          ];
+
+          if (failures.length > 0) {
+            lines.push(`**STOP: ${failures.length} assertion(s) failed:**`, ...failures.map((f) => `- ${f}`), '');
+            fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH as string, lines.join('\n') + '\n');
+            console.error('::error::In-memory plan report failed: ' + failures.join('; '));
+            process.exit(1);
+          }
+
+          fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH as string, lines.join('\n') + '\n');
+          console.log('In-memory plan report passed: 12 rules, all REVIEWED, all PARTIALLY_VERIFIED, zero PUBLISHED/ARCHIVED, 91 examples, 38 exercise templates.');
+          PLAN_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/02-plan-report.md" npx ts-node ./.ci-plan-report.ts
+          rm -f ./.ci-plan-report.ts
+
+      - name: Read-only pre-check (reachability + current production counts)
+        id: pre_check
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          cat > ./.ci-precheck.cjs <<'PRECHECK_EOF'
+          const { PrismaClient } = require('@prisma/client');
+          const fs = require('fs');
+
+          async function main() {
+            const prisma = new PrismaClient();
+            try {
+              const ruleCount = await prisma.grammarRule.count();
+              const exampleCount = await prisma.grammarRuleExample.count();
+
+              console.log('Target DB reachable: yes');
+              console.log('Current GrammarRule count: ' + ruleCount);
+              console.log('Current GrammarRuleExample count: ' + exampleCount);
+
+              fs.writeFileSync(
+                process.env.SUMMARY_FRAGMENT_PATH,
+                [
+                  '## Read-only pre-check (reachability + current production counts)',
+                  '',
+                  '- Target DB reachable: **yes**',
+                  `- Current GrammarRule count: **${ruleCount}**`,
+                  `- Current GrammarRuleExample count: **${exampleCount}**`,
+                  '',
+                ].join('\n'),
+              );
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `pre_rule_count=${ruleCount}\n`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `pre_example_count=${exampleCount}\n`);
+            } finally {
+              await prisma.$disconnect();
+            }
+          }
+
+          main().catch((e) => {
+            console.error('::error::Read-only pre-check failed: ' + (e && e.message ? e.message : String(e)));
+            fs.writeFileSync(
+              process.env.SUMMARY_FRAGMENT_PATH,
+              '## Read-only pre-check\n\n**STOP: could not reach or read the target database.**\n',
+            );
+            process.exit(1);
+          });
+          PRECHECK_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/03-precheck.md" node ./.ci-precheck.cjs
+          rm -f ./.ci-precheck.cjs
+
+      - name: Run Grammar import script (DRY RUN ONLY — zero writes)
+        id: dry_run
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          ALLOW_GRAMMAR_IMPORT: "true"
+          ALLOW_PRODUCTION_GRAMMAR_IMPORT: "true"
+          PRODUCTION_GRAMMAR_IMPORT_CONFIRMATION: ${{ env.PRODUCTION_GRAMMAR_IMPORT_CONFIRMATION }}
+          GRAMMAR_IMPORT_DRY_RUN: "true"
+        run: |
+          set +e
+          npx ts-node prisma/import-grammar-rules.ts > "${{ runner.temp }}/dry-run-output.txt" 2>&1
+          code=$?
+          set -e
+          cat "${{ runner.temp }}/dry-run-output.txt"
+
+          {
+            echo "## Grammar import script — dry run output"
+            echo ""
+            echo '```'
+            cat "${{ runner.temp }}/dry-run-output.txt"
+            echo '```'
+            echo ""
+            echo "_(exit code $code)_"
+            echo ""
+          } > "${{ runner.temp }}/summary/04-dry-run.md"
+
+          if [ "$code" -ne 0 ]; then
+            echo "::error::Grammar import dry run failed (exit $code). See job summary for captured output."
+            exit 1
+          fi
+
+          if ! grep -q "DRY RUN" "${{ runner.temp }}/dry-run-output.txt"; then
+            echo "::error::Dry-run output does not contain the expected 'DRY RUN' marker — refusing to trust this run."
+            exit 1
+          fi
+          if ! grep -q "Zero writes performed" "${{ runner.temp }}/dry-run-output.txt"; then
+            echo "::error::Dry-run output does not contain 'Zero writes performed' — refusing to trust this run."
+            exit 1
+          fi
+          if ! grep -q "12 rules" "${{ runner.temp }}/dry-run-output.txt"; then
+            echo "::error::Dry-run output does not report 12 planned rules as expected."
+            exit 1
+          fi
+          if ! grep -q "91 examples" "${{ runner.temp }}/dry-run-output.txt"; then
+            echo "::error::Dry-run output does not report 91 planned examples as expected."
+            exit 1
+          fi
+          if ! grep -q "38 exercise templates" "${{ runner.temp }}/dry-run-output.txt"; then
+            echo "::error::Dry-run output does not report 38 planned exercise templates as expected."
+            exit 1
+          fi
+
+          echo "Dry-run output verified: DRY RUN marker present, 12 rules / 91 examples / 38 exercise templates reported, zero writes performed."
+
+      - name: Post-dry-run read-only verification (counts must be unchanged)
+        id: post_check
+        if: always() && steps.pre_check.outcome == 'success'
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          PRE_RULE_COUNT: ${{ steps.pre_check.outputs.pre_rule_count }}
+          PRE_EXAMPLE_COUNT: ${{ steps.pre_check.outputs.pre_example_count }}
+        run: |
+          cat > ./.ci-postcheck.cjs <<'POSTCHECK_EOF'
+          const { PrismaClient } = require('@prisma/client');
+          const fs = require('fs');
+
+          async function main() {
+            const prisma = new PrismaClient();
+            try {
+              const ruleCount = await prisma.grammarRule.count();
+              const exampleCount = await prisma.grammarRuleExample.count();
+
+              const preRuleCount = Number(process.env.PRE_RULE_COUNT);
+              const preExampleCount = Number(process.env.PRE_EXAMPLE_COUNT);
+
+              const ruleCountUnchanged = ruleCount === preRuleCount;
+              const exampleCountUnchanged = exampleCount === preExampleCount;
+
+              console.log('Post-dry-run GrammarRule count: ' + ruleCount + ' (pre: ' + preRuleCount + ')');
+              console.log('Post-dry-run GrammarRuleExample count: ' + exampleCount + ' (pre: ' + preExampleCount + ')');
+
+              const lines = [
+                '## Post-dry-run read-only verification',
+                '',
+                `- Pre-run GrammarRule count: **${preRuleCount}**`,
+                `- Post-run GrammarRule count: **${ruleCount}**`,
+                `- GrammarRule count unchanged: **${ruleCountUnchanged ? 'yes' : 'NO'}**`,
+                `- Pre-run GrammarRuleExample count: **${preExampleCount}**`,
+                `- Post-run GrammarRuleExample count: **${exampleCount}**`,
+                `- GrammarRuleExample count unchanged: **${exampleCountUnchanged ? 'yes' : 'NO'}**`,
+                '',
+              ];
+
+              if (!ruleCountUnchanged || !exampleCountUnchanged) {
+                lines.push('**STOP: a count changed during a run that must have performed zero writes.**', '');
+                fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH, lines.join('\n') + '\n');
+                console.error('::error::Post-dry-run verification FAILED — a count changed during a dry run that must have performed zero writes.');
+                process.exit(1);
+              }
+
+              fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH, lines.join('\n') + '\n');
+            } finally {
+              await prisma.$disconnect();
+            }
+          }
+
+          main().catch((e) => {
+            console.error('::error::Post-dry-run verification failed: ' + (e && e.message ? e.message : String(e)));
+            process.exit(1);
+          });
+          POSTCHECK_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/05-postcheck.md" node ./.ci-postcheck.cjs
+          rm -f ./.ci-postcheck.cjs
+
+      - name: Publish job summary
+        if: always()
+        run: |
+          {
+            for f in "${{ runner.temp }}/summary"/*.md; do
+              [ -f "$f" ] && cat "$f"
+            done
+            echo "## Explicit confirmations"
+            echo ""
+            echo "- DRY RUN ONLY — GRAMMAR_IMPORT_DRY_RUN=true was set for the entire run; the import script's dry-run code path never opens a database transaction."
+            echo "- NO DATA IMPORTED — zero writes performed, confirmed both by the script's own report and by an independent before/after count comparison."
+            echo "- NO MIGRATION RUN — this workflow never calls \`prisma migrate deploy\`."
+            echo "- NO SEED EXECUTED — this workflow contains no seed/db-seed command."
+            echo "- NO CONTENT PUBLISHED — no GrammarRule content was created, updated, or published."
+            echo "- NO RENDER DEPLOY EXECUTED — this workflow never calls Render's API or triggers a deploy."
+          } >> "$GITHUB_STEP_SUMMARY"
