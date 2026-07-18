@@ -9,6 +9,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
 import { DiagnosticsModule } from './modules/diagnostics/diagnostics.module';
 import { ErrorsModule } from './modules/errors/errors.module';
+import { GrammarModule } from './modules/grammar/grammar.module';
 import { LessonsModule } from './modules/lessons/lessons.module';
 import { MaterialsModule } from './modules/materials/materials.module';
 import { MicroLessonsModule } from './modules/micro-lessons/micro-lessons.module';
@@ -36,6 +37,7 @@ import { UsersModule } from './modules/users/users.module';
     ProgressModule,
     MaterialsModule,
     MicroLessonsModule,
+    GrammarModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -19,6 +19,8 @@ import SettingsPage from './pages/SettingsPage';
 import GeneratorPage from './pages/GeneratorPage';
 import MaterialsPage from './pages/MaterialsPage';
 import MorePage from './pages/MorePage';
+import GrammarPage from './pages/GrammarPage';
+import GrammarRulePage from './pages/GrammarRulePage';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -57,6 +59,8 @@ export default function App() {
         <Route path="/speaking" element={<SpeakingPage />} />
         <Route path="/errors" element={<ErrorsPage />} />
         <Route path="/micro-lessons/:id" element={<MicroLessonPage />} />
+        <Route path="/grammar" element={<GrammarPage />} />
+        <Route path="/grammar/:ruleCode" element={<GrammarRulePage />} />
         <Route path="/progress" element={<ProgressPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/generator" element={<GeneratorPage />} />

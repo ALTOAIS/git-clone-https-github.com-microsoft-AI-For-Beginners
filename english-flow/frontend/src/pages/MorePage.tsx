@@ -6,6 +6,7 @@ import { Card } from '../components/ui';
 const ITEMS = [
   { to: '/phrases', key: 'phrases', icon: '💬' },
   { to: '/errors', key: 'errors', icon: '✏️' },
+  { to: '/grammar', key: 'grammar', icon: '📚' },
   { to: '/progress', key: 'progress', icon: '📈' },
   { to: '/translate', key: 'lesson', icon: '🔤', labelKey: 'translate.title' },
   { to: '/generator', key: 'generator', icon: '✨' },

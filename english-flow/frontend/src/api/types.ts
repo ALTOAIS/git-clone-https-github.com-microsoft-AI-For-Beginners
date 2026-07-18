@@ -573,3 +573,47 @@ export interface MicroLesson {
   content: MicroLessonContent;
   userExamples: { original: string; corrected: string }[];
 }
+
+export interface GrammarRuleListItem {
+  ruleCode: string;
+  titleRu: string;
+  titleEn?: string | null;
+  shortExplanationRu: string;
+  cefrLevel: CefrLevel;
+}
+
+export type GrammarExampleType =
+  | 'CORRECT'
+  | 'INCORRECT'
+  | 'CONTRAST'
+  | 'CONTEXT'
+  | 'EXCEPTION';
+
+export interface GrammarRuleExample {
+  exampleType: GrammarExampleType;
+  sentence: string;
+  correction?: string | null;
+  explanation?: string | null;
+  context?: string | null;
+  sortOrder: number;
+}
+
+export interface GrammarExerciseTemplate {
+  id: string;
+  type: 'fill_blank' | 'choice' | 'correct_sentence';
+  prompt: string;
+  options?: string[];
+  answer: string;
+}
+
+export interface GrammarRuleDetail {
+  ruleCode: string;
+  titleRu: string;
+  titleEn?: string | null;
+  shortExplanationRu: string;
+  explanationRu: string;
+  formula?: string | null;
+  cefrLevel: CefrLevel;
+  examples: GrammarRuleExample[];
+  exerciseTemplates: GrammarExerciseTemplate[];
+}

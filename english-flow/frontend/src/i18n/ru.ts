@@ -40,6 +40,7 @@ export const ru = {
     materials: 'Материалы',
     generator: 'Генератор уроков',
     streak: 'дней подряд',
+    grammar: 'Грамматика',
   },
   auth: {
     loginTitle: 'Вход в English Flow',
@@ -630,6 +631,31 @@ export const ru = {
   },
   languageIssue: {
     showExample: 'Показать пример',
+  },
+  grammar: {
+    title: 'Грамматика',
+    study: 'Изучить',
+    empty: 'Пока нет доступных правил.',
+    loadError: 'Не удалось загрузить правила. Попробуйте позже.',
+    notFound: 'Правило не найдено.',
+    backToList: 'К списку правил',
+    examplesTitle: 'Примеры',
+    exampleType: {
+      CORRECT: 'Верно',
+      INCORRECT: 'Неверно',
+      CONTRAST: 'Сравнение',
+      CONTEXT: 'Контекст',
+      EXCEPTION: 'Исключение',
+    },
+    exercisesTitle: 'Упражнения',
+    checkAnswers: 'Проверить',
+    result: 'Результат: {{score}} из {{total}}',
+    resultGood: 'Хороший результат — правило усвоено.',
+    resultRetry: 'Часть упражнений не получилась — попробуйте ещё раз.',
+    retry: 'Попробовать снова',
+    correctSentencePrompt: 'Исправьте предложение',
+    yourAnswer: 'Ваш ответ',
+    correctAnswerLabel: 'Правильный ответ',
   },
 };
 
