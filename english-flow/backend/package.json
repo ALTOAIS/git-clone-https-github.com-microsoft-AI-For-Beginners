@@ -19,7 +19,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "seed:e2e": "ts-node prisma/seed-e2e.ts"
+    "seed:e2e": "ts-node prisma/seed-e2e.ts",
+    "grammar:import": "ts-node prisma/import-grammar-rules.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
