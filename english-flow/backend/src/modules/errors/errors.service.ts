@@ -18,6 +18,7 @@ import {
 import { detectAnswerLanguage } from './language-detector';
 import {
   isAssignmentCandidate,
+  resolveAssignableGrammarRuleId,
   runGrammarResolverShadow,
 } from '../grammar/resolver/resolver-shadow';
 
@@ -94,13 +95,19 @@ export class ErrorsService {
     context?: ErrorSourceContext,
   ) {
     const results = [];
-    // Shadow-mode only (Grammar MVP resolver, grammar-mvp-v1): fetched once
-    // per call, best-effort, never blocks error recording — see
-    // safeGetPublishedGrammarRuleCodes(). Not used for anything but the
-    // shadow observation's assignmentCandidate field below; no assignment
-    // is ever persisted.
-    const publishedGrammarRuleCodes =
-      await this.safeGetPublishedGrammarRuleCodes();
+    // Grammar MVP resolver automatic assignment (grammar-mvp-v1): the
+    // PUBLISHED ruleCode -> GrammarRule.id map is fetched at most ONCE per
+    // recordErrors() invocation, outside the per-error loop, and reused for
+    // every error below — this is the only Grammar-related DB access in
+    // this method, so a batch of up to 10 errors never causes more than one
+    // extra query (no N+1). Best-effort: on failure, an empty map is
+    // returned and no assignment happens for this call — error recording
+    // itself is never blocked. See safeGetPublishedGrammarRuleMap().
+    const publishedGrammarRuleIdByCode =
+      await this.safeGetPublishedGrammarRuleMap();
+    const publishedGrammarRuleCodes = new Set(
+      publishedGrammarRuleIdByCode.keys(),
+    );
     for (const error of errors.slice(0, 10)) {
       if (!error.original?.trim() || !error.corrected?.trim()) continue;
       const existing = await this.prisma.errorRecord.findFirst({
@@ -117,17 +124,21 @@ export class ErrorsService {
         error.corrected.trim(),
       );
 
-      // Grammar MVP resolver — SHADOW MODE ONLY. Runs the existing,
-      // unmodified resolver against this real error and logs structured,
-      // non-sensitive metadata only. Never writes grammarRuleId or
-      // grammarResolverVersion, never influences the create/update below,
-      // and can never fail this call — see observeGrammarResolverShadow's
-      // own doc comment for the failure-isolation guarantee.
-      this.observeGrammarResolverShadow(
+      // Grammar MVP resolver — shadow observation + automatic-assignment
+      // resolution. Runs the existing, unmodified resolver against this
+      // real error, logs structured non-sensitive metadata, and (fail-
+      // closed) resolves a GrammarRule.id to assign ONLY for a HIGH-
+      // confidence, unambiguous result matching a currently PUBLISHED rule.
+      // Never influences the create/update below beyond the explicit
+      // grammarRuleId/grammarResolverVersion fields, and can never fail
+      // this call — see observeAndResolveGrammarAssignment's own doc
+      // comment for the failure-isolation guarantee.
+      const grammarAssignment = this.observeAndResolveGrammarAssignment(
         error.original.trim(),
         error.corrected.trim(),
         microCategory,
         publishedGrammarRuleCodes,
+        publishedGrammarRuleIdByCode,
       );
 
       if (existing) {
@@ -165,6 +176,17 @@ export class ErrorsService {
               ...(context?.originalUserAnswer
                 ? { originalUserAnswer: context.originalUserAnswer }
                 : {}),
+              // Only ever added for a record that has no assignment yet —
+              // an existing grammarRuleId/grammarResolverVersion is never
+              // overwritten or reclassified by a later (possibly weaker)
+              // shadow result (Section 5 of the activation task).
+              ...(grammarAssignment && !existing.grammarRuleId
+                ? {
+                    grammarRuleId: grammarAssignment.grammarRuleId,
+                    grammarResolverVersion:
+                      grammarAssignment.grammarResolverVersion,
+                  }
+                : {}),
             },
           }),
         );
@@ -187,6 +209,13 @@ export class ErrorsService {
               sourcePrompt: context?.sourcePrompt,
               sourceContext: context?.sourceContext,
               originalUserAnswer: context?.originalUserAnswer,
+              ...(grammarAssignment
+                ? {
+                    grammarRuleId: grammarAssignment.grammarRuleId,
+                    grammarResolverVersion:
+                      grammarAssignment.grammarResolverVersion,
+                  }
+                : {}),
             },
           }),
         );
@@ -196,63 +225,81 @@ export class ErrorsService {
   }
 
   /**
-   * Best-effort, read-only lookup of the ruleCodes currently PUBLISHED in
-   * Grammar MVP — used ONLY to compute the shadow observation's
-   * `assignmentCandidate` field (see observeGrammarResolverShadow below).
-   * Never hardcodes the current 8 PUBLISHED ruleCodes: always reflects
-   * live DB state. On any failure, returns an empty set rather than
-   * throwing — `isAssignmentCandidate` then simply reports `false`, and
-   * error recording continues unaffected either way.
+   * Best-effort, read-only lookup of the ruleCode -> GrammarRule.id map for
+   * rules currently PUBLISHED in Grammar MVP — the single source of truth
+   * for both the shadow observation's `assignmentCandidate` field and
+   * actual automatic-assignment resolution (see
+   * observeAndResolveGrammarAssignment below). Never hardcodes the current
+   * 8 PUBLISHED ruleCodes: always reflects live DB state, and is fetched at
+   * most once per recordErrors() invocation (see the call site). On any
+   * failure, returns an empty map rather than throwing — both
+   * `isAssignmentCandidate` and `resolveAssignableGrammarRuleId` then
+   * simply report ineligible, and error recording continues unaffected
+   * either way (fail-closed: a lookup failure can only ever suppress
+   * assignment, never force one).
    */
-  private async safeGetPublishedGrammarRuleCodes(): Promise<
-    ReadonlySet<string>
+  private async safeGetPublishedGrammarRuleMap(): Promise<
+    ReadonlyMap<string, string>
   > {
     try {
       const rows = await this.prisma.grammarRule.findMany({
         where: { contentStatus: 'PUBLISHED' },
-        select: { ruleCode: true },
+        select: { id: true, ruleCode: true },
       });
-      return new Set(rows.map((r) => r.ruleCode));
+      return new Map(rows.map((r) => [r.ruleCode, r.id]));
     } catch (e) {
       this.logger.warn(
-        `grammar_resolver_shadow: failed to load PUBLISHED ruleCodes, assignmentCandidate will be false this call: ${
+        `grammar_resolver_shadow: failed to load PUBLISHED ruleCode->id map, no automatic assignment will occur this call: ${
           e instanceof Error ? e.message : String(e)
         }`,
       );
-      return new Set();
+      return new Map();
     }
   }
 
   /**
-   * Grammar MVP resolver (grammar-mvp-v1) — SHADOW MODE ONLY.
+   * Grammar MVP resolver (grammar-mvp-v1) — shadow observation AND
+   * automatic-assignment resolution.
    *
    * Runs the existing, unmodified resolver against a real
-   * originalText/correctedText pair and logs only non-sensitive,
-   * structured metadata (resolverVersion, resolved ruleCode or null,
-   * confidence, ambiguous, candidate count, and the pure
-   * assignmentCandidate eligibility flag). NEVER logs or otherwise
-   * persists originalText, correctedText, any other user-authored text,
-   * or user identity.
+   * originalText/correctedText pair, logs only non-sensitive, structured
+   * metadata (resolverVersion, resolved ruleCode or null, confidence,
+   * ambiguous, candidate count, and the pure assignmentCandidate
+   * eligibility flag), and returns a `{ grammarRuleId,
+   * grammarResolverVersion }` pair for the caller to persist ONLY when
+   * every fail-closed gate is met: ruleCode != null, confidence === HIGH
+   * (which, per resolver.ts's tierFor(), already structurally implies the
+   * diff extraction's own reliability was HIGH — there is no separate,
+   * inconsistent reliability check to perform), not ambiguous, and the
+   * ruleCode is present in the caller-supplied PUBLISHED map. Every other
+   * outcome — MEDIUM/LOW confidence, ambiguous, null ruleCode, an
+   * unpublished/hidden ruleCode, or any exception anywhere in this method —
+   * returns `null`, i.e. no assignment. NEVER logs or otherwise persists
+   * originalText, correctedText, any other user-authored text, or user
+   * identity.
    *
    * Failure isolation: this method never throws. `runGrammarResolverShadow`
-   * already swallows any resolver exception internally and returns
-   * `null`; the try/catch here additionally guards the (already very
-   * unlikely) case of the eligibility check or the logging call itself
-   * failing, so that neither a resolver bug nor a logging bug can ever
-   * reach the caller and block ErrorRecord creation, which remains fully
-   * authoritative and unaffected by anything in this method.
+   * already swallows any resolver exception internally and returns `null`;
+   * the try/catch here additionally guards the (already very unlikely)
+   * case of the eligibility check, the assignment resolution, or the
+   * logging call itself failing, so that neither a resolver bug nor a
+   * logging bug can ever reach the caller and block ErrorRecord creation,
+   * which remains fully authoritative and unaffected by anything in this
+   * method.
    *
-   * Absolute no-persistence rule: this method has no access to — and
-   * never calls — `errorRecord.create`/`update`. It cannot write
-   * `grammarRuleId` or `grammarResolverVersion`; both remain exactly as
-   * they were before this call.
+   * Absolute no-persistence rule: this method has no access to — and never
+   * calls — `errorRecord.create`/`update`. It only ever returns a plain
+   * value; the caller (recordErrors) decides whether and how to persist it,
+   * including the "never overwrite an existing assignment" rule for
+   * updates.
    */
-  private observeGrammarResolverShadow(
+  private observeAndResolveGrammarAssignment(
     originalText: string,
     correctedText: string,
     existingMicroCategory: ReturnType<typeof classifyMicroCategory>,
     publishedGrammarRuleCodes: ReadonlySet<string>,
-  ): void {
+    publishedGrammarRuleIdByCode: ReadonlyMap<string, string>,
+  ): { grammarRuleId: string; grammarResolverVersion: string } | null {
     try {
       const observation = runGrammarResolverShadow({
         originalText,
@@ -273,18 +320,31 @@ export class ErrorsService {
           assignmentCandidate,
         })}`,
       );
+      const grammarRuleId = resolveAssignableGrammarRuleId(
+        observation,
+        assignmentCandidate,
+        publishedGrammarRuleIdByCode,
+      );
+      if (!grammarRuleId || !observation) return null;
+      return {
+        grammarRuleId,
+        grammarResolverVersion: observation.resolverVersion,
+      };
     } catch (e) {
-      // Best-effort only, per the shadow-mode contract: a logging/eligibility
-      // failure must never block ErrorRecord creation. Swallow, warn, move on.
+      // Best-effort only, per the fail-closed contract: a logging/
+      // eligibility/resolution failure must never block ErrorRecord
+      // creation, and must never itself cause an assignment. Swallow,
+      // warn, return null (no assignment).
       try {
         this.logger.warn(
-          `grammar_resolver_shadow: shadow observation failed, ignoring: ${
+          `grammar_resolver_shadow: shadow observation failed, ignoring, no assignment: ${
             e instanceof Error ? e.message : String(e)
           }`,
         );
       } catch {
         // Even logging the failure must not be allowed to throw further.
       }
+      return null;
     }
   }
 

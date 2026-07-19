@@ -3,12 +3,15 @@ import { UsersService } from '../users/users.service';
 
 const runGrammarResolverShadowMock = jest.fn();
 const isAssignmentCandidateMock = jest.fn();
+const resolveAssignableGrammarRuleIdMock = jest.fn();
 
 jest.mock('../grammar/resolver/resolver-shadow', () => ({
   runGrammarResolverShadow: (...args: unknown[]) =>
     runGrammarResolverShadowMock(...args),
   isAssignmentCandidate: (...args: unknown[]) =>
     isAssignmentCandidateMock(...args),
+  resolveAssignableGrammarRuleId: (...args: unknown[]) =>
+    resolveAssignableGrammarRuleIdMock(...args),
 }));
 
 // Imported after the mock so ErrorsService picks up the mocked module.
@@ -31,12 +34,10 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
       update: jest.fn(),
     },
     grammarRule: {
-      findMany: jest
-        .fn()
-        .mockResolvedValue([
-          { ruleCode: 'MODAL_BASE_VERB' },
-          { ruleCode: 'ARTICLE_A_AN' },
-        ]),
+      findMany: jest.fn().mockResolvedValue([
+        { id: 'gr-modal-base-verb', ruleCode: 'MODAL_BASE_VERB' },
+        { id: 'gr-article-a-an', ruleCode: 'ARTICLE_A_AN' },
+      ]),
     },
     ...overrides,
   } as unknown as PrismaService;
@@ -50,11 +51,24 @@ const SAMPLE_ERROR = {
   errorType: 'VERB_FORM' as const,
 };
 
-describe('ErrorsService.recordErrors — Grammar resolver shadow-mode: failure isolation and no-persistence', () => {
+// NOTE: This file mocks the entire `resolver-shadow` module (including
+// `resolveAssignableGrammarRuleId`) to isolate ErrorsService's WIRING,
+// failure-isolation, and no-N+1 behavior from the resolver's real
+// eligibility semantics. `resolveAssignableGrammarRuleIdMock` defaults to
+// `null` (no assignment) below, so — unless a test explicitly overrides it
+// — these tests exercise the "no assignment resolved" path regardless of
+// what `isAssignmentCandidateMock` returns. For proof of the REAL
+// end-to-end automatic-assignment gate (HIGH+unambiguous+PUBLISHED persists,
+// every other outcome does not), see
+// errors.service.grammar-assignment.spec.ts, which uses the real,
+// unmocked resolver + resolver-shadow.
+describe('ErrorsService.recordErrors — Grammar resolver shadow-mode: wiring, failure isolation, no-N+1', () => {
   beforeEach(() => {
     runGrammarResolverShadowMock.mockReset();
     isAssignmentCandidateMock.mockReset();
     isAssignmentCandidateMock.mockReturnValue(false);
+    resolveAssignableGrammarRuleIdMock.mockReset();
+    resolveAssignableGrammarRuleIdMock.mockReturnValue(null);
   });
 
   it('E. resolver throws synchronously -> ErrorRecord is still created normally', async () => {
@@ -109,7 +123,7 @@ describe('ErrorsService.recordErrors — Grammar resolver shadow-mode: failure i
     expect(store).toHaveLength(1);
   });
 
-  it('A/H/I. HIGH-confidence, eligible candidate is observed but grammarRuleId/grammarResolverVersion are never written to the create() payload', async () => {
+  it('isAssignmentCandidate=true but resolveAssignableGrammarRuleId=null -> nothing is written (persistence is gated on the id resolution, not on isAssignmentCandidate alone)', async () => {
     runGrammarResolverShadowMock.mockReturnValue({
       resolverVersion: 'grammar-mvp-v1',
       ruleCode: 'MODAL_BASE_VERB',
@@ -117,11 +131,8 @@ describe('ErrorsService.recordErrors — Grammar resolver shadow-mode: failure i
       ambiguous: false,
       candidateCount: 1,
     });
-    // Even when the eligibility helper itself says "true" (would be a
-    // future automatic-assignment candidate), this task must never
-    // persist anything — proving persistence isn't gated only on
-    // isAssignmentCandidate returning false in practice.
     isAssignmentCandidateMock.mockReturnValue(true);
+    // resolveAssignableGrammarRuleIdMock keeps its beforeEach default: null.
     const { prisma, store } = makePrisma();
     const service = new ErrorsService(prisma, fakeUsersService);
 
@@ -133,6 +144,26 @@ describe('ErrorsService.recordErrors — Grammar resolver shadow-mode: failure i
     expect(created).not.toHaveProperty('grammarResolverVersion');
     expect(created.grammarRuleId).toBeUndefined();
     expect(created.grammarResolverVersion).toBeUndefined();
+  });
+
+  it('wiring: when resolveAssignableGrammarRuleId resolves an id, create() persists grammarRuleId + grammarResolverVersion (resolverVersion from the observation)', async () => {
+    runGrammarResolverShadowMock.mockReturnValue({
+      resolverVersion: 'grammar-mvp-v1',
+      ruleCode: 'MODAL_BASE_VERB',
+      confidence: 'HIGH',
+      ambiguous: false,
+      candidateCount: 1,
+    });
+    isAssignmentCandidateMock.mockReturnValue(true);
+    resolveAssignableGrammarRuleIdMock.mockReturnValue('gr-modal-base-verb');
+    const { prisma, store } = makePrisma();
+    const service = new ErrorsService(prisma, fakeUsersService);
+
+    await service.recordErrors('u1', [SAMPLE_ERROR], 'review');
+
+    expect(store).toHaveLength(1);
+    expect(store[0].grammarRuleId).toBe('gr-modal-base-verb');
+    expect(store[0].grammarResolverVersion).toBe('grammar-mvp-v1');
   });
 
   it('H/I. grammarRuleId and grammarResolverVersion are absent from every create() call, regardless of resolver outcome', async () => {
