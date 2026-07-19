@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -15,6 +16,10 @@ import {
   buildHelpDetails,
 } from './context-examples';
 import { detectAnswerLanguage } from './language-detector';
+import {
+  isAssignmentCandidate,
+  runGrammarResolverShadow,
+} from '../grammar/resolver/resolver-shadow';
 
 /** Целевой размер ежедневной практики ошибок (раздел 4 ТЗ). */
 export const DAILY_TARGET = 3;
@@ -36,6 +41,8 @@ export interface ErrorSourceContext {
 
 @Injectable()
 export class ErrorsService {
+  private readonly logger = new Logger(ErrorsService.name);
+
   constructor(
     private prisma: PrismaService,
     private usersService: UsersService,
@@ -87,6 +94,13 @@ export class ErrorsService {
     context?: ErrorSourceContext,
   ) {
     const results = [];
+    // Shadow-mode only (Grammar MVP resolver, grammar-mvp-v1): fetched once
+    // per call, best-effort, never blocks error recording — see
+    // safeGetPublishedGrammarRuleCodes(). Not used for anything but the
+    // shadow observation's assignmentCandidate field below; no assignment
+    // is ever persisted.
+    const publishedGrammarRuleCodes =
+      await this.safeGetPublishedGrammarRuleCodes();
     for (const error of errors.slice(0, 10)) {
       if (!error.original?.trim() || !error.corrected?.trim()) continue;
       const existing = await this.prisma.errorRecord.findFirst({
@@ -102,6 +116,20 @@ export class ErrorsService {
         error.original.trim(),
         error.corrected.trim(),
       );
+
+      // Grammar MVP resolver — SHADOW MODE ONLY. Runs the existing,
+      // unmodified resolver against this real error and logs structured,
+      // non-sensitive metadata only. Never writes grammarRuleId or
+      // grammarResolverVersion, never influences the create/update below,
+      // and can never fail this call — see observeGrammarResolverShadow's
+      // own doc comment for the failure-isolation guarantee.
+      this.observeGrammarResolverShadow(
+        error.original.trim(),
+        error.corrected.trim(),
+        microCategory,
+        publishedGrammarRuleCodes,
+      );
+
       if (existing) {
         const wasResolvedOrScheduled =
           existing.status === 'RESOLVED' ||
@@ -165,6 +193,99 @@ export class ErrorsService {
       }
     }
     return results;
+  }
+
+  /**
+   * Best-effort, read-only lookup of the ruleCodes currently PUBLISHED in
+   * Grammar MVP — used ONLY to compute the shadow observation's
+   * `assignmentCandidate` field (see observeGrammarResolverShadow below).
+   * Never hardcodes the current 8 PUBLISHED ruleCodes: always reflects
+   * live DB state. On any failure, returns an empty set rather than
+   * throwing — `isAssignmentCandidate` then simply reports `false`, and
+   * error recording continues unaffected either way.
+   */
+  private async safeGetPublishedGrammarRuleCodes(): Promise<
+    ReadonlySet<string>
+  > {
+    try {
+      const rows = await this.prisma.grammarRule.findMany({
+        where: { contentStatus: 'PUBLISHED' },
+        select: { ruleCode: true },
+      });
+      return new Set(rows.map((r) => r.ruleCode));
+    } catch (e) {
+      this.logger.warn(
+        `grammar_resolver_shadow: failed to load PUBLISHED ruleCodes, assignmentCandidate will be false this call: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+      return new Set();
+    }
+  }
+
+  /**
+   * Grammar MVP resolver (grammar-mvp-v1) — SHADOW MODE ONLY.
+   *
+   * Runs the existing, unmodified resolver against a real
+   * originalText/correctedText pair and logs only non-sensitive,
+   * structured metadata (resolverVersion, resolved ruleCode or null,
+   * confidence, ambiguous, candidate count, and the pure
+   * assignmentCandidate eligibility flag). NEVER logs or otherwise
+   * persists originalText, correctedText, any other user-authored text,
+   * or user identity.
+   *
+   * Failure isolation: this method never throws. `runGrammarResolverShadow`
+   * already swallows any resolver exception internally and returns
+   * `null`; the try/catch here additionally guards the (already very
+   * unlikely) case of the eligibility check or the logging call itself
+   * failing, so that neither a resolver bug nor a logging bug can ever
+   * reach the caller and block ErrorRecord creation, which remains fully
+   * authoritative and unaffected by anything in this method.
+   *
+   * Absolute no-persistence rule: this method has no access to — and
+   * never calls — `errorRecord.create`/`update`. It cannot write
+   * `grammarRuleId` or `grammarResolverVersion`; both remain exactly as
+   * they were before this call.
+   */
+  private observeGrammarResolverShadow(
+    originalText: string,
+    correctedText: string,
+    existingMicroCategory: ReturnType<typeof classifyMicroCategory>,
+    publishedGrammarRuleCodes: ReadonlySet<string>,
+  ): void {
+    try {
+      const observation = runGrammarResolverShadow({
+        originalText,
+        correctedText,
+        existingMicroCategory,
+      });
+      const assignmentCandidate = isAssignmentCandidate(
+        observation,
+        publishedGrammarRuleCodes,
+      );
+      this.logger.log(
+        `grammar_resolver_shadow ${JSON.stringify({
+          resolverVersion: observation?.resolverVersion ?? null,
+          ruleCode: observation?.ruleCode ?? null,
+          confidence: observation?.confidence ?? null,
+          ambiguous: observation?.ambiguous ?? null,
+          candidateCount: observation?.candidateCount ?? null,
+          assignmentCandidate,
+        })}`,
+      );
+    } catch (e) {
+      // Best-effort only, per the shadow-mode contract: a logging/eligibility
+      // failure must never block ErrorRecord creation. Swallow, warn, move on.
+      try {
+        this.logger.warn(
+          `grammar_resolver_shadow: shadow observation failed, ignoring: ${
+            e instanceof Error ? e.message : String(e)
+          }`,
+        );
+      } catch {
+        // Even logging the failure must not be allowed to throw further.
+      }
+    }
   }
 
   /** Упражнения по ошибкам (legacy, используется TrainerService mode=errors). */
