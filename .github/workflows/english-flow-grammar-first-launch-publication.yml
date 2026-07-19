@@ -1,0 +1,591 @@
+name: English Flow — Grammar MVP First-Launch Publication (ONE-TIME)
+
+# Manual-only, one-time workflow that publishes exactly the 8 Grammar MVP
+# rules approved as the first-launch set in
+# english-flow/docs/content-pedagogy/grammar-mvp-publication-readiness-2026-07-18.md
+# (PR #47) — an explicit product-owner GO decision.
+#
+# For exactly these 8 ruleCodes, this workflow transitions:
+#   sourceVerificationStatus: PARTIALLY_VERIFIED -> VERIFIED_DIRECTLY
+#   contentStatus:            REVIEWED           -> PUBLISHED
+#   publishedAt:               null              -> now() (same timestamp for all 8)
+#
+#   ARTICLE_A_AN, ARTICLE_THE_SPECIFIC, ARTICLE_ZERO_GENERAL,
+#   PRESENT_SIMPLE_THIRD_PERSON, PAST_SIMPLE_FORM,
+#   PAST_SIMPLE_VS_PRESENT_PERFECT, MODAL_BASE_VERB,
+#   DO_DOES_DID_QUESTIONS_NEGATIVES
+#
+# The remaining 4 rules (BASIC_PREPOSITION_PATTERNS, BASIC_WORD_ORDER,
+# COUNTABLE_UNCOUNTABLE, SINGULAR_PLURAL_ARTICLE_AGREEMENT) are never
+# touched by this workflow and must remain REVIEWED / PARTIALLY_VERIFIED.
+#
+# No other field is written: contentVersion, exerciseSchemaVersion, rule
+# content, examples, and exerciseTemplates are untouched for all 12 rows.
+#
+# This workflow does NOT run `prisma migrate deploy`, does NOT run
+# `prisma db push`, does NOT run any seed or content-import script, does
+# NOT trigger a Render deploy, and does NOT touch the resolver or any
+# frontend/backend application code — it only transitions the 8 named
+# rows' two governance columns via one Prisma interactive transaction,
+# following the exact same guard pattern (pinned commit, actor check,
+# confirmation phrase, branch check, `production-db` environment,
+# pre-check -> write -> independent post-verify) already established by
+# english-flow-grammar-production-import.yml and
+# english-flow-grammar-production-dry-run.yml in this repository.
+#
+# Fail-closed throughout: any precondition mismatch before the
+# transaction aborts with zero writes; any invariant violation detected
+# INSIDE the transaction (after the 8 updates, before commit) throws,
+# which rolls back every write for all 8 rows atomically — no partial
+# publication is possible.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: >-
+          Type the exact confirmation phrase to proceed:
+          PUBLISH_8_VERIFIED_GRAMMAR_RULES
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: english-flow-grammar-first-launch-publication
+  cancel-in-progress: false
+
+env:
+  # Pinned application commit — the job checks out exactly this SHA
+  # regardless of which branch the workflow file itself lives on, so the
+  # manual-dispatch branch selector in the GitHub UI can never change
+  # which application/Prisma-schema code actually runs. This is the
+  # current HEAD of claude/english-flow-mvp-edrtv0 after PR #47 (Grammar
+  # MVP source-verification + first-launch decision package) was merged.
+  TARGET_SHA: 87722284a8844428bc9d41d44614e23f0b295164
+  REQUIRED_CONFIRMATION: PUBLISH_8_VERIFIED_GRAMMAR_RULES
+
+jobs:
+  publish:
+    name: Grammar MVP first-launch publication — 8 rules (ONE-TIME)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production-db
+    # The job must not execute at all unless the actor, the typed
+    # confirmation phrase, AND the branch this workflow_dispatch was
+    # fired from all match exactly (case-sensitive, exact equality).
+    # This third condition mirrors, inside the workflow itself, the
+    # `production-db` GitHub Environment's own "Selected branches and
+    # tags" restriction — defense in depth, not a replacement for it.
+    # If this evaluates false, GitHub skips the job entirely; the
+    # environment's Required Reviewer gate below never even gets
+    # reached, and PRODUCTION_DIRECT_URL is never exposed.
+    if: >-
+      github.actor == 'ALTOAIS' &&
+      github.event.inputs.confirmation == 'PUBLISH_8_VERIFIED_GRAMMAR_RULES' &&
+      github.ref == 'refs/heads/claude/compliance-risk-hub-mvp-vn86he'
+    steps:
+      - name: Checkout pinned application commit
+        # actions/checkout v4.3.1 (immutable commit, not the mutable v4 tag)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          persist-credentials: false
+
+      - name: Verify checked-out commit matches pinned SHA
+        run: |
+          actual="$(git rev-parse HEAD)"
+          if [ "$actual" != "$TARGET_SHA" ]; then
+            echo "::error::Checked-out commit ($actual) does not match pinned SHA ($TARGET_SHA)."
+            exit 1
+          fi
+          echo "Verified HEAD == $TARGET_SHA"
+
+      - name: Initialize job summary
+        run: |
+          mkdir -p "${{ runner.temp }}/summary"
+          {
+            echo "# English Flow — Grammar MVP First-Launch Publication (ONE-TIME)"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Actor | \`${{ github.actor }}\` |"
+            echo "| Pinned target SHA | \`$TARGET_SHA\` |"
+            echo "| Mode | **PUBLISH 8 RULES — writes to production** |"
+          } > "${{ runner.temp }}/summary/00-header.md"
+
+      - name: Setup Node
+        # actions/setup-node v4.4.0 (immutable commit, not the mutable v4 tag)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: english-flow/backend/package-lock.json
+
+      - name: Install dependencies (deterministic, from committed lockfile)
+        working-directory: english-flow/backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: english-flow/backend
+        run: npx prisma generate
+
+      - name: Validate production connection target
+        working-directory: english-flow/backend
+        env:
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          cat > ./.ci-validate.cjs <<'VALIDATE_EOF'
+          const raw = process.env.DIRECT_URL;
+          if (!raw) {
+            console.error('::error::DIRECT_URL secret is not set.');
+            process.exit(1);
+          }
+
+          let url;
+          try {
+            url = new URL(raw);
+          } catch (e) {
+            console.error('::error::PRODUCTION_DIRECT_URL is not a valid URL.');
+            process.exit(1);
+          }
+
+          if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
+            console.error('::error::Connection string is not a PostgreSQL URL (unexpected protocol).');
+            process.exit(1);
+          }
+
+          const hostname = url.hostname.toLowerCase();
+          if (!hostname.endsWith('.neon.tech') && hostname !== 'neon.tech') {
+            console.error('::error::Hostname does not belong to Neon (expected *.neon.tech).');
+            process.exit(1);
+          }
+
+          const dbName = url.pathname.replace(/^\//, '');
+          if (!dbName) {
+            console.error('::error::Database name is empty in the connection string.');
+            process.exit(1);
+          }
+
+          const sslmode = url.searchParams.get('sslmode');
+          if (!sslmode || sslmode.toLowerCase() === 'disable') {
+            console.error('::error::Connection string does not request a secure (sslmode) connection.');
+            process.exit(1);
+          }
+
+          const hostLabels = hostname.split('.');
+          const maskedHostSuffix = hostLabels.slice(-4).join('.');
+          const maskedIdentity = `host=...${maskedHostSuffix} db=${dbName}`;
+
+          console.log('Production connection target validated (Neon, TLS).');
+          console.log('Masked identity: ' + maskedIdentity);
+
+          require('fs').writeFileSync(
+            process.env.SUMMARY_FRAGMENT_PATH,
+            [
+              '## Connection validation',
+              '',
+              '- Hostname belongs to Neon: yes',
+              '- Database name non-empty: yes',
+              '- TLS/SSL requested: yes',
+              `- Masked identity: \`${maskedIdentity}\``,
+              '',
+            ].join('\n'),
+          );
+          VALIDATE_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/01-connection.md" node ./.ci-validate.cjs
+          rm -f ./.ci-validate.cjs
+
+      - name: Pre-publication read-only check (fail-closed — zero writes on any mismatch)
+        id: pre_check
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          cat > ./.ci-precheck.ts <<'PRECHECK_EOF'
+          import { PrismaClient } from '@prisma/client';
+          import * as fs from 'fs';
+
+          const LAUNCH_SET = [
+            'ARTICLE_A_AN',
+            'ARTICLE_THE_SPECIFIC',
+            'ARTICLE_ZERO_GENERAL',
+            'PRESENT_SIMPLE_THIRD_PERSON',
+            'PAST_SIMPLE_FORM',
+            'PAST_SIMPLE_VS_PRESENT_PERFECT',
+            'MODAL_BASE_VERB',
+            'DO_DOES_DID_QUESTIONS_NEGATIVES',
+          ];
+          const HIDDEN_SET = [
+            'BASIC_PREPOSITION_PATTERNS',
+            'BASIC_WORD_ORDER',
+            'COUNTABLE_UNCOUNTABLE',
+            'SINGULAR_PLURAL_ARTICLE_AGREEMENT',
+          ];
+          const EXPECTED_ALL_12 = [...LAUNCH_SET, ...HIDDEN_SET].sort();
+
+          async function main() {
+            const prisma = new PrismaClient();
+            const failures: string[] = [];
+            try {
+              const rules = await prisma.grammarRule.findMany({
+                select: { ruleCode: true, contentStatus: true, sourceVerificationStatus: true },
+              });
+              const exampleCount = await prisma.grammarRuleExample.count();
+
+              console.log('Target DB reachable: yes');
+              console.log('Current GrammarRule count:', rules.length);
+              console.log('Current GrammarRuleExample count:', exampleCount);
+
+              if (rules.length !== 12) failures.push(`GrammarRule count is ${rules.length}, expected 12`);
+              if (exampleCount !== 91) failures.push(`GrammarRuleExample count is ${exampleCount}, expected 91`);
+
+              const actualCodes = rules.map((r) => r.ruleCode).sort();
+              const codesMatch = JSON.stringify(actualCodes) === JSON.stringify(EXPECTED_ALL_12);
+              if (!codesMatch) {
+                failures.push(`ruleCodes do not exactly match the expected 12: found [${actualCodes.join(', ')}]`);
+              }
+
+              const byCode = new Map(rules.map((r) => [r.ruleCode, r]));
+
+              for (const code of LAUNCH_SET) {
+                const rule = byCode.get(code);
+                if (!rule) { failures.push(`Launch-set rule ${code} not found`); continue; }
+                if (rule.contentStatus !== 'REVIEWED') {
+                  failures.push(`Launch-set rule ${code}: contentStatus is ${rule.contentStatus}, expected REVIEWED`);
+                }
+                if (rule.sourceVerificationStatus !== 'PARTIALLY_VERIFIED') {
+                  failures.push(`Launch-set rule ${code}: sourceVerificationStatus is ${rule.sourceVerificationStatus}, expected PARTIALLY_VERIFIED`);
+                }
+              }
+
+              for (const code of HIDDEN_SET) {
+                const rule = byCode.get(code);
+                if (!rule) { failures.push(`Hidden-set rule ${code} not found`); continue; }
+                if (rule.contentStatus !== 'REVIEWED') {
+                  failures.push(`Hidden-set rule ${code}: contentStatus is ${rule.contentStatus}, expected REVIEWED`);
+                }
+                if (rule.sourceVerificationStatus !== 'PARTIALLY_VERIFIED') {
+                  failures.push(`Hidden-set rule ${code}: sourceVerificationStatus is ${rule.sourceVerificationStatus}, expected PARTIALLY_VERIFIED`);
+                }
+              }
+
+              const publishedCount = rules.filter((r) => r.contentStatus === 'PUBLISHED').length;
+              const archivedCount = rules.filter((r) => r.contentStatus === 'ARCHIVED').length;
+              if (publishedCount !== 0) failures.push(`PUBLISHED count is ${publishedCount}, expected 0`);
+              if (archivedCount !== 0) failures.push(`ARCHIVED count is ${archivedCount}, expected 0`);
+
+              const lines = [
+                '## Pre-publication read-only check (fail-closed)',
+                '',
+                `- GrammarRule count: **${rules.length}** (expected 12)`,
+                `- GrammarRuleExample count: **${exampleCount}** (expected 91)`,
+                `- ruleCodes match the expected 12 exactly: **${codesMatch ? 'yes' : 'NO'}**`,
+                `- All 8 launch-set rules REVIEWED/PARTIALLY_VERIFIED: **${LAUNCH_SET.every((c) => byCode.get(c)?.contentStatus === 'REVIEWED' && byCode.get(c)?.sourceVerificationStatus === 'PARTIALLY_VERIFIED') ? 'yes' : 'NO'}**`,
+                `- All 4 hidden-set rules REVIEWED/PARTIALLY_VERIFIED: **${HIDDEN_SET.every((c) => byCode.get(c)?.contentStatus === 'REVIEWED' && byCode.get(c)?.sourceVerificationStatus === 'PARTIALLY_VERIFIED') ? 'yes' : 'NO'}**`,
+                `- PUBLISHED count: **${publishedCount}** (expected 0)`,
+                `- ARCHIVED count: **${archivedCount}** (expected 0)`,
+                '',
+              ];
+
+              if (failures.length > 0) {
+                lines.push(
+                  `**STOP: ${failures.length} precondition(s) failed. Zero writes performed. Not automatically repairing, retrying, deleting, overwriting, or restoring:**`,
+                  ...failures.map((f) => `- ${f}`),
+                  '',
+                );
+                fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH as string, lines.join('\n') + '\n');
+                console.error('::error::Pre-publication check FAILED: ' + failures.join('; '));
+                process.exit(1);
+              }
+
+              fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH as string, lines.join('\n') + '\n');
+              console.log('Pre-publication check PASSED: all preconditions satisfied. Zero writes so far.');
+            } finally {
+              await prisma.$disconnect();
+            }
+          }
+
+          main().catch((e) => {
+            console.error('::error::Pre-publication check threw an unexpected exception: ' + (e && e.message ? e.message : String(e)));
+            process.exit(1);
+          });
+          PRECHECK_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/02-precheck.md" npx ts-node ./.ci-precheck.ts
+          rm -f ./.ci-precheck.ts
+
+      - name: Atomic publication (single transaction — writes to production)
+        id: publish
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          CONFIRMATION_PHRASE: ${{ github.event.inputs.confirmation }}
+          REQUIRED_CONFIRMATION_PHRASE: PUBLISH_8_VERIFIED_GRAMMAR_RULES
+        run: |
+          cat > ./.ci-publish.ts <<'PUBLISH_EOF'
+          import { PrismaClient } from '@prisma/client';
+          import * as fs from 'fs';
+
+          const LAUNCH_SET = [
+            'ARTICLE_A_AN',
+            'ARTICLE_THE_SPECIFIC',
+            'ARTICLE_ZERO_GENERAL',
+            'PRESENT_SIMPLE_THIRD_PERSON',
+            'PAST_SIMPLE_FORM',
+            'PAST_SIMPLE_VS_PRESENT_PERFECT',
+            'MODAL_BASE_VERB',
+            'DO_DOES_DID_QUESTIONS_NEGATIVES',
+          ].sort();
+          const HIDDEN_SET = [
+            'BASIC_PREPOSITION_PATTERNS',
+            'BASIC_WORD_ORDER',
+            'COUNTABLE_UNCOUNTABLE',
+            'SINGULAR_PLURAL_ARTICLE_AGREEMENT',
+          ].sort();
+
+          async function main() {
+            // Defense in depth: the confirmation phrase is re-checked here,
+            // inside the script itself, not just in the workflow's own
+            // `if:` job condition — a second, independent gate before any
+            // write is attempted.
+            if (process.env.CONFIRMATION_PHRASE !== process.env.REQUIRED_CONFIRMATION_PHRASE) {
+              console.error('::error::Confirmation phrase mismatch inside publish script. Zero writes performed.');
+              process.exit(1);
+            }
+
+            const prisma = new PrismaClient();
+            try {
+              await prisma.$transaction(async (tx) => {
+                const now = new Date();
+
+                for (const ruleCode of LAUNCH_SET) {
+                  await tx.grammarRule.update({
+                    where: { ruleCode },
+                    data: {
+                      contentStatus: 'PUBLISHED',
+                      sourceVerificationStatus: 'VERIFIED_DIRECTLY',
+                      publishedAt: now,
+                    },
+                  });
+                }
+
+                // In-transaction, pre-commit invariant verification. Any
+                // failure below throws, which rolls back all 8 updates
+                // atomically — no partial publication is possible.
+                const postRules = await tx.grammarRule.findMany({
+                  select: { ruleCode: true, contentStatus: true, sourceVerificationStatus: true },
+                });
+                const postExampleCount = await tx.grammarRuleExample.count();
+
+                if (postRules.length !== 12) {
+                  throw new Error(`Post-update GrammarRule count is ${postRules.length}, expected 12. Rolling back.`);
+                }
+                if (postExampleCount !== 91) {
+                  throw new Error(`Post-update GrammarRuleExample count is ${postExampleCount}, expected 91. Rolling back.`);
+                }
+
+                const publishedRows = postRules.filter((r) => r.contentStatus === 'PUBLISHED');
+                const verifiedDirectlyRows = postRules.filter((r) => r.sourceVerificationStatus === 'VERIFIED_DIRECTLY');
+                const archivedRows = postRules.filter((r) => r.contentStatus === 'ARCHIVED');
+
+                if (publishedRows.length !== 8) {
+                  throw new Error(`Expected exactly 8 PUBLISHED rows, found ${publishedRows.length}. Rolling back.`);
+                }
+                if (verifiedDirectlyRows.length !== 8) {
+                  throw new Error(`Expected exactly 8 VERIFIED_DIRECTLY rows, found ${verifiedDirectlyRows.length}. Rolling back.`);
+                }
+                if (archivedRows.length !== 0) {
+                  throw new Error(`Expected 0 ARCHIVED rows, found ${archivedRows.length}. Rolling back.`);
+                }
+
+                const publishedCodes = publishedRows.map((r) => r.ruleCode).sort();
+                const verifiedDirectlyCodes = verifiedDirectlyRows.map((r) => r.ruleCode).sort();
+
+                if (JSON.stringify(publishedCodes) !== JSON.stringify(LAUNCH_SET)) {
+                  throw new Error(`PUBLISHED ruleCodes do not exactly match the launch set. Found: [${publishedCodes.join(', ')}]. Rolling back.`);
+                }
+                if (JSON.stringify(verifiedDirectlyCodes) !== JSON.stringify(LAUNCH_SET)) {
+                  throw new Error(`VERIFIED_DIRECTLY ruleCodes do not exactly match the launch set. Found: [${verifiedDirectlyCodes.join(', ')}]. Rolling back.`);
+                }
+
+                const postByCode = new Map(postRules.map((r) => [r.ruleCode, r]));
+                for (const ruleCode of HIDDEN_SET) {
+                  const rule = postByCode.get(ruleCode);
+                  if (!rule || rule.contentStatus !== 'REVIEWED') {
+                    throw new Error(`Hidden rule ${ruleCode} contentStatus is ${rule ? rule.contentStatus : 'MISSING'}, expected REVIEWED. Rolling back.`);
+                  }
+                  if (rule.sourceVerificationStatus !== 'PARTIALLY_VERIFIED') {
+                    throw new Error(`Hidden rule ${ruleCode} sourceVerificationStatus is ${rule.sourceVerificationStatus}, expected PARTIALLY_VERIFIED. Rolling back.`);
+                  }
+                }
+
+                console.log('In-transaction invariants satisfied for all 12 rows. Committing.');
+              });
+
+              console.log('Transaction committed.');
+              console.log('Published (8): ' + LAUNCH_SET.join(', '));
+              console.log('Hidden, unchanged (4): ' + HIDDEN_SET.join(', '));
+
+              fs.writeFileSync(
+                process.env.SUMMARY_FRAGMENT_PATH as string,
+                [
+                  '## Atomic publication — transaction committed',
+                  '',
+                  '- All 8 launch-set updates + in-transaction invariant verification succeeded in one transaction.',
+                  `- Published (8): ${LAUNCH_SET.join(', ')}`,
+                  `- Hidden, unchanged (4): ${HIDDEN_SET.join(', ')}`,
+                  '',
+                ].join('\n'),
+              );
+            } catch (e) {
+              const message = e instanceof Error ? e.message : String(e);
+              console.error('::error::Publication FAILED, transaction rolled back: ' + message);
+              fs.writeFileSync(
+                process.env.SUMMARY_FRAGMENT_PATH as string,
+                [
+                  '## Atomic publication — FAILED, rolled back',
+                  '',
+                  `**STOP: ${message}**`,
+                  '',
+                  'The transaction was rolled back in full — no partial publication. Not automatically repairing, retrying, deleting, overwriting, or restoring.',
+                  '',
+                ].join('\n'),
+              );
+              process.exit(1);
+            } finally {
+              await prisma.$disconnect();
+            }
+          }
+
+          main();
+          PUBLISH_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/03-publish.md" npx ts-node ./.ci-publish.ts
+          rm -f ./.ci-publish.ts
+
+      - name: Post-commit read-only verification (independent of the publish script)
+        id: post_verify
+        working-directory: english-flow/backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: |
+          cat > ./.ci-postverify.ts <<'POSTVERIFY_EOF'
+          import { PrismaClient } from '@prisma/client';
+          import * as fs from 'fs';
+
+          const LAUNCH_SET = [
+            'ARTICLE_A_AN',
+            'ARTICLE_THE_SPECIFIC',
+            'ARTICLE_ZERO_GENERAL',
+            'PRESENT_SIMPLE_THIRD_PERSON',
+            'PAST_SIMPLE_FORM',
+            'PAST_SIMPLE_VS_PRESENT_PERFECT',
+            'MODAL_BASE_VERB',
+            'DO_DOES_DID_QUESTIONS_NEGATIVES',
+          ].sort();
+          const HIDDEN_SET = [
+            'BASIC_PREPOSITION_PATTERNS',
+            'BASIC_WORD_ORDER',
+            'COUNTABLE_UNCOUNTABLE',
+            'SINGULAR_PLURAL_ARTICLE_AGREEMENT',
+          ].sort();
+
+          async function main() {
+            const prisma = new PrismaClient();
+            try {
+              const rules = await prisma.grammarRule.findMany({
+                select: { ruleCode: true, contentStatus: true, sourceVerificationStatus: true },
+              });
+              const exampleCount = await prisma.grammarRuleExample.count();
+
+              const publishedCodes = rules.filter((r) => r.contentStatus === 'PUBLISHED').map((r) => r.ruleCode).sort();
+              const verifiedDirectlyCodes = rules.filter((r) => r.sourceVerificationStatus === 'VERIFIED_DIRECTLY').map((r) => r.ruleCode).sort();
+              const archivedCount = rules.filter((r) => r.contentStatus === 'ARCHIVED').length;
+              const byCode = new Map(rules.map((r) => [r.ruleCode, r]));
+              const hiddenReviewedCount = HIDDEN_SET.filter((c) => byCode.get(c)?.contentStatus === 'REVIEWED').length;
+              const hiddenPartialCount = HIDDEN_SET.filter((c) => byCode.get(c)?.sourceVerificationStatus === 'PARTIALLY_VERIFIED').length;
+
+              const failures: string[] = [];
+              if (rules.length !== 12) failures.push(`GrammarRule count is ${rules.length}, expected 12`);
+              if (exampleCount !== 91) failures.push(`GrammarRuleExample count is ${exampleCount}, expected 91`);
+              if (JSON.stringify(publishedCodes) !== JSON.stringify(LAUNCH_SET)) {
+                failures.push(`PUBLISHED ruleCodes do not exactly match the launch set: found [${publishedCodes.join(', ')}]`);
+              }
+              if (JSON.stringify(verifiedDirectlyCodes) !== JSON.stringify(LAUNCH_SET)) {
+                failures.push(`VERIFIED_DIRECTLY ruleCodes do not exactly match the launch set: found [${verifiedDirectlyCodes.join(', ')}]`);
+              }
+              if (archivedCount !== 0) failures.push(`ARCHIVED count is ${archivedCount}, expected 0`);
+              if (hiddenReviewedCount !== 4) failures.push(`Hidden-set REVIEWED count is ${hiddenReviewedCount}, expected 4`);
+              if (hiddenPartialCount !== 4) failures.push(`Hidden-set PARTIALLY_VERIFIED count is ${hiddenPartialCount}, expected 4`);
+
+              console.log('GrammarRule count:', rules.length);
+              console.log('GrammarRuleExample count:', exampleCount);
+              console.log('PUBLISHED ruleCodes:', publishedCodes.join(', '));
+              console.log('VERIFIED_DIRECTLY ruleCodes:', verifiedDirectlyCodes.join(', '));
+              console.log('Hidden set (still REVIEWED/PARTIALLY_VERIFIED):', HIDDEN_SET.join(', '));
+              console.log('ARCHIVED count:', archivedCount);
+
+              const lines = [
+                '## Post-commit read-only verification (independent of the publish script)',
+                '',
+                `- GrammarRule count: **${rules.length}** (expected 12)`,
+                `- GrammarRuleExample count: **${exampleCount}** (expected 91)`,
+                `- PUBLISHED (8): \`${publishedCodes.join(', ')}\``,
+                `- VERIFIED_DIRECTLY (8): \`${verifiedDirectlyCodes.join(', ')}\``,
+                `- Hidden, still REVIEWED (${hiddenReviewedCount}/4) / PARTIALLY_VERIFIED (${hiddenPartialCount}/4): \`${HIDDEN_SET.join(', ')}\``,
+                `- ARCHIVED count: **${archivedCount}** (expected 0)`,
+                '',
+              ];
+
+              if (failures.length > 0) {
+                lines.push(
+                  `**STOP: ${failures.length} post-publication invariant(s) failed. Not automatically repairing, retrying, deleting, overwriting, or restoring:**`,
+                  ...failures.map((f) => `- ${f}`),
+                  '',
+                );
+                fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH as string, lines.join('\n') + '\n');
+                console.error('::error::Post-publication verification FAILED: ' + failures.join('; '));
+                process.exit(1);
+              }
+
+              fs.writeFileSync(process.env.SUMMARY_FRAGMENT_PATH as string, lines.join('\n') + '\n');
+              console.log('Post-publication verification PASSED.');
+            } finally {
+              await prisma.$disconnect();
+            }
+          }
+
+          main().catch((e) => {
+            console.error('::error::Post-publication verification script threw an unexpected exception: ' + (e && e.message ? e.message : String(e)));
+            process.exit(1);
+          });
+          POSTVERIFY_EOF
+
+          SUMMARY_FRAGMENT_PATH="${{ runner.temp }}/summary/04-postverify.md" npx ts-node ./.ci-postverify.ts
+          rm -f ./.ci-postverify.ts
+
+      - name: Publish job summary
+        if: always()
+        run: |
+          {
+            for f in "${{ runner.temp }}/summary"/*.md; do
+              [ -f "$f" ] && cat "$f"
+            done
+            echo "## Explicit confirmations"
+            echo ""
+            echo "- PUBLISHED 8 RULES — sourceVerificationStatus VERIFIED_DIRECTLY and contentStatus PUBLISHED, set atomically in one transaction with in-transaction pre-commit invariant verification and automatic rollback on any failure."
+            echo "- 4 RULES UNCHANGED — BASIC_PREPOSITION_PATTERNS, BASIC_WORD_ORDER, COUNTABLE_UNCOUNTABLE, SINGULAR_PLURAL_ARTICLE_AGREEMENT remain REVIEWED / PARTIALLY_VERIFIED, confirmed by an independent post-commit read-only check."
+            echo "- NO OTHER FIELD CHANGED — contentVersion, exerciseSchemaVersion, rule content, examples, and exerciseTemplates were never touched for any of the 12 rows."
+            echo "- NO MIGRATION RUN — this workflow never calls \`prisma migrate deploy\` or \`prisma db push\`."
+            echo "- NO SEED EXECUTED — this workflow contains no seed/db-seed command."
+            echo "- NO CONTENT IMPORT — this workflow does not run prisma/import-grammar-rules.ts or any other import script."
+            echo "- NO RENDER DEPLOY EXECUTED — this workflow never calls Render's API or triggers a deploy."
+            echo "- NO RESOLVER ACTIVATION — this workflow touches no resolver code or write path; grammar-mvp-v1 remains merged but inactive."
+            echo "- NO CONTENT/SCHEMA/CODE CHANGES — this workflow touches no application code or Grammar content; only the two governance columns (contentStatus, sourceVerificationStatus) and publishedAt on the 8 named rows."
+          } >> "$GITHUB_STEP_SUMMARY"
