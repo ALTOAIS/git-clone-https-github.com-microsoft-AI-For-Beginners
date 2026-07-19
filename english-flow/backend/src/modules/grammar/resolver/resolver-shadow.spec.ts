@@ -1,5 +1,6 @@
 import {
   isAssignmentCandidate,
+  resolveAssignableGrammarRuleId,
   runGrammarResolverShadow,
 } from './resolver-shadow';
 import { GRAMMAR_RESOLVER_VERSION } from './resolver.types';
@@ -238,5 +239,114 @@ describe('isAssignmentCandidate — pure decision helper, no DB access, no autom
         new Set(),
       ),
     ).toBe(false);
+  });
+});
+
+describe('resolveAssignableGrammarRuleId — pure, no DB access, single source of truth reused from isAssignmentCandidate', () => {
+  const PUBLISHED_MAP = new Map([
+    ['MODAL_BASE_VERB', 'rule-id-modal-base-verb'],
+    ['ARTICLE_A_AN', 'rule-id-article-a-an'],
+  ]);
+
+  it('returns the mapped GrammarRule.id when isCandidate is true and the ruleCode is present', () => {
+    expect(
+      resolveAssignableGrammarRuleId(
+        {
+          resolverVersion: GRAMMAR_RESOLVER_VERSION,
+          ruleCode: 'MODAL_BASE_VERB',
+          confidence: 'HIGH',
+          ambiguous: false,
+          candidateCount: 1,
+        },
+        true,
+        PUBLISHED_MAP,
+      ),
+    ).toBe('rule-id-modal-base-verb');
+  });
+
+  it('returns null when isCandidate is false, regardless of how "eligible-looking" the observation is', () => {
+    expect(
+      resolveAssignableGrammarRuleId(
+        {
+          resolverVersion: GRAMMAR_RESOLVER_VERSION,
+          ruleCode: 'MODAL_BASE_VERB',
+          confidence: 'HIGH',
+          ambiguous: false,
+          candidateCount: 1,
+        },
+        false,
+        PUBLISHED_MAP,
+      ),
+    ).toBeNull();
+  });
+
+  it('returns null for a null observation even if isCandidate is (incorrectly) true', () => {
+    expect(
+      resolveAssignableGrammarRuleId(null, true, PUBLISHED_MAP),
+    ).toBeNull();
+  });
+
+  it('returns null for a null ruleCode even if isCandidate is (incorrectly) true', () => {
+    expect(
+      resolveAssignableGrammarRuleId(
+        {
+          resolverVersion: GRAMMAR_RESOLVER_VERSION,
+          ruleCode: null,
+          confidence: 'HIGH',
+          ambiguous: false,
+          candidateCount: 0,
+        },
+        true,
+        PUBLISHED_MAP,
+      ),
+    ).toBeNull();
+  });
+
+  it('returns null when the ruleCode is missing from the supplied map, even if isCandidate is true (defensive: map and isCandidate should normally agree)', () => {
+    expect(
+      resolveAssignableGrammarRuleId(
+        {
+          resolverVersion: GRAMMAR_RESOLVER_VERSION,
+          ruleCode: 'BASIC_WORD_ORDER',
+          confidence: 'HIGH',
+          ambiguous: false,
+          candidateCount: 1,
+        },
+        true,
+        PUBLISHED_MAP,
+      ),
+    ).toBeNull();
+  });
+
+  it('agrees with isAssignmentCandidate end-to-end: eligible observation + published map -> non-null id', () => {
+    const observation = {
+      resolverVersion: GRAMMAR_RESOLVER_VERSION,
+      ruleCode: 'ARTICLE_A_AN' as const,
+      confidence: 'HIGH' as const,
+      ambiguous: false,
+      candidateCount: 1,
+    };
+    const publishedCodes = new Set(PUBLISHED_MAP.keys());
+    const isCandidate = isAssignmentCandidate(observation, publishedCodes);
+    expect(isCandidate).toBe(true);
+    expect(
+      resolveAssignableGrammarRuleId(observation, isCandidate, PUBLISHED_MAP),
+    ).toBe('rule-id-article-a-an');
+  });
+
+  it('agrees with isAssignmentCandidate end-to-end: hidden/unpublished ruleCode -> null id, even at HIGH confidence', () => {
+    const observation = {
+      resolverVersion: GRAMMAR_RESOLVER_VERSION,
+      ruleCode: 'BASIC_WORD_ORDER' as const,
+      confidence: 'HIGH' as const,
+      ambiguous: false,
+      candidateCount: 1,
+    };
+    const publishedCodes = new Set(PUBLISHED_MAP.keys());
+    const isCandidate = isAssignmentCandidate(observation, publishedCodes);
+    expect(isCandidate).toBe(false);
+    expect(
+      resolveAssignableGrammarRuleId(observation, isCandidate, PUBLISHED_MAP),
+    ).toBeNull();
   });
 });

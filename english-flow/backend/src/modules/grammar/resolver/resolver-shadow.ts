@@ -7,11 +7,14 @@ import type {
 } from './resolver.types';
 
 /**
- * Shadow-mode observation layer for the Grammar MVP resolver
- * (grammar-mvp-v1). This module never persists anything and never
- * activates automatic assignment — it exists only to safely run the
- * existing, unmodified resolver against real ErrorRecord creation
- * inputs and produce non-sensitive, structured metadata for logging.
+ * Shadow-observation and assignment-eligibility layer for the Grammar MVP
+ * resolver (grammar-mvp-v1). This module never persists anything itself —
+ * it only runs the existing, unmodified resolver against real ErrorRecord
+ * creation inputs, produces non-sensitive structured metadata for logging,
+ * and (pure, no DB access) resolves whether/what a caller-supplied
+ * PUBLISHED-ruleCode map would allow an automatic assignment to use.
+ * Persisting `grammarRuleId`/`grammarResolverVersion` is entirely the
+ * caller's (errors.service.ts's) responsibility.
  *
  * Only two fields from the raw resolver input are ever handled here
  * (originalText, correctedText — required by the resolver's own
@@ -89,4 +92,30 @@ export function isAssignmentCandidate(
   if (observation.confidence !== 'HIGH') return false;
   if (observation.ambiguous) return false;
   return publishableRuleCodes.has(observation.ruleCode);
+}
+
+/**
+ * Resolves the `GrammarRule.id` an automatic assignment should persist for
+ * this observation, or `null` if it is not eligible.
+ *
+ * Deliberately takes `isCandidate` as an argument — the exact boolean
+ * already produced by `isAssignmentCandidate` for this same observation and
+ * the same published-ruleCode set — rather than recomputing eligibility
+ * itself. This guarantees there is exactly one eligibility gate in the
+ * whole system: this function can never disagree with, or duplicate the
+ * semantics of, `isAssignmentCandidate`.
+ *
+ * No DB access: `publishedRuleIdByCode` (ruleCode -> GrammarRule.id) must be
+ * supplied by the caller, fetched safely and at most once per
+ * `recordErrors()` invocation — this function only performs an in-memory
+ * lookup. Returns `null` (never throws, never invents an id) if the
+ * resolved ruleCode is missing from the supplied map for any reason.
+ */
+export function resolveAssignableGrammarRuleId(
+  observation: GrammarShadowObservation | null,
+  isCandidate: boolean,
+  publishedRuleIdByCode: ReadonlyMap<string, string>,
+): string | null {
+  if (!isCandidate || !observation?.ruleCode) return null;
+  return publishedRuleIdByCode.get(observation.ruleCode) ?? null;
 }
