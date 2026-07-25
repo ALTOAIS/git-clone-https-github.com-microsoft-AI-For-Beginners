@@ -1,6 +1,7 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { QuizData, TeamScores } from '../types';
 import { music } from '../audio/music';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 interface FinalResultsProps {
   quiz: QuizData;
@@ -15,6 +16,7 @@ const CONFETTI_COLORS = ['#ffcc33', '#ff5fa2', '#4da3ff', '#5ee08a', '#ff8c42', 
 export function FinalResults({ quiz, scores, roundResults, onNewGame }: FinalResultsProps) {
   const tie = scores.boys === scores.girls;
   const winner = scores.boys > scores.girls ? quiz.teams.boys : quiz.teams.girls;
+  const [confirmNewGame, setConfirmNewGame] = useState(false);
 
   // Фанфары победителю (если музыка включена)
   useEffect(() => {
@@ -72,10 +74,23 @@ export function FinalResults({ quiz, scores, roundResults, onNewGame }: FinalRes
       </table>
 
       <div className="host-controls">
-        <button className="btn btn-primary btn-xl" onClick={onNewGame}>
+        <button className="btn btn-primary btn-xl" onClick={() => setConfirmNewGame(true)}>
           Новая игра
         </button>
       </div>
+
+      {confirmNewGame && (
+        <ConfirmDialog
+          title="Начать новую игру?"
+          message="Текущий результат будет потерян."
+          confirmLabel="Новая игра"
+          onConfirm={() => {
+            setConfirmNewGame(false);
+            onNewGame();
+          }}
+          onCancel={() => setConfirmNewGame(false)}
+        />
+      )}
     </div>
   );
 }

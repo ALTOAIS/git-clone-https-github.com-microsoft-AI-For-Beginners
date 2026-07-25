@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { FinalRound as FinalRoundData, TeamKey, TeamScores } from '../types';
+import { ProgressDots } from '../components/ProgressDots';
 
 interface FinalRoundProps {
   round: FinalRoundData;
@@ -60,6 +61,7 @@ export function FinalRound({ round, teams, baseScores, onComplete }: FinalRoundP
       <div className="question-counter">
         Вопрос {index + 1} из {round.questions.length}
       </div>
+      <ProgressDots current={index + 1} total={round.questions.length} />
 
       {stage === 'bet' && (
         <>

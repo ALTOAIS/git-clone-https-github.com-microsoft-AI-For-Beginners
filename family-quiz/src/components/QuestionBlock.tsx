@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Question } from '../types';
 import { Timer } from './Timer';
+import { ProgressDots } from './ProgressDots';
 
 const OPTION_LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е'];
 
@@ -50,6 +51,7 @@ export function QuestionBlock({ blockTitle, questions, timerSeconds, onDone }: Q
       <div className="question-counter">
         {stage === 'ask' ? 'Вопрос' : 'Ответ'} {index + 1} из {questions.length}
       </div>
+      <ProgressDots current={index + 1} total={questions.length} />
       {question.category && <div className="question-category">{question.category}</div>}
       <h2 className="question-text">{question.text}</h2>
 

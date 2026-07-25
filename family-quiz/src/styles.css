@@ -41,6 +41,28 @@ body {
   gap: clamp(12px, 2vh, 28px);
 }
 
+/* ===== Переходы между экранами ===== */
+
+/* Лёгкое проявление при каждой смене экрана (интро тура → игра → результаты) —
+   анимация запускается автоматически при монтировании компонента, JS не нужен. */
+@keyframes screen-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.screen,
+.round-intro,
+.question-block,
+.score-entry {
+  animation: screen-fade-in 0.35s ease-out both;
+}
+
 /* ===== Верхняя панель ===== */
 
 .top-bar {
@@ -115,6 +137,11 @@ body {
 }
 
 .btn-girls {
+  background: var(--girls);
+  color: #2b0416;
+}
+
+.btn-danger {
   background: var(--girls);
   color: #2b0416;
 }
@@ -253,6 +280,28 @@ body {
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.12em;
+}
+
+/* Крупный визуальный индикатор прогресса по вопросам тура — рядом со счётчиком «Вопрос N из M» */
+.progress-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(6px, 0.9vw, 12px);
+  max-width: min(90vw, 900px);
+}
+
+.progress-dot {
+  width: clamp(12px, 1.4vw, 22px);
+  height: clamp(12px, 1.4vw, 22px);
+  border-radius: 50%;
+  background: var(--panel-light);
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.progress-dot-active {
+  background: var(--accent);
+  transform: scale(1.1);
 }
 
 .question-text {
@@ -541,7 +590,13 @@ body {
   .blackbox-question,
   .blackbox-answer,
   .blackbox-reveal-image,
-  .blackbox-reveal-fact {
+  .blackbox-reveal-fact,
+  .screen,
+  .round-intro,
+  .question-block,
+  .score-entry,
+  .confirm-overlay,
+  .confirm-dialog {
     animation: none;
   }
 }
@@ -849,5 +904,70 @@ body {
   }
   100% {
     transform: translateY(110vh) rotate(720deg);
+  }
+}
+
+/* ===== Подтверждение действия ===== */
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 20, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+  animation: confirm-overlay-in 0.2s ease both;
+}
+
+.confirm-dialog {
+  background: var(--panel);
+  border: 3px solid var(--panel-light);
+  border-radius: 24px;
+  padding: clamp(28px, 4vw, 48px);
+  max-width: min(90vw, 640px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+  animation: confirm-dialog-in 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.confirm-title {
+  font-size: clamp(26px, 3vw, 42px);
+  color: var(--accent);
+}
+
+.confirm-message {
+  font-size: clamp(18px, 2vw, 28px);
+  color: var(--muted);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+@keyframes confirm-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes confirm-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }

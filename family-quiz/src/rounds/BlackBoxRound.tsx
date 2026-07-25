@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { BlackBoxRound as BlackBoxRoundData, TeamKey, TeamScores } from '../types';
 import { pointsWord } from '../plural';
 import { blackboxImages } from '../assets/blackboxImages';
+import { ProgressDots } from '../components/ProgressDots';
 
 interface BlackBoxRoundProps {
   round: BlackBoxRoundData;
@@ -44,6 +45,7 @@ export function BlackBoxRound({ round, teams, onComplete }: BlackBoxRoundProps) 
           Чёрный ящик {itemIndex + 1} из {round.items.length}
         </div>
       )}
+      <ProgressDots current={itemIndex + 1} total={round.items.length} />
 
       <div className="blackbox-scene">
         <div className={`blackbox-box ${answerShown ? 'blackbox-open' : ''}`}>

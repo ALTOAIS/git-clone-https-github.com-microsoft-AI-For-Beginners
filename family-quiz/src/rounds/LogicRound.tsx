@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { ImagesRound, TeamKey, TeamScores } from '../types';
 import { QuizImage } from '../components/QuizImage';
 import { ScoreEntry } from '../components/ScoreEntry';
+import { ProgressDots } from '../components/ProgressDots';
 
 interface LogicRoundProps {
   round: ImagesRound;
@@ -55,6 +56,7 @@ export function LogicRound({ round, teams, onComplete }: LogicRoundProps) {
       <div className="question-counter">
         {stage === 'ask' ? 'Вопрос' : 'Ответ'} {index + 1} из {round.questions.length}
       </div>
+      <ProgressDots current={index + 1} total={round.questions.length} />
       {question.text && <h2 className="question-text">{question.text}</h2>}
       <div className="images-row">
         {question.images.map((src, i) => (
@@ -76,7 +78,7 @@ export function LogicRound({ round, teams, onComplete }: LogicRoundProps) {
               ? 'Показать ответы'
               : 'Следующий вопрос'
             : isLast
-              ? 'Ввести результаты'
+              ? 'Завершить'
               : 'Следующий ответ'}
         </button>
       </div>

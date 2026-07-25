@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { QuizData } from '../types';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 interface HomeScreenProps {
   quiz: QuizData;
@@ -9,6 +11,8 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen({ quiz, hasSavedGame, onStart, onContinue, onReset }: HomeScreenProps) {
+  const [confirmReset, setConfirmReset] = useState(false);
+
   return (
     <div className="screen home-screen">
       <h1 className="home-title">{quiz.title}</h1>
@@ -28,7 +32,7 @@ export function HomeScreen({ quiz, hasSavedGame, onStart, onContinue, onReset }:
             <button className="btn btn-primary btn-xl" onClick={onContinue}>
               Продолжить игру
             </button>
-            <button className="btn btn-ghost" onClick={onReset}>
+            <button className="btn btn-ghost" onClick={() => setConfirmReset(true)}>
               Начать заново
             </button>
           </>
@@ -38,6 +42,19 @@ export function HomeScreen({ quiz, hasSavedGame, onStart, onContinue, onReset }:
           </button>
         )}
       </div>
+
+      {confirmReset && (
+        <ConfirmDialog
+          title="Начать новую игру?"
+          message="Текущий результат будет потерян."
+          confirmLabel="Новая игра"
+          onConfirm={() => {
+            setConfirmReset(false);
+            onReset();
+          }}
+          onCancel={() => setConfirmReset(false)}
+        />
+      )}
     </div>
   );
 }
