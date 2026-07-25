@@ -51,6 +51,10 @@ export interface BlackBoxItem {
   hints: string[];
   answer: string;
   points: number;
+  /** Имя файла в src/assets/images/blackbox/ (см. blackboxImages.ts). Необязательное — старые предметы без картинки работают как раньше. */
+  image?: string;
+  /** Интересный факт — показывается вместе с ответом, если задан. */
+  fact?: string;
 }
 
 export interface BlackBoxRound {

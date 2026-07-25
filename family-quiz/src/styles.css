@@ -422,7 +422,27 @@ body {
 
 /* ===== Чёрный ящик ===== */
 
+/* «Прожектор» за ящиком — атмосфера тайны, пока ответ не открыт */
+.blackbox-scene {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 4vh, 56px);
+}
+
+.blackbox-scene::before {
+  content: '';
+  position: absolute;
+  inset: clamp(-40px, -6vw, -80px);
+  background: radial-gradient(circle, rgba(255, 204, 51, 0.16), transparent 68%);
+  pointer-events: none;
+  z-index: 0;
+}
+
 .blackbox-box {
+  position: relative;
+  z-index: 1;
   width: clamp(220px, 30vw, 440px);
   height: clamp(220px, 30vw, 440px);
   background: #000;
@@ -432,6 +452,23 @@ body {
   align-items: center;
   justify-content: center;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+  transition: background 0.5s ease, border-color 0.5s ease;
+  overflow: hidden;
+}
+
+/* Медленная пульсация свечения — ящик хранит тайну */
+.blackbox-box:not(.blackbox-open) {
+  animation: blackbox-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes blackbox-pulse {
+  0%,
+  100% {
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6), 0 0 0 rgba(255, 204, 51, 0);
+  }
+  50% {
+    box-shadow: 0 12px 60px rgba(0, 0, 0, 0.7), 0 0 50px rgba(255, 204, 51, 0.4);
+  }
 }
 
 .blackbox-open {
@@ -443,13 +480,70 @@ body {
   font-size: clamp(90px, 12vw, 180px);
   font-weight: 800;
   color: var(--accent);
+  animation: blackbox-flicker 2.6s ease-in-out infinite;
+}
+
+@keyframes blackbox-flicker {
+  0%,
+  38%,
+  42%,
+  100% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.55;
+  }
+}
+
+.blackbox-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  text-align: center;
 }
 
 .blackbox-answer {
   font-size: clamp(30px, 3.6vw, 56px);
   font-weight: 800;
-  padding: 16px;
-  text-align: center;
+  animation: blackbox-reveal-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.blackbox-reveal-image {
+  width: clamp(110px, 15vw, 200px);
+  height: clamp(110px, 15vw, 200px);
+  object-fit: contain;
+  filter: drop-shadow(0 8px 20px rgba(255, 204, 51, 0.35));
+  animation: blackbox-reveal-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: 0.15s;
+}
+
+.blackbox-reveal-fact {
+  animation: blackbox-reveal-in 0.5s ease-out both;
+  animation-delay: 0.4s;
+}
+
+@keyframes blackbox-reveal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7) translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blackbox-box:not(.blackbox-open),
+  .blackbox-question,
+  .blackbox-answer,
+  .blackbox-reveal-image,
+  .blackbox-reveal-fact {
+    animation: none;
+  }
 }
 
 .hints {

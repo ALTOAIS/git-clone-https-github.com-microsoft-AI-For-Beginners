@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { BlackBoxRound as BlackBoxRoundData, TeamKey, TeamScores } from '../types';
 import { pointsWord } from '../plural';
+import { blackboxImages } from '../assets/blackboxImages';
 
 interface BlackBoxRoundProps {
   round: BlackBoxRoundData;
@@ -18,6 +19,8 @@ export function BlackBoxRound({ round, teams, onComplete }: BlackBoxRoundProps) 
   const item = round.items[itemIndex];
   const isLastItem = itemIndex === round.items.length - 1;
   const allHintsShown = hintsShown >= item.hints.length;
+  // Картинка необязательна: у старых предметов без поля image просто не рендерится
+  const imageSrc = item.image ? blackboxImages[item.image] : undefined;
 
   const pickWinner = (team: TeamKey | null) => {
     const next: TeamScores = {
@@ -42,9 +45,20 @@ export function BlackBoxRound({ round, teams, onComplete }: BlackBoxRoundProps) 
         </div>
       )}
 
-      <div className={`blackbox-box ${answerShown ? 'blackbox-open' : ''}`}>
-        {answerShown ? <span className="blackbox-answer">{item.answer}</span> : <span className="blackbox-question">?</span>}
+      <div className="blackbox-scene">
+        <div className={`blackbox-box ${answerShown ? 'blackbox-open' : ''}`}>
+          {answerShown ? (
+            <div className="blackbox-reveal">
+              <span className="blackbox-answer">{item.answer}</span>
+              {imageSrc && <img className="blackbox-reveal-image" src={imageSrc} alt={item.answer} />}
+            </div>
+          ) : (
+            <span className="blackbox-question">?</span>
+          )}
+        </div>
       </div>
+
+      {answerShown && item.fact && <p className="question-fact blackbox-reveal-fact">💡 {item.fact}</p>}
 
       <div className="hints">
         {item.hints.slice(0, hintsShown).map((hint, i) => (
